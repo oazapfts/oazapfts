@@ -104,9 +104,12 @@ export function createMethodCall(
   return createCall(ts.createPropertyAccess(ts.createThis(), method), opts);
 }
 
-export function createShorthandObjectLiteral(props: string[]) {
+export function createObjectLiteral(props: [string, string | ts.Expression][]) {
   return ts.createObjectLiteral(
-    props.map(p => ts.createShorthandPropertyAssignment(p))
+    props.map(([name, identifier]) =>
+      ts.createPropertyAssignment(propertyName(name), toExpression(identifier))
+    ),
+    true
   );
 }
 

@@ -333,7 +333,7 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
 
       // build the method signature - first all the required parameters
       const methodParams = required.map(p =>
-        cg.createParameter(resolve(p).name, {
+        cg.createParameter(_.camelCase(resolve(p).name), {
           type: getTypeFromSchema(isReference(p) ? p : p.schema)
         })
       );
@@ -361,14 +361,16 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
         methodParams.push(
           cg.createParameter(
             cg.createObjectBinding(
-              optional.map(resolve).map(({ name }) => ({ name }))
+              optional
+                .map(resolve)
+                .map(({ name }) => ({ name: _.camelCase(name) }))
             ),
             {
               initializer: ts.createObjectLiteral(),
               type: ts.createTypeLiteralNode(
                 optional.map(p =>
                   cg.createPropertySignature({
-                    name: resolve(p).name,
+                    name: _.camelCase(resolve(p).name),
                     questionToken: true,
                     type: getTypeFromSchema(isReference(p) ? p : p.schema)
                   })
@@ -392,7 +394,9 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
           Object.entries(paramsByFormatter).map(([format, params]) => {
             //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
             return callQsFunction(format, [
-              cg.createShorthandObjectLiteral(params.map(p => p.name))
+              cg.createObjectLiteral(
+                params.map(p => [p.name, _.camelCase(p.name)])
+              )
             ]);
           })
         );
@@ -417,9 +421,8 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
         init.push(
           ts.createPropertyAssignment(
             "headers",
-            ts.createObjectLiteral(
-              header.map(name => ts.createShorthandPropertyAssignment(name)),
-              true
+            cg.createObjectLiteral(
+              header.map(name => [name, _.camelCase(name)])
             )
           )
         );
