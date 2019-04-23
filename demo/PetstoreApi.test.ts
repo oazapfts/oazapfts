@@ -1,14 +1,18 @@
 import fs from "fs";
-import { Api, Pet } from "./PetstoreApi";
+import { generateApi } from "../src";
+
 (global as any).fetch = require("node-fetch");
 (global as any).FormData = require("form-data");
-
-const api = new Api();
-
 describe("petstore.swagger.io", () => {
-  let pet: Pet;
+  let pet: any;
+  let api: any;
   let id = 0;
+
   beforeAll(async () => {
+    const code = await generateApi(require("./petstore.json"));
+    fs.writeFileSync(__dirname + "/PetstoreApi.ts", code);
+    const { Api } = require("./PetstoreApi");
+    api = new Api();
     const pets = await api.findPetsByStatus(["available"]);
     expect(pets.length).toBeGreaterThan(0);
     [pet] = pets;
@@ -31,13 +35,6 @@ describe("petstore.swagger.io", () => {
     expect(order).toMatchObject({
       quantity: 1,
       status: "placed"
-    });
-  });
-
-  it("should get orders", async () => {
-    const order = await api.getOrderById(3);
-    expect(order).toMatchObject({
-      id: 3
     });
   });
 
