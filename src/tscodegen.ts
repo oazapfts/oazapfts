@@ -107,7 +107,7 @@ export function createMethodCall(
 export function createObjectLiteral(props: [string, string | ts.Expression][]) {
   return ts.createObjectLiteral(
     props.map(([name, identifier]) =>
-      ts.createPropertyAssignment(propertyName(name), toExpression(identifier))
+      createPropertyAssignment(name, toExpression(identifier))
     ),
     true
   );
@@ -122,7 +122,7 @@ export function createPropertyAssignment(
       return ts.createShorthandPropertyAssignment(name);
     }
   }
-  return ts.createPropertyAssignment(name, expression);
+  return ts.createPropertyAssignment(propertyName(name), expression);
 }
 
 export function block(...statements: ts.Statement[]) {

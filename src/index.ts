@@ -119,9 +119,42 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 }
 
 /**
+ * Despite its name, OpenApi's `deepObject` serialization does not support
+ * deeply nested objects. As a workaround we detect parameters that contain
+ * sqaure backets and merge them into a single object.
+ */
+function supportDeepObjects(params: oapi.ParameterObject[]) {
+  const res: oapi.ParameterObject[] = [];
+  const merged: any = {};
+  params.forEach(p => {
+    const m = /^(.+?)\[(.*?)\]/.exec(p.name);
+    if (!m) {
+      res.push(p);
+      return;
+    }
+    const [, name, prop] = m;
+    let obj = merged[name];
+    if (!obj) {
+      obj = merged[name] = {
+        name,
+        in: p.in,
+        style: "deepObject",
+        schema: {
+          type: "object",
+          properties: {}
+        }
+      };
+      res.push(obj);
+    }
+    obj.schema.properties[prop] = p.schema;
+  });
+  return res;
+}
+
+/**
  * Main entry point that generates TypeScript code from a given API spec.
  */
-export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
+export function generateApi(spec: oapi.OpenApiSpec) {
   function resolve<T>(obj: T | oapi.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
@@ -323,17 +356,28 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
       const name = getOperationName(verb, path, operationId);
 
       // merge item and op parameters
-      const parameters = [
+      const parameters = supportDeepObjects([
         ...resolveArray(item.parameters),
         ...resolveArray(op.parameters)
-      ];
+      ]);
 
       // split into required/optional
       const [required, optional] = _.partition(parameters, "required");
 
+      // convert parameter names to argument names ...
+      const argNames: any = {};
+      parameters
+        .map(p => p.name)
+        .forEach(name => {
+          // strip leading namespaces, eg. foo.name -> name
+          const stripped = _.camelCase(name.replace(/.+\./, ""));
+          // keep the prefix if the stripped-down name is already taken
+          argNames[name] = stripped in argNames ? _.camelCase(name) : stripped;
+        });
+
       // build the method signature - first all the required parameters
       const methodParams = required.map(p =>
-        cg.createParameter(_.camelCase(resolve(p).name), {
+        cg.createParameter(argNames[resolve(p).name], {
           type: getTypeFromSchema(isReference(p) ? p : p.schema)
         })
       );
@@ -363,14 +407,14 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
             cg.createObjectBinding(
               optional
                 .map(resolve)
-                .map(({ name }) => ({ name: _.camelCase(name) }))
+                .map(({ name }) => ({ name: argNames[name] }))
             ),
             {
               initializer: ts.createObjectLiteral(),
               type: ts.createTypeLiteralNode(
                 optional.map(p =>
                   cg.createPropertySignature({
-                    name: _.camelCase(resolve(p).name),
+                    name: argNames[resolve(p).name],
                     questionToken: true,
                     type: getTypeFromSchema(isReference(p) ? p : p.schema)
                   })
@@ -395,7 +439,7 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
             //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
             return callQsFunction(format, [
               cg.createObjectLiteral(
-                params.map(p => [p.name, _.camelCase(p.name)])
+                params.map(p => [p.name, argNames[p.name]])
               )
             ]);
           })
@@ -421,9 +465,7 @@ export function generateApi(spec: oapi.OpenApiSpec, banner?: string) {
         init.push(
           ts.createPropertyAssignment(
             "headers",
-            cg.createObjectLiteral(
-              header.map(name => [name, _.camelCase(name)])
-            )
+            cg.createObjectLiteral(header.map(name => [name, argNames[name]]))
           )
         );
       }
