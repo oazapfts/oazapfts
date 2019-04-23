@@ -46,6 +46,9 @@ export class Api {
       ...req,
       headers
     });
+    if (!res.ok) {
+      throw new HttpError(res.status, res.statusText);
+    }
     return res.text();
   }
 
@@ -193,3 +196,11 @@ export const QS = {
   pipe: delimited("|"),
   space: delimited("%20")
 };
+
+export class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}

@@ -25,6 +25,12 @@ describe("petstore.swagger.io", () => {
     expect(pet2).toMatchObject(pet);
   });
 
+  it("should reject invalid ids", () => {
+    const promise = api.getPetById(-1);
+    expect(promise).rejects.toThrow("Not Found");
+    expect(promise).rejects.toHaveProperty("status", 404);
+  });
+
   it("should place orders", async () => {
     expect(id).toBeGreaterThan(0);
     const order = await api.placeOrder({
