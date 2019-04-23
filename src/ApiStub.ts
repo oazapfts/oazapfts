@@ -100,9 +100,17 @@ export class Api {
 function encode(encoders: Encoders, delimiter = ",") {
   const q = (v: any, i: number) => {
     const encoder = encoders[i % encoders.length];
-    if (Array.isArray(v)) {
-      return v.map(encoder).join(delimiter);
+    if (typeof v === "object") {
+      if (Array.isArray(v)) {
+        return v.map(encoder).join(delimiter);
+      }
+      const flat = Object.entries(v).reduce(
+        (flat, entry) => [...flat, ...entry],
+        [] as any
+      );
+      return flat.map(encoder).join(delimiter);
     }
+
     return encoder(String(v));
   };
 
@@ -180,6 +188,7 @@ export const QS = {
       })
       .join("&");
   },
+
   form: delimited(),
   pipe: delimited("|"),
   space: delimited("%20")

@@ -11,6 +11,11 @@ describe("delimited", () => {
   it("should use spaces", () => {
     expect(space({ id: [3, 4, 5] })).toEqual("id=3%204%205");
   });
+  it("should enumerate entries", () => {
+    expect(form({ author: { firstName: "Felix", role: "admin" } })).toEqual(
+      "author=firstName,Felix,role,admin"
+    );
+  });
 });
 
 describe("explode", () => {
