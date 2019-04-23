@@ -1,0 +1,53 @@
+{
+  "name": "oazapfts",
+  "version": "0.0.1",
+  "description": "OpenApi TypeScript client generator",
+  "main": "lib/index.js",
+  "bin": {
+    "oazapfts": "./lib/cli.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "prepare": "npm run build && chmod +x ./lib/cli.js"
+  },
+  "keywords": [
+    "openapi",
+    "typescript"
+  ],
+  "author": "Felix Gnass",
+  "license": "MIT",
+  "devDependencies": {
+    "@loopback/openapi-v3-types": "^1.0.14",
+    "@types/got": "^9.4.3",
+    "@types/jest": "^24.0.11",
+    "@types/lodash": "^4.14.123",
+    "@types/node": "^11.13.7",
+    "form-data": "^2.3.3",
+    "jest": "^24.7.1",
+    "node-fetch": "^2.3.0",
+    "ts-jest": "^24.0.2",
+    "ts-node": "^8.0.3"
+  },
+  "dependencies": {
+    "got": "^9.6.0",
+    "lodash": "^4.17.11",
+    "typescript": "^3.4.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "node",
+      "ts",
+      "d.ts"
+    ],
+    "transform": {
+      "\\.ts$": "ts-jest"
+    }
+  }
+}
