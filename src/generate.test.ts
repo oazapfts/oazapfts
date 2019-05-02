@@ -1,4 +1,4 @@
-import { getOperationName, generateApi } from "./index";
+import generate, { getOperationName } from "./generate";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -11,8 +11,8 @@ describe("getOperationName", () => {
   });
 });
 
-describe("createApi", () => {
+describe("generate", () => {
   it("should generate an api", () => {
-    generateApi(require("../demo/petstore.json"));
+    generate(require("../demo/petstore.json"));
   });
 });

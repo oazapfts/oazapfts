@@ -204,3 +204,9 @@ export class HttpError extends Error {
     this.status = status;
   }
 }
+
+type PromisedApiResult<M> = M extends (...args: any) => Promise<infer T>
+  ? T
+  : never;
+
+export type ApiResult<N extends keyof Api> = PromisedApiResult<Api[N]>;

@@ -7,8 +7,9 @@
     "oazapfts": "./lib/cli.js"
   },
   "scripts": {
-    "test": "jest",
+    "test": "npm run generate-demo && jest",
     "build": "tsc",
+    "generate-demo": "npm run prepare && ./lib/cli.js ./demo/petstore.json ./demo/PetstoreApi.ts",
     "prepare": "npm run build && chmod +x ./lib/cli.js"
   },
   "keywords": [

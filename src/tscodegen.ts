@@ -61,10 +61,10 @@ export function createTypeAliasDeclaration({
   typeParameters,
   type
 }: {
-  decorators?: ReadonlyArray<ts.Decorator>;
-  modifiers?: ReadonlyArray<ts.Modifier>;
+  decorators?: Array<ts.Decorator>;
+  modifiers?: Array<ts.Modifier>;
   name: string | ts.Identifier;
-  typeParameters?: ReadonlyArray<ts.TypeParameterDeclaration>;
+  typeParameters?: Array<ts.TypeParameterDeclaration>;
   type: ts.TypeNode;
 }) {
   return ts.createTypeAliasDeclaration(
@@ -87,8 +87,8 @@ export function createCall(
     typeArgs,
     args
   }: {
-    typeArgs?: ReadonlyArray<ts.TypeNode>;
-    args?: ReadonlyArray<ts.Expression>;
+    typeArgs?: Array<ts.TypeNode>;
+    args?: Array<ts.Expression>;
   }
 ) {
   return ts.createCall(toExpression(expression), typeArgs, args);
@@ -97,8 +97,8 @@ export function createCall(
 export function createMethodCall(
   method: string,
   opts: {
-    typeArgs?: ReadonlyArray<ts.TypeNode>;
-    args?: ReadonlyArray<ts.Expression>;
+    typeArgs?: Array<ts.TypeNode>;
+    args?: Array<ts.Expression>;
   }
 ) {
   return createCall(ts.createPropertyAccess(ts.createThis(), method), opts);
@@ -137,12 +137,12 @@ export function createClassDeclaration({
   heritageClauses,
   members
 }: {
-  decorators?: ReadonlyArray<ts.Decorator>;
-  modifiers?: ReadonlyArray<ts.Modifier>;
+  decorators?: Array<ts.Decorator>;
+  modifiers?: Array<ts.Modifier>;
   name?: string | ts.Identifier;
-  typeParameters?: ReadonlyArray<ts.TypeParameterDeclaration>;
-  heritageClauses?: ReadonlyArray<ts.HeritageClause>;
-  members: ReadonlyArray<ts.ClassElement>;
+  typeParameters?: Array<ts.TypeParameterDeclaration>;
+  heritageClauses?: Array<ts.HeritageClause>;
+  members: Array<ts.ClassElement>;
 }) {
   return ts.createClassDeclaration(
     decorators,
@@ -160,9 +160,9 @@ export function createConstructor({
   parameters,
   body
 }: {
-  decorators?: ReadonlyArray<ts.Decorator>;
-  modifiers?: ReadonlyArray<ts.Modifier>;
-  parameters: ReadonlyArray<ts.ParameterDeclaration>;
+  decorators?: Array<ts.Decorator>;
+  modifiers?: Array<ts.Modifier>;
+  parameters: Array<ts.ParameterDeclaration>;
   body?: ts.Block;
 }) {
   return ts.createConstructor(decorators, modifiers, parameters, body);
@@ -216,8 +216,8 @@ export function createParameter(
     type,
     initializer
   }: {
-    decorators?: ReadonlyArray<ts.Decorator>;
-    modifiers?: ReadonlyArray<ts.Modifier>;
+    decorators?: Array<ts.Decorator>;
+    modifiers?: Array<ts.Modifier>;
     dotDotDotToken?: ts.DotDotDotToken;
     questionToken?: ts.QuestionToken | boolean;
     type?: ts.TypeNode;
@@ -251,7 +251,7 @@ export function createPropertySignature({
   type,
   initializer
 }: {
-  modifiers?: ReadonlyArray<ts.Modifier>;
+  modifiers?: Array<ts.Modifier>;
   name: ts.PropertyName | string;
   questionToken?: ts.QuestionToken | boolean;
   type?: ts.TypeNode;
@@ -276,8 +276,8 @@ export function createIndexSignature(
   }: {
     indexName?: string;
     indexType?: ts.TypeNode;
-    decorators?: ReadonlyArray<ts.Decorator>;
-    modifiers?: ReadonlyArray<ts.Modifier>;
+    decorators?: Array<ts.Decorator>;
+    modifiers?: Array<ts.Modifier>;
   } = {}
 ) {
   return ts.createIndexSignature(

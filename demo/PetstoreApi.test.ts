@@ -1,18 +1,16 @@
 import fs from "fs";
-import { generateApi } from "../src";
+import { Api } from "./PetstoreApi";
+
+const api = new Api();
 
 (global as any).fetch = require("node-fetch");
 (global as any).FormData = require("form-data");
+
 describe("petstore.swagger.io", () => {
   let pet: any;
-  let api: any;
   let id = 0;
 
   beforeAll(async () => {
-    const code = await generateApi(require("./petstore.json"));
-    fs.writeFileSync(__dirname + "/PetstoreApi.ts", code);
-    const { Api } = require("./PetstoreApi");
-    api = new Api();
     const pets = await api.findPetsByStatus(["available"]);
     expect(pets.length).toBeGreaterThan(0);
     [pet] = pets;
