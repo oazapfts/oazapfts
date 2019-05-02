@@ -24,7 +24,7 @@ describe("petstore.swagger.io", () => {
   });
 
   it("should reject invalid ids", () => {
-    const promise = api.getPetById(-1);
+    const promise = api.getPetById(-130976);
     expect(promise).rejects.toThrow("Not Found");
     expect(promise).rejects.toHaveProperty("status", 404);
   });
