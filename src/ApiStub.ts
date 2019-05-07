@@ -39,8 +39,7 @@ export class Api {
   }
 
   private async _fetch(url: string, req: FetchRequestOpts = {}) {
-    // remove headers with undefined keys...
-    const headers = req.headers && JSON.parse(JSON.stringify(req.headers));
+    const headers = stripUndefined(req.headers);
     const res = await fetch(this._baseUrl + url, {
       ...this._fetchOpts,
       ...req,
@@ -98,6 +97,13 @@ export class Api {
 }
 
 /**
+ * Deeply remove all properties with undefined values.
+ */
+function stripUndefined<T>(obj: T) {
+  return obj && JSON.parse(JSON.stringify(obj));
+}
+
+/**
  * Creates a tag-function to encode template strings with the given encoders.
  */
 function encode(encoders: Encoders, delimiter = ",") {
@@ -130,6 +136,7 @@ function encode(encoders: Encoders, delimiter = ",") {
 function delimited(delimiter = ",") {
   return (params: Record<string, any>, encoders = encodeReserved) =>
     Object.entries(params)
+      .filter(([, value]) => value !== undefined)
       .map(([name, value]) => encode(encoders, delimiter)`${name}=${value}`)
       .join("&");
 }
@@ -159,6 +166,7 @@ export const QS = {
     const qv = encode([s => s, v]);
     const visit = (obj: any, prefix = ""): string =>
       Object.entries(obj)
+        .filter(([, v]) => v !== undefined)
         .map(([prop, v]) => {
           const key = prefix ? qk`${prefix}[${prop}]` : prop;
           if (typeof v === "object") {
@@ -180,6 +188,7 @@ export const QS = {
   explode(params: Record<string, any>, encoders = encodeReserved): string {
     const q = encode(encoders);
     return Object.entries(params)
+      .filter(([, value]) => value !== undefined)
       .map(([name, value]) => {
         if (Array.isArray(value)) {
           return value.map(v => q`${name}=${v}`).join("&");

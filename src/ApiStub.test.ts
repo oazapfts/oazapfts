@@ -16,6 +16,9 @@ describe("delimited", () => {
       "author=firstName,Felix,role,admin"
     );
   });
+  it("should omit undefined values", () => {
+    expect(form({ id: 23, foo: undefined })).toEqual("id=23");
+  });
 });
 
 describe("explode", () => {
@@ -26,6 +29,9 @@ describe("explode", () => {
     expect(explode({ author: { firstName: "Felix", role: "admin" } })).toEqual(
       "firstName=Felix&role=admin"
     );
+  });
+  it("should omit undefined values", () => {
+    expect(explode({ id: 23, foo: undefined })).toEqual("id=23");
   });
 });
 
@@ -39,6 +45,11 @@ describe("deep", () => {
     expect(
       deep({ author: { name: { first: "Felix", last: "Gnass" } } })
     ).toEqual("author[name][first]=Felix&author[name][last]=Gnass");
+  });
+  it("should omit undefined values", () => {
+    expect(deep({ author: { name: "Felix", role: undefined } })).toEqual(
+      "author[name]=Felix"
+    );
   });
 });
 
