@@ -19,18 +19,22 @@ type JsonRequestOpts = RequestOpts & {
 type MultipartRequestOpts = RequestOpts & {
     body: Record<string, string | Blob | undefined | any>;
 };
+export type ApiOptions = {
+    baseUrl?: string;
+    fetch?: typeof fetch;
+} & RequestInit;
 export class Api {
     private _baseUrl: string;
+    private _fetchImpl?: typeof fetch;
     private _fetchOpts: RequestInit;
-    constructor({ baseUrl = "https://petstore.swagger.io/v2", ...fetchOpts }: {
-        baseUrl?: string;
-    } & RequestInit = {}) {
+    constructor({ baseUrl = "https://petstore.swagger.io/v2", fetch: fetchImpl, ...fetchOpts }: ApiOptions = {}) {
+        this._fetchImpl = fetchImpl;
         this._baseUrl = baseUrl;
         this._fetchOpts = fetchOpts;
     }
     private async _fetch(url: string, req: FetchRequestOpts = {}) {
         const headers = stripUndefined(req.headers);
-        const res = await fetch(this._baseUrl + url, {
+        const res = await (this._fetchImpl || fetch)(this._baseUrl + url, {
             ...this._fetchOpts,
             ...req,
             headers

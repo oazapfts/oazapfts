@@ -1,5 +1,41 @@
-import { QS } from "./ApiStub";
+import { QS, Api, ApiOptions } from "./ApiStub";
 const { query, pipe, form, space, deep, explode } = QS;
+
+describe("Api", () => {
+  const createApi = (options: ApiOptions) => {
+    return (new Api(options) as any)
+  }
+  let g: any;
+
+  beforeAll(() => {
+    g = (global as any);
+    g.fetch = g.fetch || (() => {});
+  });
+
+  it("should use global fetch", () => {
+    jest.spyOn(g, "fetch").mockImplementationOnce(() => ({
+      ok: true,
+      text: () => "hello"
+    }));
+
+    createApi({ baseUrl: "foo/" })._fetch("bar", {})
+
+    expect(g.fetch).toHaveBeenCalledWith('foo/bar', expect.any(Object));
+  });
+
+  it("should not use global fetch if local is provided", () => {
+    jest.spyOn(g, "fetch");
+    const customFetch = jest.fn(() => ({
+      ok: true,
+      text: () => "hello"
+    }) as any);
+
+    createApi({ baseUrl: "foo/", fetch: customFetch })._fetch("bar", {})
+
+    expect(customFetch).toHaveBeenCalledWith('foo/bar', expect.any(Object));
+    expect(g.fetch).not.toHaveBeenCalled();
+  });
+});
 
 describe("delimited", () => {
   it("should use commas", () => {
