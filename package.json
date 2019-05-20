@@ -47,6 +47,7 @@
       "ts",
       "d.ts"
     ],
+    "restoreMocks": true,
     "transform": {
       "\\.ts$": "ts-jest"
     }
