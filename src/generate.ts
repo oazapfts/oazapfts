@@ -32,8 +32,6 @@ function getFormatter({ style, explode }: oapi.ParameterObject) {
   return explode ? "explode" : "form";
 }
 
-const aliases: ts.TypeAliasDeclaration[] = [];
-
 /**
  * Create a method name for a given operation, either from its operationId or
  * the HTTP verb and path.
@@ -155,6 +153,8 @@ function supportDeepObjects(params: oapi.ParameterObject[]) {
  * Main entry point that generates TypeScript code from a given API spec.
  */
 export default function generateApi(spec: oapi.OpenApiSpec) {
+  const aliases: ts.TypeAliasDeclaration[] = [];
+
   function resolve<T>(obj: T | oapi.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
