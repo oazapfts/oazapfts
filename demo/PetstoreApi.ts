@@ -257,6 +257,17 @@ export class Api {
             method: "DELETE"
         });
     }
+    async customizePet({ furColor, color }: {
+        furColor?: string;
+        color?: string;
+    } = {}) {
+        return await this._fetch(`/pet/customize${QS.query(QS.form({
+            "fur.color": furColor,
+            color
+        }))}`, {
+            method: "POST"
+        }) as string;
+    }
 }
 /**
  * Deeply remove all properties with undefined values.

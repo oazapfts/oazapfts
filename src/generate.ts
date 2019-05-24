@@ -368,6 +368,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
       const argNames: any = {};
       parameters
         .map(p => p.name)
+        .sort((a, b) => a.length - b.length)
         .forEach(name => {
           // strip leading namespaces, eg. foo.name -> name
           const stripped = _.camelCase(name.replace(/.+\./, ""));

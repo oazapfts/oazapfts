@@ -834,8 +834,36 @@
           }
         }
       }
+    },
+    "/pet/customize": {
+      "post": {
+        "operationId": "customizePet",
+        "parameters": [
+          {
+            "name": "fur.color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "successful operation",
+            "content": {}
+          }
+        }
+      }
     }
   },
+
   "components": {
     "schemas": {
       "Order": {
