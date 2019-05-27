@@ -3,6 +3,7 @@ import ts from "typescript";
 import path from "path";
 import * as oapi from "@loopback/openapi-v3-types";
 import * as cg from "./tscodegen";
+import generateServers from './generateServers';
 
 const verbs = [
   "GET",
@@ -508,7 +509,10 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     });
   });
 
-  stub.statements = cg.appendNodes(stub.statements, ...aliases);
+  stub.statements = cg.appendNodes(stub.statements, ...[
+    ...aliases,
+    ...generateServers(spec.servers || [])
+  ]);
   apiClass.members = cg.appendNodes(apiClass.members, ...members);
 
   return stub;
