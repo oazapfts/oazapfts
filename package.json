@@ -19,7 +19,7 @@
   "author": "Felix Gnass",
   "license": "MIT",
   "devDependencies": {
-    "@loopback/openapi-v3-types": "^1.0.14",
+    "@loopback/openapi-v3-types": "^1.0.21",
     "@types/got": "^9.4.3",
     "@types/jest": "^24.0.11",
     "@types/lodash": "^4.14.123",
