@@ -26,10 +26,26 @@ type MultipartRequestOpts = RequestOpts & {
   body: Record<string, string | Blob | undefined | any>;
 };
 
+type ServerI = {
+  url: string;
+}
+
 export type ApiOptions = {
-  baseUrl?: string,
-  fetch?: typeof fetch
+  /**
+   * @deprecated "baseUrl" has been renamed to "server"
+   */
+  baseUrl?: string;
+  server?: ServerI | string;
+  fetch?: typeof fetch;
 } & RequestInit;
+
+function getUrl(server: string | ServerI): string {
+  if (typeof server === 'string') {
+    return server;
+  }
+
+  return server.url;
+}
 
 export class Api {
   private _baseUrl: string;
@@ -38,11 +54,12 @@ export class Api {
 
   constructor({
     baseUrl = "",
+    server,
     fetch: fetchImpl,
     ...fetchOpts
   }: ApiOptions = {}) {
     this._fetchImpl = fetchImpl;
-    this._baseUrl = baseUrl;
+    this._baseUrl = server ? getUrl(server) : baseUrl;
     this._fetchOpts = fetchOpts;
   }
 

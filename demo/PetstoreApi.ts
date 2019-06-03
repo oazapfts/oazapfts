@@ -19,17 +19,30 @@ type JsonRequestOpts = RequestOpts & {
 type MultipartRequestOpts = RequestOpts & {
     body: Record<string, string | Blob | undefined | any>;
 };
+type ServerI = {
+    url: string;
+};
 export type ApiOptions = {
+    /**
+     * @deprecated "baseUrl" has been renamed to "server"
+     */
     baseUrl?: string;
+    server?: ServerI | string;
     fetch?: typeof fetch;
 } & RequestInit;
+function getUrl(server: string | ServerI): string {
+    if (typeof server === "string") {
+        return server;
+    }
+    return server.url;
+}
 export class Api {
     private _baseUrl: string;
     private _fetchImpl?: typeof fetch;
     private _fetchOpts: RequestInit;
-    constructor({ baseUrl = "https://petstore.swagger.io/v2", fetch: fetchImpl, ...fetchOpts }: ApiOptions = {}) {
+    constructor({ baseUrl = "https://petstore.swagger.io/v2", server, fetch: fetchImpl, ...fetchOpts }: ApiOptions = {}) {
         this._fetchImpl = fetchImpl;
-        this._baseUrl = baseUrl;
+        this._baseUrl = server ? getUrl(server) : baseUrl;
         this._fetchOpts = fetchOpts;
     }
     private async _fetch(url: string, req: FetchRequestOpts = {}) {
@@ -411,3 +424,15 @@ export type User = {
     phone?: string;
     userStatus?: number;
 };
+export class Server {
+    url: string;
+    constructor() {
+        this.url = "https://petstore.swagger.io/v2";
+    }
+}
+export class Server2 {
+    url: string;
+    constructor() {
+        this.url = "http://petstore.swagger.io/v2";
+    }
+}
