@@ -35,17 +35,6 @@ describe("Api", () => {
     expect(customFetch).toHaveBeenCalledWith('foo/bar', expect.any(Object));
     expect(g.fetch).not.toHaveBeenCalled();
   });
-
-  it('joins baseUrl when server is given to constructor', () => {
-    const customFetch = jest.fn(() => ({
-      ok: true,
-      text: () => "hello"
-    }) as any);
-
-    createApi({ baseUrl: "https://example.org", server: '/foo/', fetch: customFetch })._fetch("bar", {})
-
-    expect(customFetch).toHaveBeenCalledWith('https://example.org/foo/bar', expect.any(Object));
-  })
 });
 
 describe("delimited", () => {
