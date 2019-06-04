@@ -39,12 +39,10 @@ export type ApiOptions = {
   fetch?: typeof fetch;
 } & RequestInit;
 
-function getUrl(server: string | ServerI): string {
-  if (typeof server === 'string') {
-    return server;
-  }
+function getUrl(server: string | ServerI, baseUrl: string): string {
+  const url = typeof server === 'string' ? server : server.url
 
-  return server.url;
+  return baseUrl.length ? `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}` : url;
 }
 
 export class Api {
@@ -59,7 +57,7 @@ export class Api {
     ...fetchOpts
   }: ApiOptions = {}) {
     this._fetchImpl = fetchImpl;
-    this._baseUrl = server ? getUrl(server) : baseUrl;
+    this._baseUrl = server ? getUrl(server, baseUrl) : baseUrl;
     this._fetchOpts = fetchOpts;
   }
 

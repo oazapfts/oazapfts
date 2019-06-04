@@ -30,11 +30,9 @@ export type ApiOptions = {
     server?: ServerI | string;
     fetch?: typeof fetch;
 } & RequestInit;
-function getUrl(server: string | ServerI): string {
-    if (typeof server === "string") {
-        return server;
-    }
-    return server.url;
+function getUrl(server: string | ServerI, baseUrl: string): string {
+    const url = typeof server === "string" ? server : server.url;
+    return baseUrl.length ? `${baseUrl.replace(/\/$/, "")}/${url.replace(/^\//, "")}` : url;
 }
 export class Api {
     private _baseUrl: string;
@@ -42,7 +40,7 @@ export class Api {
     private _fetchOpts: RequestInit;
     constructor({ baseUrl = "https://petstore.swagger.io/v2", server, fetch: fetchImpl, ...fetchOpts }: ApiOptions = {}) {
         this._fetchImpl = fetchImpl;
-        this._baseUrl = server ? getUrl(server) : baseUrl;
+        this._baseUrl = server ? getUrl(server, baseUrl) : baseUrl;
         this._fetchOpts = fetchOpts;
     }
     private async _fetch(url: string, req: FetchRequestOpts = {}) {
