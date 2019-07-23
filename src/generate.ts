@@ -120,7 +120,7 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 /**
  * Despite its name, OpenApi's `deepObject` serialization does not support
  * deeply nested objects. As a workaround we detect parameters that contain
- * sqaure backets and merge them into a single object.
+ * square brackets and merge them into a single object.
  */
 function supportDeepObjects(params: oapi.ParameterObject[]) {
   const res: oapi.ParameterObject[] = [];
