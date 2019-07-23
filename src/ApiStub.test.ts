@@ -87,6 +87,11 @@ describe("deep", () => {
       "author[name]=Felix"
     );
   });
+  it("should serialize nested arrays", () => {
+    expect(deep({ names: ["Felix", "Dario"] })).toEqual(
+      "names[]=Felix&names[]=Dario"
+    );
+  });
 });
 
 describe("query", () => {

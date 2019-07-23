@@ -191,15 +191,15 @@ export const QS = {
     const qv = encode([s => s, v]);
     // don't add index to arrays
     // https://github.com/expressjs/body-parser/issues/289
-    const visit = (obj: any, prefix = "", noIndex = false): string =>
+    const visit = (obj: any, prefix = ""): string =>
       Object.entries(obj)
         .filter(([, v]) => v !== undefined)
         .map(([prop, v]) => {
+          const index = Array.isArray(obj) ? "" : prop;
           const key = prefix
-            ? noIndex ? prefix : qk`${prefix}[${prop}]`
-            : prop;
+            ? qk`${prefix}[${index}]` : prop;
           if (typeof v === "object") {
-            return visit(v, key, Array.isArray(v));
+            return visit(v, key);
           }
           return qv`${key}=${v}`;
         })
