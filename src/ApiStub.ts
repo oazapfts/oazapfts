@@ -189,11 +189,15 @@ export const QS = {
   deep(params: Record<string, any>, [k, v] = encodeReserved): string {
     const qk = encode([s => s, k]);
     const qv = encode([s => s, v]);
+    // don't add index to arrays
+    // https://github.com/expressjs/body-parser/issues/289
     const visit = (obj: any, prefix = ""): string =>
       Object.entries(obj)
         .filter(([, v]) => v !== undefined)
         .map(([prop, v]) => {
-          const key = prefix ? qk`${prefix}[${prop}]` : prop;
+          const index = Array.isArray(obj) ? "" : prop;
+          const key = prefix
+            ? qk`${prefix}[${index}]` : prop;
           if (typeof v === "object") {
             return visit(v, key);
           }
