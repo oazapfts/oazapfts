@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import * as oapi from "@loopback/openapi-v3-types";
 import * as cg from "./tscodegen";
-import ts, { TypeNode, ParameterDeclaration, LiteralExpression, Expression, TemplateLiteral } from "typescript";
+import ts, { TypeNode, TemplateLiteral } from "typescript";
 
 function createLiteral(v: string | boolean | number) {
   switch (typeof v) {
