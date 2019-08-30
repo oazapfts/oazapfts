@@ -319,7 +319,7 @@ function delimited(delimiter = ",") {
         .join("&");
 }
 /**
- * Functions to serialize query paramters in different styles.
+ * Functions to serialize query parameters in different styles.
  */
 export const QS = {
     encode,
