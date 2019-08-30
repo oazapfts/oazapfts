@@ -181,8 +181,11 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     let ref = refs[$ref];
     if (!ref) {
       const schema = resolve<oapi.SchemaObject>(obj);
-      const type = getTypeFromSchema(schema);
+
       const name = schema.title || $ref.replace(/.+\//, "");
+      ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
+
+      const type = getTypeFromSchema(schema);
       aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
@@ -190,7 +193,6 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
           type
         })
       );
-      ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
     }
     return ref;
   }
