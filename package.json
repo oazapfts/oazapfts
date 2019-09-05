@@ -19,21 +19,21 @@
   "author": "Felix Gnass",
   "license": "MIT",
   "devDependencies": {
-    "@loopback/openapi-v3-types": "^1.0.21",
-    "@types/got": "^9.4.3",
-    "@types/jest": "^24.0.11",
-    "@types/lodash": "^4.14.123",
-    "@types/node": "^11.13.7",
-    "form-data": "^2.3.3",
-    "jest": "^24.7.1",
+    "@loopback/openapi-v3-types": "^1.2.1",
+    "@types/got": "^9.6.7",
+    "@types/jest": "^24.0.18",
+    "@types/lodash": "^4.14.138",
+    "@types/node": "^12.7.4",
+    "form-data": "^2.5.1",
+    "jest": "^24.9.0",
     "node-fetch": "^2.3.0",
     "ts-jest": "^24.0.2",
-    "ts-node": "^8.0.3"
+    "ts-node": "^8.3.0"
   },
   "dependencies": {
     "got": "^9.6.0",
-    "lodash": "^4.17.11",
-    "typescript": "^3.4.4"
+    "lodash": "^4.17.15",
+    "typescript": "^3.6.2"
   },
   "jest": {
     "testEnvironment": "node",
