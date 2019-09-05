@@ -3,7 +3,7 @@ import ts from "typescript";
 import path from "path";
 import * as oapi from "@loopback/openapi-v3-types";
 import * as cg from "./tscodegen";
-import generateServers from './generateServers';
+import generateServers from "./generateServers";
 
 const verbs = [
   "GET",
@@ -39,7 +39,8 @@ function getFormatter({ style, explode }: oapi.ParameterObject) {
  */
 export function getOperationName(verb: string, path: string, id?: string) {
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
-  return _.camelCase(id || `${verb} ${path}`);
+  const usePath = !id || id.match(/[^\w\s]/);
+  return _.camelCase(usePath ? `${verb} ${path}` : id);
 }
 
 function isNullable(schema: any) {
@@ -511,10 +512,10 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     });
   });
 
-  stub.statements = cg.appendNodes(stub.statements, ...[
-    ...aliases,
-    ...generateServers(spec.servers || [])
-  ]);
+  stub.statements = cg.appendNodes(
+    stub.statements,
+    ...[...aliases, ...generateServers(spec.servers || [])]
+  );
   apiClass.members = cg.appendNodes(apiClass.members, ...members);
 
   return stub;

@@ -1,5 +1,5 @@
 import generate, { getOperationName } from "./generate";
-import { printAst } from './index';
+import { printAst } from "./index";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -9,6 +9,11 @@ describe("getOperationName", () => {
     expect(getOperationName("GET", "/pets/{color}/{status}")).toEqual(
       "getPetsByColorAndStatus"
     );
+  });
+  it("should not use ids with special chars", () => {
+    expect(
+      getOperationName("GET", "/pets", "API\\PetController::listPetAction")
+    ).toEqual("getPets");
   });
 });
 
