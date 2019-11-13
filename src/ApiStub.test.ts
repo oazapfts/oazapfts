@@ -1,14 +1,11 @@
-import { QS, Api, ApiOptions } from "./ApiStub";
+import { _, QS } from "./ApiStub";
 const { query, pipe, form, space, deep, explode } = QS;
 
 describe("Api", () => {
-  const createApi = (options: ApiOptions) => {
-    return (new Api(options) as any)
-  }
   let g: any;
 
   beforeAll(() => {
-    g = (global as any);
+    g = global as any;
     g.fetch = g.fetch || (() => {});
   });
 
@@ -18,21 +15,24 @@ describe("Api", () => {
       text: () => "hello"
     }));
 
-    createApi({ baseUrl: "foo/" })._fetch("bar", {})
+    _.fetch("bar", { baseUrl: "foo/" });
 
-    expect(g.fetch).toHaveBeenCalledWith('foo/bar', expect.any(Object));
+    expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
 
   it("should not use global fetch if local is provided", () => {
     jest.spyOn(g, "fetch");
-    const customFetch = jest.fn(() => ({
-      ok: true,
-      text: () => "hello"
-    }) as any);
+    const customFetch = jest.fn(
+      () =>
+        ({
+          ok: true,
+          text: () => "hello"
+        } as any)
+    );
 
-    createApi({ baseUrl: "foo/", fetch: customFetch })._fetch("bar", {})
+    _.fetch("bar", { baseUrl: "foo/", fetch: customFetch });
 
-    expect(customFetch).toHaveBeenCalledWith('foo/bar', expect.any(Object));
+    expect(customFetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
     expect(g.fetch).not.toHaveBeenCalled();
   });
 });

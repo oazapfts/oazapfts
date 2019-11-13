@@ -3,7 +3,7 @@ import ts from "typescript";
 import path from "path";
 import * as oapi from "@loopback/openapi-v3-types";
 import * as cg from "./tscodegen";
-import generateServers from "./generateServers";
+import generateServers, { defaultBaseUrl } from "./generateServers";
 
 const verbs = [
   "GET",
@@ -17,10 +17,10 @@ const verbs = [
 ];
 
 const contentTypes = {
-  "*/*": "_json",
-  "application/json": "_json",
-  "application/x-www-form-urlencoded": "_form",
-  "multipart/form-data": "_multipart"
+  "*/*": "json",
+  "application/json": "json",
+  "application/x-www-form-urlencoded": "form",
+  "multipart/form-data": "multipart"
 };
 
 /**
@@ -114,6 +114,16 @@ function createUrlExpression(path: string, qs?: ts.Expression) {
 function callQsFunction(name: string, args: ts.Expression[]) {
   return cg.createCall(
     ts.createPropertyAccess(ts.createIdentifier("QS"), name),
+    { args }
+  );
+}
+
+/**
+ * Create a call expression for one of the _unerscore functions defined in ApiStub.
+ */
+function callUnderscoreFunction(name: string, args: ts.Expression[]) {
+  return cg.createCall(
+    ts.createPropertyAccess(ts.createIdentifier("_"), name),
     { args }
   );
 }
@@ -336,16 +346,25 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
   const stub = cg.parseFile(path.resolve(__dirname, "../src/ApiStub.ts"));
 
   // ApiStub contains a class declaration, find it ...
-  const apiClass = cg.findNode<ts.ClassDeclaration>(
+  const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
+  servers.initializer = generateServers(spec.servers || []);
+
+  const { initializer } = cg.findFirstVariableDeclaration(
     stub.statements,
-    ts.SyntaxKind.ClassDeclaration
+    "defaults"
+  );
+  if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
+    throw new Error("No object literal: defaults");
+  }
+
+  cg.changePropertyValue(
+    initializer,
+    "baseUrl",
+    defaultBaseUrl(spec.servers || [])
   );
 
-  // Modify its constructor to use be baseUrl from the spec
-  setBaseUrl(apiClass, spec);
-
-  // Collect class members to be added...
-  const members: ts.ClassElement[] = [];
+  // Collect class functions to be added...
+  const functions: ts.FunctionDeclaration[] = [];
 
   Object.keys(spec.paths).forEach(path => {
     const item: oapi.PathItemObject = spec.paths[path];
@@ -405,7 +424,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
         );
       }
 
-      // and finally an object with all optional parameters
+      // add an object with all optional parameters
       if (optional.length) {
         methodParams.push(
           cg.createParameter(
@@ -430,6 +449,13 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
         );
       }
 
+      methodParams.push(
+        cg.createParameter("opts", {
+          type: ts.createTypeReferenceNode("RequestOpts", undefined),
+          questionToken: true
+        })
+      );
+
       // Next, build the method body...
 
       const returnsJson = hasJsonContent(getOkResponse(responses));
@@ -452,7 +478,9 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
       }
 
       const url = createUrlExpression(path, qs);
-      const init = [];
+      const init: ts.ObjectLiteralElementLike[] = [
+        ts.createSpreadAssignment(ts.createIdentifier("opts"))
+      ];
 
       if (method !== "GET") {
         init.push(
@@ -470,7 +498,26 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
         init.push(
           ts.createPropertyAssignment(
             "headers",
-            cg.createObjectLiteral(header.map(name => [name, argNames[name]]))
+            ts.createObjectLiteral(
+              [
+                ts.createSpreadAssignment(
+                  ts.createLogicalAnd(
+                    ts.createIdentifier("opts"),
+                    ts.createPropertyAccess(
+                      ts.createIdentifier("opts"),
+                      "headers"
+                    )
+                  )
+                ),
+                ...header.map(name =>
+                  ts.createPropertyAssignment(
+                    name,
+                    ts.createIdentifier(argNames[name])
+                  )
+                )
+              ],
+              true
+            )
           )
         );
       }
@@ -482,24 +529,25 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
           return !!_.get(body, ["content", type]);
         });
         const initObj = ts.createObjectLiteral(init, true);
-        args.push(m ? cg.createMethodCall(m[1], { args: [initObj] }) : initObj);
+        args.push(m ? callUnderscoreFunction(m[1], [initObj]) : initObj);
       }
 
-      members.push(
+      functions.push(
         cg.addComment(
-          cg.createMethod(
+          cg.createFunctionDeclaration(
             name,
             {
-              modifiers: [cg.modifier.async]
+              modifiers: [cg.modifier.export, cg.modifier.async]
             },
             methodParams,
             cg.block(
               ts.createReturn(
                 ts.createAsExpression(
                   ts.createAwait(
-                    cg.createMethodCall(returnsJson ? "_fetchJson" : "_fetch", {
+                    callUnderscoreFunction(
+                      returnsJson ? "fetchJson" : "fetch",
                       args
-                    })
+                    )
                   ),
                   getTypeFromResponses(responses)
                 )
@@ -514,9 +562,8 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
 
   stub.statements = cg.appendNodes(
     stub.statements,
-    ...[...aliases, ...generateServers(spec.servers || [])]
+    ...[...aliases, ...functions]
   );
-  apiClass.members = cg.appendNodes(apiClass.members, ...members);
 
   return stub;
 }

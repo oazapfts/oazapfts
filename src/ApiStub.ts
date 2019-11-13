@@ -3,16 +3,11 @@
  */
 type Encoders = Array<(s: string) => string>;
 
-// Encode param names and values as URIComponent
-const encodeReserved = [encodeURIComponent, encodeURIComponent];
-
-// Allow reserved chars in param values
-const allowReserved = [encodeURIComponent, encodeURI];
-
-type RequestOpts = {
+export type RequestOpts = {
+  baseUrl?: string;
+  fetch?: typeof fetch;
   headers?: Record<string, string | undefined>;
-  method?: string;
-};
+} & Omit<RequestInit, "body" | "headers">;
 
 type FetchRequestOpts = RequestOpts & {
   body?: string | FormData;
@@ -26,58 +21,30 @@ type MultipartRequestOpts = RequestOpts & {
   body: Record<string, string | Blob | undefined | any>;
 };
 
-type ServerI = {
-  url: string;
-}
+export const servers = {};
 
-export type ApiOptions = {
-  /**
-   * @deprecated "baseUrl" has been renamed to "server"
-   */
-  baseUrl?: string;
-  server?: ServerI | string;
-  fetch?: typeof fetch;
-} & RequestInit;
+export const defaults = {
+  baseUrl: "/"
+};
 
-function getUrl(server: string | ServerI): string {
-  if (typeof server === 'string') {
-    return server;
-  }
-
-  return server.url;
-}
-
-export class Api {
-  private _baseUrl: string;
-  private _fetchImpl?: typeof fetch;
-  private _fetchOpts: RequestInit;
-
-  constructor({
-    baseUrl = "",
-    server,
-    fetch: fetchImpl,
-    ...fetchOpts
-  }: ApiOptions = {}) {
-    this._fetchImpl = fetchImpl;
-    this._baseUrl = server ? getUrl(server) : baseUrl;
-    this._fetchOpts = fetchOpts;
-  }
-
-  private async _fetch(url: string, req: FetchRequestOpts = {}) {
-    const headers = stripUndefined(req.headers);
-    const res = await (this._fetchImpl || fetch)(this._baseUrl + url, {
-      ...this._fetchOpts,
-      ...req,
-      headers
+export const _ = {
+  async fetch(url: string, req?: FetchRequestOpts) {
+    const { baseUrl, headers, fetch: customFetch, ...init } = {
+      ...defaults,
+      ...req
+    };
+    const res = await (customFetch || fetch)(baseUrl + url, {
+      ...init,
+      headers: _.stripUndefined(headers)
     });
     if (!res.ok) {
       throw new HttpError(res.status, res.statusText);
     }
     return res.text();
-  }
+  },
 
-  private async _fetchJson(url: string, req: FetchRequestOpts = {}) {
-    const res = await this._fetch(url, {
+  async fetchJson(url: string, req: FetchRequestOpts = {}) {
+    const res = await _.fetch(url, {
       ...req,
       headers: {
         ...req.headers,
@@ -85,9 +52,9 @@ export class Api {
       }
     });
     return JSON.parse(res);
-  }
+  },
 
-  private _json({ body, headers, ...req }: JsonRequestOpts) {
+  json({ body, headers, ...req }: JsonRequestOpts) {
     return {
       ...req,
       body: JSON.stringify(body),
@@ -96,9 +63,9 @@ export class Api {
         "Content-Type": "application/json"
       }
     };
-  }
+  },
 
-  private _form({ body, headers, ...req }: JsonRequestOpts) {
+  form({ body, headers, ...req }: JsonRequestOpts) {
     return {
       ...req,
       body: QS.form(body),
@@ -107,9 +74,9 @@ export class Api {
         "Content-Type": "application/x-www-form-urlencoded"
       }
     };
-  }
+  },
 
-  private _multipart({ body, ...req }: MultipartRequestOpts) {
+  multipart({ body, ...req }: MultipartRequestOpts) {
     const data = new FormData();
     Object.entries(body).forEach(([name, value]) => {
       data.append(name, value);
@@ -118,62 +85,62 @@ export class Api {
       ...req,
       body: data
     };
-  }
-}
+  },
 
-/**
- * Deeply remove all properties with undefined values.
- */
-function stripUndefined<T>(obj: T) {
-  return obj && JSON.parse(JSON.stringify(obj));
-}
+  /**
+   * Deeply remove all properties with undefined values.
+   */
+  stripUndefined<T>(obj: T) {
+    return obj && JSON.parse(JSON.stringify(obj));
+  },
 
-/**
- * Creates a tag-function to encode template strings with the given encoders.
- */
-function encode(encoders: Encoders, delimiter = ",") {
-  const q = (v: any, i: number) => {
-    const encoder = encoders[i % encoders.length];
-    if (typeof v === "object") {
-      if (Array.isArray(v)) {
-        return v.map(encoder).join(delimiter);
+  // Encode param names and values as URIComponent
+  encodeReserved: [encodeURIComponent, encodeURIComponent],
+  allowReserved: [encodeURIComponent, encodeURI],
+
+  /**
+   * Creates a tag-function to encode template strings with the given encoders.
+   */
+  encode(encoders: Encoders, delimiter = ",") {
+    const q = (v: any, i: number) => {
+      const encoder = encoders[i % encoders.length];
+      if (typeof v === "object") {
+        if (Array.isArray(v)) {
+          return v.map(encoder).join(delimiter);
+        }
+        const flat = Object.entries(v).reduce(
+          (flat, entry) => [...flat, ...entry],
+          [] as any
+        );
+        return flat.map(encoder).join(delimiter);
       }
-      const flat = Object.entries(v).reduce(
-        (flat, entry) => [...flat, ...entry],
-        [] as any
-      );
-      return flat.map(encoder).join(delimiter);
-    }
 
-    return encoder(String(v));
-  };
+      return encoder(String(v));
+    };
 
-  return (strings: TemplateStringsArray, ...values: any[]) => {
-    return strings.reduce((prev, s, i) => {
-      return `${prev}${s}${q(values[i] || "", i)}`;
-    }, "");
-  };
-}
+    return (strings: TemplateStringsArray, ...values: any[]) => {
+      return strings.reduce((prev, s, i) => {
+        return `${prev}${s}${q(values[i] || "", i)}`;
+      }, "");
+    };
+  },
 
-/**
- * Separate array values by the given delimiter.
- */
-function delimited(delimiter = ",") {
-  return (params: Record<string, any>, encoders = encodeReserved) =>
-    Object.entries(params)
-      .filter(([, value]) => value !== undefined)
-      .map(([name, value]) => encode(encoders, delimiter)`${name}=${value}`)
-      .join("&");
-}
+  /**
+   * Separate array values by the given delimiter.
+   */
+  delimited(delimiter = ",") {
+    return (params: Record<string, any>, encoders = _.encodeReserved) =>
+      Object.entries(params)
+        .filter(([, value]) => value !== undefined)
+        .map(([name, value]) => _.encode(encoders, delimiter)`${name}=${value}`)
+        .join("&");
+  }
+};
 
 /**
  * Functions to serialize query parameters in different styles.
  */
 export const QS = {
-  encode,
-  encodeReserved,
-  allowReserved,
-
   /**
    * Join params using an ampersand and prepends a questionmark if not empty.
    */
@@ -186,9 +153,9 @@ export const QS = {
    * Serializes nested objects according to the `deepObject` style specified in
    * https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#style-values
    */
-  deep(params: Record<string, any>, [k, v] = encodeReserved): string {
-    const qk = encode([s => s, k]);
-    const qv = encode([s => s, v]);
+  deep(params: Record<string, any>, [k, v] = _.encodeReserved): string {
+    const qk = _.encode([s => s, k]);
+    const qv = _.encode([s => s, v]);
     // don't add index to arrays
     // https://github.com/expressjs/body-parser/issues/289
     const visit = (obj: any, prefix = ""): string =>
@@ -196,8 +163,7 @@ export const QS = {
         .filter(([, v]) => v !== undefined)
         .map(([prop, v]) => {
           const index = Array.isArray(obj) ? "" : prop;
-          const key = prefix
-            ? qk`${prefix}[${index}]` : prop;
+          const key = prefix ? qk`${prefix}[${index}]` : prop;
           if (typeof v === "object") {
             return visit(v, key);
           }
@@ -214,8 +180,8 @@ export const QS = {
    * For other types of properties this property has no effect.
    * See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#encoding-object
    */
-  explode(params: Record<string, any>, encoders = encodeReserved): string {
-    const q = encode(encoders);
+  explode(params: Record<string, any>, encoders = _.encodeReserved): string {
+    const q = _.encode(encoders);
     return Object.entries(params)
       .filter(([, value]) => value !== undefined)
       .map(([name, value]) => {
@@ -230,9 +196,9 @@ export const QS = {
       .join("&");
   },
 
-  form: delimited(),
-  pipe: delimited("|"),
-  space: delimited("%20")
+  form: _.delimited(),
+  pipe: _.delimited("|"),
+  space: _.delimited("%20")
 };
 
 export class HttpError extends Error {
@@ -243,8 +209,6 @@ export class HttpError extends Error {
   }
 }
 
-type PromisedApiResult<M> = M extends (...args: any) => Promise<infer T>
+export type ApiResult<Fn> = Fn extends (...args: any) => Promise<infer T>
   ? T
   : never;
-
-export type ApiResult<N extends keyof Api> = PromisedApiResult<Api[N]>;

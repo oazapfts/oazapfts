@@ -1,5 +1,5 @@
 import fs from "fs";
-import ts from "typescript";
+import ts, { createStringLiteral } from "typescript";
 
 type KeywordTypeName =
   | "any"
@@ -76,7 +76,7 @@ export function createTypeAliasDeclaration({
   );
 }
 
-function toExpression(ex: ts.Expression | string) {
+export function toExpression(ex: ts.Expression | string) {
   if (typeof ex === "string") return ts.createIdentifier(ex);
   return ex;
 }
@@ -89,7 +89,7 @@ export function createCall(
   }: {
     typeArgs?: Array<ts.TypeNode>;
     args?: Array<ts.Expression>;
-  }
+  } = {}
 ) {
   return ts.createCall(toExpression(expression), typeArgs, args);
 }
@@ -127,6 +127,61 @@ export function createPropertyAssignment(
 
 export function block(...statements: ts.Statement[]) {
   return ts.createBlock(statements, true);
+}
+
+export function createArrowFunction(
+  parameters: ts.ParameterDeclaration[],
+  body: ts.ConciseBody,
+  {
+    modifiers,
+    typeParameters,
+    type,
+    equalsGreaterThanToken
+  }: {
+    modifiers?: ts.Modifier[];
+    typeParameters?: ts.TypeParameterDeclaration[];
+    type?: ts.TypeNode;
+    equalsGreaterThanToken?: ts.EqualsGreaterThanToken;
+  } = {}
+) {
+  return ts.createArrowFunction(
+    modifiers,
+    typeParameters,
+    parameters,
+    type,
+    equalsGreaterThanToken,
+    body
+  );
+}
+
+export function createFunctionDeclaration(
+  name: string | ts.Identifier | undefined,
+  {
+    decorators,
+    modifiers,
+    asteriskToken,
+    typeParameters,
+    type
+  }: {
+    decorators?: ts.Decorator[];
+    modifiers?: ts.Modifier[];
+    asteriskToken?: ts.AsteriskToken;
+    typeParameters?: ts.TypeParameterDeclaration[];
+    type?: ts.TypeNode;
+  },
+  parameters: ts.ParameterDeclaration[],
+  body?: ts.Block
+): ts.FunctionDeclaration {
+  return ts.createFunctionDeclaration(
+    decorators,
+    modifiers,
+    asteriskToken,
+    name,
+    typeParameters,
+    parameters,
+    type,
+    body
+  );
 }
 
 export function createClassDeclaration({
@@ -323,11 +378,56 @@ export function createTemplateString(
 
 export function findNode<T extends ts.Node>(
   nodes: ts.NodeArray<ts.Node>,
-  kind: T extends { kind: infer K } ? K : never
+  kind: T extends { kind: infer K } ? K : never,
+  test?: (node: T) => boolean | undefined
 ): T {
-  const node = nodes.find(s => s.kind === kind) as T;
+  const node = nodes.find(s => s.kind === kind && (!test || test(s as T))) as T;
   if (!node) throw new Error(`Node not found: ${kind}`);
   return node;
+}
+
+export function getName(name: ts.Node) {
+  if (ts.isIdentifier(name)) {
+    return name.escapedText;
+  }
+  if (ts.isLiteralExpression(name)) {
+    return name.text;
+  }
+  return "";
+}
+
+export function getFirstDeclarationName(n: ts.VariableStatement) {
+  const name = ts.getNameOfDeclaration(n.declarationList.declarations[0]);
+  return name ? getName(name) : "";
+}
+
+export function findFirstVariableDeclaration(
+  nodes: ts.NodeArray<ts.Node>,
+  name: string
+) {
+  const statement = findNode<ts.VariableStatement>(
+    nodes,
+    ts.SyntaxKind.VariableStatement,
+    n => getFirstDeclarationName(n) === name
+  );
+  const [first] = statement.declarationList.declarations;
+  if (!first) throw new Error("Missing declaration");
+  return first;
+}
+
+export function changePropertyValue(
+  o: ts.ObjectLiteralExpression,
+  property: string,
+  value: ts.Expression
+) {
+  const p = o.properties.find(
+    p => ts.isPropertyAssignment(p) && getName(p.name) === property
+  );
+  if (p && ts.isPropertyAssignment(p)) {
+    p.initializer = value;
+  } else {
+    throw new Error(`No such property: ${property}`);
+  }
 }
 
 export function appendNodes<T extends ts.Node>(
