@@ -1,6 +1,14 @@
 /**
  * DO NOT MODIFY - This file has been generated using oazapfts.
+ * See https://www.npmjs.com/package/oazapfts
  */
+
+export const defaults: RequestOpts = {
+  baseUrl: "/"
+};
+
+export const servers = {};
+
 type Encoders = Array<(s: string) => string>;
 
 export type RequestOpts = {
@@ -21,12 +29,6 @@ type MultipartRequestOpts = RequestOpts & {
   body: Record<string, string | Blob | undefined | any>;
 };
 
-export const servers = {};
-
-export const defaults = {
-  baseUrl: "/"
-};
-
 export const _ = {
   async fetch(url: string, req?: FetchRequestOpts) {
     const { baseUrl, headers, fetch: customFetch, ...init } = {
@@ -35,7 +37,7 @@ export const _ = {
     };
     const res = await (customFetch || fetch)(baseUrl + url, {
       ...init,
-      headers: _.stripUndefined(headers)
+      headers: _.stripUndefined({ ...defaults.headers, ...headers })
     });
     if (!res.ok) {
       throw new HttpError(res.status, res.statusText, baseUrl + url);
