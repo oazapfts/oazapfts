@@ -38,7 +38,7 @@ export const _ = {
       headers: _.stripUndefined(headers)
     });
     if (!res.ok) {
-      throw new HttpError(res.status, res.statusText);
+      throw new HttpError(res.status, res.statusText, baseUrl + url);
     }
     return res.text();
   },
@@ -203,8 +203,8 @@ export const QS = {
 
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string) {
-    super(message);
+  constructor(status: number, message: string, url: string) {
+    super(`${url} - ${message} (${status})`);
     this.status = status;
   }
 }
