@@ -10,4 +10,10 @@ async function generate(spec: string, dest: string) {
 }
 
 const [, , spec, dest] = process.argv;
+
+if (!spec) {
+  console.error("Usage: oazapfts <spec> [filename]");
+  process.exit(1);
+}
+
 generate(spec, dest);
