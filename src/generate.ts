@@ -211,14 +211,14 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
   /**
    * Creates a type node from a given schema.
    * Delegates to getBaseTypeFromSchema internally and
-   * optionally adds an intersection with null.
+   * optionally adds a union with null.
    */
   function getTypeFromSchema(
     schema?: oapi.SchemaObject | oapi.ReferenceObject
   ): ts.TypeNode {
     const type = getBaseTypeFromSchema(schema);
     return isNullable(schema)
-      ? ts.createIntersectionTypeNode([type, cg.keywordType.null])
+      ? ts.createUnionTypeNode([type, cg.keywordType.null])
       : type;
   }
 
