@@ -53,7 +53,7 @@ export const _ = {
         Accept: "application/json"
       }
     });
-    return JSON.parse(res);
+    return res && JSON.parse(res);
   },
 
   json({ body, headers, ...req }: JsonRequestOpts) {
