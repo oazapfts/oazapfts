@@ -491,7 +491,11 @@ export function printFile(sourceFile: ts.SourceFile) {
 }
 
 export function isValidIdentifier(str: string) {
-  if (str.trim() !== str) return false;
+  if (!str.length || str.trim() !== str) return false;
   const node = ts.parseIsolatedEntityName(str, ts.ScriptTarget.Latest);
-  return node && !("originalKeywordKind" in node);
+  return (
+    !!node &&
+    node.kind === ts.SyntaxKind.Identifier &&
+    !("originalKeywordKind" in node)
+  );
 }

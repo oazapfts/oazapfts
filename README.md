@@ -19,13 +19,13 @@ Generate TypeScript clients to tap into OpenAPI servers.
 npx oazapfts <spec> [filename]
 ```
 
-Where `<spec>` is the URL or local path of an OpenAPI 3.x JSON spec and `<filename>` is the location of the `.ts` file to be generated.
+Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either json or yml) and `<filename>` is the location of the `.ts` file to be generated.
 
 **NOTE:** The generated functions are named according to their `operationId`. If no operation id is specified in the spec, a reasonable name is generated from the HTTP verb and the path.
 
 ## Overriding Defaults
 
-The genereated file exports a `defaults` constant that can be used to override the `basePath`, provide a custom `fetch` implementation or to send additional headers with each request:
+The generated file exports a `defaults` constant that can be used to override the `basePath`, provide a custom `fetch` implementation or to send additional headers with each request:
 
 ```ts
 import * as api from "./api.ts";

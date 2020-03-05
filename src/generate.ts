@@ -1,7 +1,7 @@
 import _ from "lodash";
 import ts from "typescript";
 import path from "path";
-import * as oapi from "@loopback/openapi-v3-types";
+import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 
@@ -26,28 +26,40 @@ const contentTypes = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-function getFormatter({ style, explode }: oapi.ParameterObject) {
+function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   if (style === "deepObject") return "deep";
   return explode ? "explode" : "form";
 }
 
+function getOperationIdentifier(id?: string) {
+  if (!id) return;
+  if (id.match(/[^\w\s]/)) return;
+  id = _.camelCase(id);
+  if (cg.isValidIdentifier(id)) return id;
+}
+
 /**
  * Create a method name for a given operation, either from its operationId or
  * the HTTP verb and path.
  */
-export function getOperationName(verb: string, path: string, id?: string) {
+export function getOperationName(
+  verb: string,
+  path: string,
+  operationId?: string
+) {
+  const id = getOperationIdentifier(operationId);
+  if (id) return id;
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
-  const usePath = !id || !cg.isValidIdentifier(id);
-  return _.camelCase(usePath ? `${verb} ${path}` : id);
+  return _.camelCase(`${verb} ${path}`);
 }
 
 function isNullable(schema: any) {
   return !!(schema && schema.nullable);
 }
 
-function isReference(obj: any): obj is oapi.ReferenceObject {
+function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
   return obj && "$ref" in obj;
 }
 
@@ -71,7 +83,7 @@ function hasJsonContent(obj: any) {
  * If the spec contains a URL use that value as default baseUrl in the
  * constructor of the Api class.
  */
-function setBaseUrl(apiClass: ts.ClassDeclaration, spec: oapi.OpenApiSpec) {
+function setBaseUrl(apiClass: ts.ClassDeclaration, spec: OpenAPIV3.Document) {
   const baseUrl = _.get(spec, "servers[0].url");
   if (baseUrl) {
     const ctor = cg.findNode<ts.ConstructorDeclaration>(
@@ -133,8 +145,8 @@ function callUnderscoreFunction(name: string, args: ts.Expression[]) {
  * deeply nested objects. As a workaround we detect parameters that contain
  * square brackets and merge them into a single object.
  */
-function supportDeepObjects(params: oapi.ParameterObject[]) {
-  const res: oapi.ParameterObject[] = [];
+function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
+  const res: OpenAPIV3.ParameterObject[] = [];
   const merged: any = {};
   params.forEach(p => {
     const m = /^(.+?)\[(.*?)\]/.exec(p.name);
@@ -164,10 +176,10 @@ function supportDeepObjects(params: oapi.ParameterObject[]) {
 /**
  * Main entry point that generates TypeScript code from a given API spec.
  */
-export default function generateApi(spec: oapi.OpenApiSpec) {
+export default function generateApi(spec: OpenAPIV3.Document) {
   const aliases: ts.TypeAliasDeclaration[] = [];
 
-  function resolve<T>(obj: T | oapi.ReferenceObject) {
+  function resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith("#/")) {
@@ -177,7 +189,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     return _.get(spec, path) as T;
   }
 
-  function resolveArray<T>(array?: Array<T | oapi.ReferenceObject>) {
+  function resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
     return array ? array.map(resolve) : [];
   }
 
@@ -187,11 +199,11 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  function getRefAlias(obj: oapi.ReferenceObject) {
+  function getRefAlias(obj: OpenAPIV3.ReferenceObject) {
     const { $ref } = obj;
     let ref = refs[$ref];
     if (!ref) {
-      const schema = resolve<oapi.SchemaObject>(obj);
+      const schema = resolve<OpenAPIV3.SchemaObject>(obj);
 
       const name = schema.title || $ref.replace(/.+\//, "");
       ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
@@ -214,7 +226,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
    * optionally adds a union with null.
    */
   function getTypeFromSchema(
-    schema?: oapi.SchemaObject | oapi.ReferenceObject
+    schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
     const type = getBaseTypeFromSchema(schema);
     return isNullable(schema)
@@ -227,7 +239,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
    * schema and returns the appropriate type.
    */
   function getBaseTypeFromSchema(
-    schema?: oapi.SchemaObject | oapi.ReferenceObject
+    schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
     if (!schema) return cg.keywordType.any;
     if (isReference(schema)) {
@@ -242,7 +254,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
       // allOf -> intersection
       return ts.createIntersectionTypeNode(schema.allOf.map(getTypeFromSchema));
     }
-    if (schema.items) {
+    if ("items" in schema) {
       // items -> array
       return ts.createArrayTypeNode(getTypeFromSchema(schema.items));
     }
@@ -281,10 +293,13 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
    */
   function getTypeFromProperties(
     props: {
-      [prop: string]: oapi.SchemaObject | oapi.ReferenceObject;
+      [prop: string]: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
     },
     required?: string[],
-    additionalProperties?: boolean | oapi.SchemaObject | oapi.ReferenceObject
+    additionalProperties?:
+      | boolean
+      | OpenAPIV3.SchemaObject
+      | OpenAPIV3.ReferenceObject
   ) {
     const members: ts.TypeElement[] = Object.keys(props).map(name => {
       const schema = props[name];
@@ -306,7 +321,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     return ts.createTypeLiteralNode(members);
   }
 
-  function getOkResponse(res: oapi.ResponsesObject) {
+  function getOkResponse(res: OpenAPIV3.ResponsesObject) {
     const codes = Object.keys(res);
     const okCodes = codes.filter(
       code => codes.length === 1 || parseInt(code, 10) < 400
@@ -317,19 +332,19 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
     return res[okCodes[0]];
   }
 
-  function getTypeFromResponses(res: oapi.ResponsesObject) {
+  function getTypeFromResponses(res: OpenAPIV3.ResponsesObject) {
     return getTypeFromResponse(getOkResponse(res));
   }
 
   function getTypeFromResponse(
-    res: oapi.ResponseObject | oapi.ReferenceObject
+    res: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
   ) {
     if (isReference(res)) return getRefAlias(res);
     if (!res || !res.content) return cg.keywordType.void;
     return getTypeFromSchema(getSchemaFromContent(res.content));
   }
 
-  function getSchemaFromContent(content: oapi.ContentObject) {
+  function getSchemaFromContent(content: any) {
     const contentType = Object.keys(contentTypes).find(t => t in content);
     let schema;
     if (contentType) {
@@ -370,13 +385,13 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
   const names: Record<string, number> = {};
 
   Object.keys(spec.paths).forEach(path => {
-    const item: oapi.PathItemObject = spec.paths[path];
+    const item: OpenAPIV3.PathItemObject = spec.paths[path];
     Object.keys(resolve(item)).forEach(verb => {
       const method = verb.toUpperCase();
       // skip summary/description/parameters etc...
       if (!verbs.includes(method)) return;
 
-      const op: oapi.OperationObject = item[verb];
+      const op: OpenAPIV3.OperationObject = (item as any)[verb];
       const { operationId, requestBody, responses, summary, description } = op;
 
       let name = getOperationName(verb, path, operationId);
@@ -468,7 +483,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
 
       // Next, build the method body...
 
-      const returnsJson = hasJsonContent(getOkResponse(responses));
+      const returnsJson = hasJsonContent(getOkResponse(responses!));
       const query = parameters.filter(p => p.in === "query");
       const header = parameters.filter(p => p.in === "header").map(p => p.name);
       let qs;
@@ -559,7 +574,7 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
                       args
                     )
                   ),
-                  getTypeFromResponses(responses)
+                  getTypeFromResponses(responses!)
                 )
               )
             )

@@ -1,8 +1,10 @@
 /**
+ * Swagger Petstore
+ * 1.0.0
  * DO NOT MODIFY - This file has been generated using oazapfts.
  * See https://www.npmjs.com/package/oazapfts
  */
-export const defaults = {
+export const defaults: RequestOpts = {
     baseUrl: "https://petstore.swagger.io/v2"
 };
 export const servers = {
@@ -32,7 +34,7 @@ export const _ = {
         };
         const res = await (customFetch || fetch)(baseUrl + url, {
             ...init,
-            headers: _.stripUndefined(headers)
+            headers: _.stripUndefined({ ...defaults.headers, ...headers })
         });
         if (!res.ok) {
             throw new HttpError(res.status, res.statusText, baseUrl + url);
@@ -47,7 +49,7 @@ export const _ = {
                 Accept: "application/json"
             }
         });
-        return JSON.parse(res);
+        return res && JSON.parse(res);
     },
     json({ body, headers, ...req }: JsonRequestOpts) {
         return {
@@ -203,7 +205,7 @@ export type Pet = {
 };
 export type ApiResponse = {
     code?: number;
-    type?: string;
+    "type"?: string;
     message?: string;
 };
 export type Order = {
