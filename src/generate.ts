@@ -39,7 +39,7 @@ function getFormatter({ style, explode }: oapi.ParameterObject) {
  */
 export function getOperationName(verb: string, path: string, id?: string) {
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
-  const usePath = !id || id.match(/[^\w\s]/);
+  const usePath = !id || !cg.isValidIdentifier(id);
   return _.camelCase(usePath ? `${verb} ${path}` : id);
 }
 
@@ -366,6 +366,9 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
   // Collect class functions to be added...
   const functions: ts.FunctionDeclaration[] = [];
 
+  // Keep track of names to detect duplicates
+  const names: Record<string, number> = {};
+
   Object.keys(spec.paths).forEach(path => {
     const item: oapi.PathItemObject = spec.paths[path];
     Object.keys(resolve(item)).forEach(verb => {
@@ -376,7 +379,14 @@ export default function generateApi(spec: oapi.OpenApiSpec) {
       const op: oapi.OperationObject = item[verb];
       const { operationId, requestBody, responses, summary, description } = op;
 
-      const name = getOperationName(verb, path, operationId);
+      let name = getOperationName(verb, path, operationId);
+      const count = (names[name] = (names[name] || 0) + 1);
+      if (count > 1) {
+        // The name is already taken, which means that the spec is probably
+        // invalid as operationIds must be unique. Since this is quite common
+        // nevertheless we append a counter:
+        name += count;
+      }
 
       // merge item and op parameters
       const parameters = supportDeepObjects([

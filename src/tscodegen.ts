@@ -1,6 +1,7 @@
 import fs from "fs";
 import ts, { createStringLiteral } from "typescript";
 
+ts.parseIsolatedEntityName;
 type KeywordTypeName =
   | "any"
   | "number"
@@ -491,10 +492,6 @@ export function printFile(sourceFile: ts.SourceFile) {
 
 export function isValidIdentifier(str: string) {
   if (str.trim() !== str) return false;
-  try {
-    new Function(str, "var " + str);
-  } catch (_) {
-    return false;
-  }
-  return true;
+  const node = ts.parseIsolatedEntityName(str, ts.ScriptTarget.Latest);
+  return node && !("originalKeywordKind" in node);
 }
