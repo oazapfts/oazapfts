@@ -1,7 +1,7 @@
 import _ from "lodash";
-import * as oapi from "@loopback/openapi-v3-types";
 import * as cg from "./tscodegen";
 import ts, { TypeNode, TemplateLiteral } from "typescript";
+import { OpenAPIV3 } from "openapi-types";
 
 function createLiteral(v: string | boolean | number) {
   switch (typeof v) {
@@ -39,7 +39,7 @@ function createTemplate(url: string): TemplateLiteral {
 
 function createServerFunction(
   template: string,
-  vars: Record<string, oapi.ServerVariableObject>
+  vars: Record<string, OpenAPIV3.ServerVariableObject>
 ) {
   const params = [
     cg.createParameter(
@@ -73,13 +73,13 @@ function createServerFunction(
   return cg.createArrowFunction(params, createTemplate(template));
 }
 
-function generateServerExpression(server: oapi.ServerObject) {
+function generateServerExpression(server: OpenAPIV3.ServerObject) {
   return server.variables
     ? createServerFunction(server.url, server.variables)
     : ts.createStringLiteral(server.url);
 }
 
-function defaultUrl(server?: oapi.ServerObject) {
+function defaultUrl(server?: OpenAPIV3.ServerObject) {
   if (!server) return "/";
   const { url, variables } = server;
   if (!variables) return url;
@@ -88,17 +88,17 @@ function defaultUrl(server?: oapi.ServerObject) {
   );
 }
 
-export function defaultBaseUrl(servers: oapi.ServerObject[]) {
+export function defaultBaseUrl(servers: OpenAPIV3.ServerObject[]) {
   return ts.createStringLiteral(defaultUrl(servers[0]));
 }
 
-function serverName(server: oapi.ServerObject, index: number) {
+function serverName(server: OpenAPIV3.ServerObject, index: number) {
   return server.description
     ? _.camelCase(server.description.replace(/\W+/, " "))
     : `server${index + 1}`;
 }
 
-export default function generateServers(servers: oapi.ServerObject[]) {
+export default function generateServers(servers: OpenAPIV3.ServerObject[]) {
   const props = servers.map((server, i) => {
     return [serverName(server, i), generateServerExpression(server)] as [
       string,
