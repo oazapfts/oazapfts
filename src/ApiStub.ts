@@ -34,12 +34,13 @@ export const _ = {
       ...defaults,
       ...req
     };
-    const res = await (customFetch || fetch)(baseUrl + url, {
+    const href = _.joinUrl(baseUrl, url);
+    const res = await (customFetch || fetch)(href, {
       ...init,
       headers: _.stripUndefined({ ...defaults.headers, ...headers })
     });
     if (!res.ok) {
-      throw new HttpError(res.status, res.statusText, baseUrl + url);
+      throw new HttpError(res.status, res.statusText, href);
     }
     return res.text();
   },
@@ -135,6 +136,13 @@ export const _ = {
         .filter(([, value]) => value !== undefined)
         .map(([name, value]) => _.encode(encoders, delimiter)`${name}=${value}`)
         .join("&");
+  },
+
+  joinUrl(...parts: Array<string | undefined>) {
+    return parts
+      .filter(Boolean)
+      .join("/")
+      .replace(/([^:]\/)\/+/, "$1");
   }
 };
 

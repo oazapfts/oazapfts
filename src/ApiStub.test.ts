@@ -20,6 +20,20 @@ describe("Api", () => {
     expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
 
+  it("should join urls", () => {
+    expect(_.joinUrl("http://example.com/", "/foo")).toEqual(
+      "http://example.com/foo"
+    );
+    expect(_.joinUrl("http://example.com", "foo")).toEqual(
+      "http://example.com/foo"
+    );
+    expect(_.joinUrl("http://example.com", "/foo")).toEqual(
+      "http://example.com/foo"
+    );
+    expect(_.joinUrl("//example.com/", "/foo")).toEqual("//example.com/foo");
+    expect(_.joinUrl(undefined, "/foo")).toEqual("/foo");
+  });
+
   it("should not use global fetch if local is provided", () => {
     jest.spyOn(g, "fetch");
     const customFetch = jest.fn(
