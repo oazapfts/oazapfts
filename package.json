@@ -18,6 +18,7 @@
   ],
   "author": "Felix Gnass",
   "license": "MIT",
+  "repository": "cellular/oazapfts",
   "devDependencies": {
     "@types/jest": "^25.1.4",
     "@types/lodash": "^4.14.149",
