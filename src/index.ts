@@ -1,7 +1,7 @@
 import * as cg from "./tscodegen";
 import generate from "./generate";
 import ts from "typescript";
-import SwaggerParser from "swagger-parser";
+import SwaggerParser from "@apidevtools/swagger-parser";
 import converter from "swagger2openapi";
 import { OpenAPIV3 } from "openapi-types";
 
