@@ -108,7 +108,8 @@ function createUrlExpression(path: string, qs?: ts.Expression) {
   // Use a replacer function to collect spans as a side effect:
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
-    (_, head, expression, literal) => {
+    (_substr, head, name, literal) => {
+      const expression = _.camelCase(name);
       spans.push({ expression: ts.createIdentifier(expression), literal });
       return head;
     }

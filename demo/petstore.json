@@ -237,7 +237,7 @@
         ]
       }
     },
-    "/pet/{petId}": {
+    "/pet/{pet_id}": {
       "get": {
         "tags": ["pet"],
         "summary": "Find pet by ID",
@@ -245,7 +245,7 @@
         "operationId": "getPetById",
         "parameters": [
           {
-            "name": "petId",
+            "name": "pet_id",
             "in": "path",
             "description": "ID of pet to return",
             "required": true,
