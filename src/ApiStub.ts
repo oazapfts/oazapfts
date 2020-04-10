@@ -17,6 +17,7 @@ export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
   headers?: Record<string, string | undefined>;
+  stripNullsBeforeValidation?: boolean;
 } & Omit<RequestInit, "body" | "headers">;
 
 type FetchRequestOpts = RequestOpts & {
@@ -46,12 +47,25 @@ type MultipartRequestOpts = RequestOpts & {
 export const _ = {
   validator: new Validator(),
 
+  removeNulls(instance: { [key: string]: unknown }, property: string): void {
+    const value = instance[property];
+    if (value === null || typeof value == "undefined") {
+      delete instance[property];
+    }
+  },
+
   async fetch(
     url: string,
     validation: ValidationOpts,
     req: FetchRequestOpts = {}
   ) {
-    const { baseUrl, headers, fetch: customFetch, ...init } = {
+    const {
+      baseUrl,
+      headers,
+      fetch: customFetch,
+      stripNullsBeforeValidation,
+      ...init
+    } = {
       ...defaults,
       ...req
     };
@@ -86,7 +100,13 @@ export const _ = {
 
     if ("json" in responseSchemaFormat) {
       const responseJson = JSON.parse(text);
-      const validationOptions = { allowUnknownAttributes: true };
+      const extraValidationOptions = stripNullsBeforeValidation
+        ? { preValidateProperty: _.removeNulls }
+        : {};
+      const validationOptions = {
+        allowUnknownAttributes: true,
+        ...extraValidationOptions
+      };
       const responseSchema: Schema = responseSchemaFormat["json"];
 
       const validationResponse = _.validator.validate(
@@ -101,7 +121,12 @@ export const _ = {
 
       throw new HttpError(
         res.status,
-        `Failed to validate schema of response with status ${res.status} and body:\n${text}`,
+        `Failed to validate schema of response with status ${res.status}\n` +
+          `Messages:\n` +
+          `  - ${validationResponse.errors
+            .map(err => err.stack)
+            .join("\n  - ")}\n\n` +
+          `Body:\n${text}`,
         href
       );
     }

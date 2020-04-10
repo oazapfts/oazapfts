@@ -17,6 +17,7 @@ export type RequestOpts = {
     baseUrl?: string;
     fetch?: typeof fetch;
     headers?: Record<string, string | undefined>;
+    stripNullsBeforeValidation?: boolean;
 } & Omit<RequestInit, "body" | "headers">;
 type FetchRequestOpts = RequestOpts & {
     body?: string | FormData;
@@ -41,8 +42,16 @@ type MultipartRequestOpts = RequestOpts & {
 };
 export const _ = {
     validator: new Validator(),
+    removeNulls(instance: {
+        [key: string]: unknown;
+    }, property: string): void {
+        const value = instance[property];
+        if (value === null || typeof value == "undefined") {
+            delete instance[property];
+        }
+    },
     async fetch(url: string, validation: ValidationOpts, req: FetchRequestOpts = {}) {
-        const { baseUrl, headers, fetch: customFetch, ...init } = {
+        const { baseUrl, headers, fetch: customFetch, stripNullsBeforeValidation, ...init } = {
             ...defaults,
             ...req
         };
@@ -54,12 +63,8 @@ export const _ = {
         const res = await (customFetch || fetch)(href, {
             ...init,
             headers: _.stripUndefined({
-                ...defaults.headers,
-                ...req,
-                headers: {
-                    ...req.headers,
-                    ...extraHeaders
-                }
+                ...headers,
+                ...extraHeaders
             })
         });
         const responseSchemaFormat: ResponseSchemaFormat = validation.responseSchemas[res.status.toString()] ||
@@ -70,13 +75,24 @@ export const _ = {
         const text = await res.text();
         if ("json" in responseSchemaFormat) {
             const responseJson = JSON.parse(text);
-            const validationOptions = { allowUnknownAttributes: true };
+            const extraValidationOptions = stripNullsBeforeValidation
+                ? { preValidateProperty: _.removeNulls }
+                : {};
+            const validationOptions = {
+                allowUnknownAttributes: true,
+                ...extraValidationOptions
+            };
             const responseSchema: Schema = responseSchemaFormat["json"];
             const validationResponse = _.validator.validate(responseJson, responseSchema, validationOptions);
             if (validationResponse.valid) {
                 return responseJson;
             }
-            throw new HttpError(res.status, `Failed to validate schema of response with status ${res.status} and body:\n${text}`, href);
+            throw new HttpError(res.status, `Failed to validate schema of response with status ${res.status}\n` +
+                `Messages:\n` +
+                `  - ${validationResponse.errors
+                    .map(err => err.stack)
+                    .join("\n  - ")}\n\n` +
+                `Body:\n${text}`, href);
         }
         return text;
     },
@@ -296,8 +312,9 @@ export async function findPetsByStatus(status: ("available" | "pending" | "sold"
                  */
                 {
                     "type": "array", "items": { "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer",
-                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array",
-                                "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
+                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
+                                            "maximum": 9223372036854776000
+                                        }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
         ...opts
     }) as Pet[] | string;
 }
@@ -316,8 +333,9 @@ export async function findPetsByTags(tags: string[], opts?: RequestOpts) {
                  */
                 {
                     "type": "array", "items": { "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer",
-                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array",
-                                "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
+                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
+                                            "maximum": 9223372036854776000
+                                        }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
         ...opts
     }) as Pet[] | string;
 }
@@ -333,11 +351,8 @@ export async function getPetById(petId: number, opts?: RequestOpts) {
                  * See https://www.npmjs.com/package/oazapfts
                  */
                 {
-                    "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array", "items": { "type": "object",
-                                "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000
-                                    }, "name": { "type": "string" } } } },
-                        "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } },
-                    "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
+                    "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } } }, "status": {
+                            "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
         ...opts
     }) as Pet | string | string;
 }
@@ -426,7 +441,8 @@ export async function placeOrder(order: Order, opts?: RequestOpts) {
                     "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": //www.npmjs.com/package/oazapfts
                             -9223372036854776000, "maximum": 9223372036854776000 }, "petId": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
                             "maximum": 9223372036854776000 }, "quantity": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647 },
-                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved", "delivered"] }, "complete": { "type": "boolean",
+                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved",
+                                "delivered"] }, "complete": { "type": "boolean",
                             "default": false } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
@@ -448,7 +464,8 @@ export async function getOrderById(orderId: number, opts?: RequestOpts) {
                     "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": //www.npmjs.com/package/oazapfts
                             -9223372036854776000, "maximum": 9223372036854776000 }, "petId": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
                             "maximum": 9223372036854776000 }, "quantity": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647 },
-                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved", "delivered"] }, "complete": { "type": "boolean",
+                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved",
+                                "delivered"] }, "complete": { "type": "boolean",
                             "default": false } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
         ...opts
     }) as Order | string | string;
