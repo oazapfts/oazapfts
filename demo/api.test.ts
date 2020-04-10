@@ -22,10 +22,15 @@ describe("petstore.swagger.io", () => {
     expect(pet2).toMatchObject(pet);
   });
 
-  it("should reject invalid ids", () => {
-    const promise = getPetById(-130976);
-    expect(promise).rejects.toThrow("Not Found");
-    expect(promise).rejects.toHaveProperty("status", 404);
+  it("should reject invalid ids", async () => {
+    const notFound = await getPetById(-130976);
+    expect(notFound).toMatchInlineSnapshot(`
+      Object {
+        "code": 1,
+        "message": "Pet not found",
+        "type": "error",
+      }
+    `);
   });
 
   // petstore API seems to have changed. TODO: investigate and update test

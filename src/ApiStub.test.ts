@@ -9,13 +9,13 @@ describe("Api", () => {
     g.fetch = g.fetch || (() => {});
   });
 
-  it("should use global fetch", () => {
+  it("should use global fetch", async () => {
     jest.spyOn(g, "fetch").mockImplementationOnce(() => ({
-      ok: true,
+      status: 200,
       text: () => "hello"
     }));
 
-    _.fetch("bar", { baseUrl: "foo/" });
+    await _.fetch("bar", { responseCodes: ["200"] }, { baseUrl: "foo/" });
 
     expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
@@ -34,20 +34,42 @@ describe("Api", () => {
     expect(_.joinUrl(undefined, "/foo")).toEqual("/foo");
   });
 
-  it("should not use global fetch if local is provided", () => {
+  it("should not use global fetch if local is provided", async () => {
     jest.spyOn(g, "fetch");
     const customFetch = jest.fn(
       () =>
         ({
-          ok: true,
+          status: "200",
           text: () => "hello"
         } as any)
     );
 
-    _.fetch("bar", { baseUrl: "foo/", fetch: customFetch });
+    await _.fetch(
+      "bar",
+      { responseCodes: ["200"] },
+      { baseUrl: "foo/", fetch: customFetch }
+    );
 
     expect(customFetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
     expect(g.fetch).not.toHaveBeenCalled();
+  });
+
+  it("should throw error when api returns unexpected response code", () => {
+    jest.spyOn(g, "fetch").mockImplementationOnce(() => ({
+      status: 400,
+      statusText: "BadRequest",
+      text: () => "hello"
+    }));
+
+    const response = _.fetch(
+      "bar",
+      { responseCodes: ["200"] },
+      { baseUrl: "foo/" }
+    );
+
+    return expect(response).rejects.toMatchInlineSnapshot(
+      `[Error: foo/bar - BadRequest (400)]`
+    );
   });
 });
 

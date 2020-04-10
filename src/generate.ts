@@ -16,9 +16,13 @@ const verbs = [
   "TRACE"
 ];
 
-const contentTypes = {
+const jsonContentTypes = {
   "*/*": "json",
-  "application/json": "json",
+  "application/json": "json"
+};
+
+const contentTypes = {
+  ...jsonContentTypes,
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart"
 };
@@ -26,14 +30,14 @@ const contentTypes = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
+function getFormatter({ style, explode }: OpenAPIV3.ParameterObject): string {
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   if (style === "deepObject") return "deep";
   return explode ? "explode" : "form";
 }
 
-function getOperationIdentifier(id?: string) {
+function getOperationIdentifier(id?: string): string | undefined {
   if (!id) return;
   if (id.match(/[^\w\s]/)) return;
   id = _.camelCase(id);
@@ -48,15 +52,19 @@ export function getOperationName(
   verb: string,
   path: string,
   operationId?: string
-) {
+): string {
   const id = getOperationIdentifier(operationId);
   if (id) return id;
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
   return _.camelCase(`${verb} ${path}`);
 }
 
-function isNullable(schema: any) {
-  return !!(schema && schema.nullable);
+function isNullable(
+  schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject | undefined
+): boolean {
+  return (
+    schema !== undefined && !isReference(schema) && (schema.nullable || false)
+  );
 }
 
 function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
@@ -66,17 +74,12 @@ function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
 /**
  * If the given object is a ReferenceObject, return the last part of its path
  */
-function getReferenceName(obj: any) {
+function getReferenceName(
+  obj: OpenAPIV3.ReferenceObject | unknown
+): string | undefined {
   if (isReference(obj)) {
     return _.camelCase(obj.$ref.split("/").slice(-1)[0]);
   }
-}
-
-function hasJsonContent(obj: any) {
-  return (
-    !!_.get(obj, ["content", "application/json"]) ||
-    !!_.get(obj, ["content", "*/*"])
-  );
 }
 
 /**
@@ -322,32 +325,27 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     return ts.createTypeLiteralNode(members);
   }
 
-  function getOkResponse(res: OpenAPIV3.ResponsesObject) {
-    const codes = Object.keys(res);
-    const okCodes = codes.filter(
-      code => codes.length === 1 || parseInt(code, 10) < 400
-    );
+  function getTypeFromResponses(res: OpenAPIV3.ResponsesObject): ts.TypeNode {
+    const responsesTypes = Object.values(res).map(response => {
+      return getTypeFromResponse(response);
+    });
 
-    // as a side effect also export types for other response codes
-    codes.forEach(code => getTypeFromResponse(res[code]));
-    return res[okCodes[0]];
-  }
-
-  function getTypeFromResponses(res: OpenAPIV3.ResponsesObject) {
-    return getTypeFromResponse(getOkResponse(res));
+    return ts.createUnionTypeNode(responsesTypes);
   }
 
   function getTypeFromResponse(
     res: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
-  ) {
+  ): ts.TypeNode {
     if (isReference(res)) return getRefAlias(res);
-    if (!res || !res.content) return cg.keywordType.void;
+    if (!res.content) return cg.keywordType.void;
     return getTypeFromSchema(getSchemaFromContent(res.content));
   }
 
-  function getSchemaFromContent(content: any) {
+  function getSchemaFromContent(content: {
+    [media: string]: OpenAPIV3.MediaTypeObject;
+  }): OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject {
     const contentType = Object.keys(contentTypes).find(t => t in content);
-    let schema;
+    let schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject | undefined;
     if (contentType) {
       schema = _.get(content, [contentType, "schema"]);
     }
@@ -355,6 +353,23 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       schema || {
         type: "string"
       }
+    );
+  }
+
+  function hasJsonContent(
+    responses: OpenAPIV3.ResponsesObject | undefined
+  ): boolean {
+    return (
+      responses !== undefined &&
+      Object.values(responses).some(response => {
+        const resolvedResponse = isReference(response)
+          ? resolve<OpenAPIV3.ResponseObject>(response)
+          : response;
+
+        return Object.keys(jsonContentTypes).some(
+          contentType => !!_.get(resolvedResponse.content, [contentType])
+        );
+      })
     );
   }
 
@@ -484,7 +499,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
 
       // Next, build the method body...
 
-      const returnsJson = hasJsonContent(getOkResponse(responses!));
+      const returnsJson = hasJsonContent(responses);
       const query = parameters.filter(p => p.in === "query");
       const header = parameters.filter(p => p.in === "header").map(p => p.name);
       let qs;
@@ -549,6 +564,20 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       }
 
       const args: ts.Expression[] = [url];
+
+      if (responses !== undefined) {
+        const responseCodes = Object.keys(responses).map(code =>
+          ts.createStringLiteral(code)
+        );
+        args.push(
+          ts.createObjectLiteral([
+            ts.createPropertyAssignment(
+              "responseCodes",
+              ts.createArrayLiteral(responseCodes)
+            )
+          ])
+        );
+      }
 
       if (init.length) {
         const m = Object.entries(contentTypes).find(([type]) => {

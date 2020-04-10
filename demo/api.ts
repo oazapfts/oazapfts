@@ -20,6 +20,9 @@ export type RequestOpts = {
 type FetchRequestOpts = RequestOpts & {
     body?: string | FormData;
 };
+type ValidationOpts = {
+    responseCodes: string[];
+};
 type JsonRequestOpts = RequestOpts & {
     body: object;
 };
@@ -27,7 +30,7 @@ type MultipartRequestOpts = RequestOpts & {
     body: Record<string, string | Blob | undefined | any>;
 };
 export const _ = {
-    async fetch(url: string, req?: FetchRequestOpts) {
+    async fetch(url: string, validation: ValidationOpts, req?: FetchRequestOpts) {
         const { baseUrl, headers, fetch: customFetch, ...init } = {
             ...defaults,
             ...req
@@ -37,13 +40,14 @@ export const _ = {
             ...init,
             headers: _.stripUndefined({ ...defaults.headers, ...headers })
         });
-        if (!res.ok) {
-            throw new HttpError(res.status, res.statusText, href);
+        if (validation.responseCodes.includes("default") ||
+            validation.responseCodes.includes(res.status.toString())) {
+            return res.text();
         }
-        return res.text();
+        throw new HttpError(res.status, res.statusText, href);
     },
-    async fetchJson(url: string, req: FetchRequestOpts = {}) {
-        const res = await _.fetch(url, {
+    async fetchJson(url: string, validation: ValidationOpts, req: FetchRequestOpts = {}) {
+        const res = await _.fetch(url, validation, {
             ...req,
             headers: {
                 ...req.headers,
@@ -237,17 +241,17 @@ export type User = {
  * Update an existing pet
  */
 export async function updatePet(pet: Pet, opts?: RequestOpts) {
-    return await _.fetch("/pet", _.json({
+    return await _.fetch("/pet", { responseCodes: ["400", "404", "405"] }, _.json({
         ...opts,
         method: "PUT",
         body: pet
-    }));
+    })) as string | string | string;
 }
 /**
  * Add a new pet to the store
  */
 export async function addPet(pet: Pet, opts?: RequestOpts) {
-    return await _.fetch("/pet", _.json({
+    return await _.fetch("/pet", { responseCodes: ["405"] }, _.json({
         ...opts,
         method: "POST",
         body: pet
@@ -259,9 +263,9 @@ export async function addPet(pet: Pet, opts?: RequestOpts) {
 export async function findPetsByStatus(status: ("available" | "pending" | "sold")[], opts?: RequestOpts) {
     return await _.fetchJson(`/pet/findByStatus${QS.query(QS.explode({
         status
-    }))}`, {
+    }))}`, { responseCodes: ["200", "400"] }, {
         ...opts
-    }) as Pet[];
+    }) as Pet[] | string;
 }
 /**
  * Finds Pets by tags
@@ -269,17 +273,17 @@ export async function findPetsByStatus(status: ("available" | "pending" | "sold"
 export async function findPetsByTags(tags: string[], opts?: RequestOpts) {
     return await _.fetchJson(`/pet/findByTags${QS.query(QS.explode({
         tags
-    }))}`, {
+    }))}`, { responseCodes: ["200", "400"] }, {
         ...opts
-    }) as Pet[];
+    }) as Pet[] | string;
 }
 /**
  * Find pet by ID
  */
 export async function getPetById(petId: number, opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/${petId}`, {
+    return await _.fetchJson(`/pet/${petId}`, { responseCodes: ["200", "400", "404"] }, {
         ...opts
-    }) as Pet;
+    }) as Pet | string | string;
 }
 /**
  * Updates a pet in the store with form data
@@ -288,7 +292,7 @@ export async function updatePetWithForm(petId: number, body: {
     name?: string;
     status?: string;
 }, opts?: RequestOpts) {
-    return await _.fetch(`/pet/${petId}`, _.form({
+    return await _.fetch(`/pet/${petId}`, { responseCodes: ["405"] }, _.form({
         ...opts,
         method: "POST",
         body
@@ -300,14 +304,14 @@ export async function updatePetWithForm(petId: number, body: {
 export async function deletePet(petId: number, { apiKey }: {
     apiKey?: string;
 } = {}, opts?: RequestOpts) {
-    return await _.fetch(`/pet/${petId}`, {
+    return await _.fetch(`/pet/${petId}`, { responseCodes: ["400", "404"] }, {
         ...opts,
         method: "DELETE",
         headers: {
             ...opts && opts.headers,
             api_key: apiKey
         }
-    });
+    }) as string | string;
 }
 /**
  * uploads an image
@@ -316,7 +320,7 @@ export async function uploadFile(petId: number, body: {
     additionalMetadata?: string;
     file?: Blob;
 }, opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/${petId}/uploadImage`, _.multipart({
+    return await _.fetchJson(`/pet/${petId}/uploadImage`, { responseCodes: ["200"] }, _.multipart({
         ...opts,
         method: "POST",
         body
@@ -326,7 +330,7 @@ export async function uploadFile(petId: number, body: {
  * Returns pet inventories by status
  */
 export async function getInventory(opts?: RequestOpts) {
-    return await _.fetchJson("/store/inventory", {
+    return await _.fetchJson("/store/inventory", { responseCodes: ["200"] }, {
         ...opts
     }) as {
         [key: string]: number;
@@ -336,34 +340,34 @@ export async function getInventory(opts?: RequestOpts) {
  * Place an order for a pet
  */
 export async function placeOrder(order: Order, opts?: RequestOpts) {
-    return await _.fetchJson("/store/order", _.json({
+    return await _.fetchJson("/store/order", { responseCodes: ["200", "400"] }, _.json({
         ...opts,
         method: "POST",
         body: order
-    })) as Order;
+    })) as Order | string;
 }
 /**
  * Find purchase order by ID
  */
 export async function getOrderById(orderId: number, opts?: RequestOpts) {
-    return await _.fetchJson(`/store/order/${orderId}`, {
+    return await _.fetchJson(`/store/order/${orderId}`, { responseCodes: ["200", "400", "404"] }, {
         ...opts
-    }) as Order;
+    }) as Order | string | string;
 }
 /**
  * Delete purchase order by ID
  */
 export async function deleteOrder(orderId: number, opts?: RequestOpts) {
-    return await _.fetch(`/store/order/${orderId}`, {
+    return await _.fetch(`/store/order/${orderId}`, { responseCodes: ["400", "404"] }, {
         ...opts,
         method: "DELETE"
-    });
+    }) as string | string;
 }
 /**
  * Create user
  */
 export async function createUser(user: User, opts?: RequestOpts) {
-    return await _.fetch("/user", _.json({
+    return await _.fetch("/user", { responseCodes: ["default"] }, _.json({
         ...opts,
         method: "POST",
         body: user
@@ -373,7 +377,7 @@ export async function createUser(user: User, opts?: RequestOpts) {
  * Creates list of users with given input array
  */
 export async function createUsersWithArrayInput(body: User[], opts?: RequestOpts) {
-    return await _.fetch("/user/createWithArray", _.json({
+    return await _.fetch("/user/createWithArray", { responseCodes: ["default"] }, _.json({
         ...opts,
         method: "POST",
         body
@@ -383,7 +387,7 @@ export async function createUsersWithArrayInput(body: User[], opts?: RequestOpts
  * Creates list of users with given input array
  */
 export async function createUsersWithListInput(body: User[], opts?: RequestOpts) {
-    return await _.fetch("/user/createWithList", _.json({
+    return await _.fetch("/user/createWithList", { responseCodes: ["default"] }, _.json({
         ...opts,
         method: "POST",
         body
@@ -396,15 +400,15 @@ export async function loginUser(username: string, password: string, opts?: Reque
     return await _.fetchJson(`/user/login${QS.query(QS.form({
         username,
         password
-    }))}`, {
+    }))}`, { responseCodes: ["200", "400"] }, {
         ...opts
-    }) as string;
+    }) as string | string;
 }
 /**
  * Logs out current logged in user session
  */
 export async function logoutUser(opts?: RequestOpts) {
-    return await _.fetch("/user/logout", {
+    return await _.fetch("/user/logout", { responseCodes: ["default"] }, {
         ...opts
     }) as string;
 }
@@ -412,28 +416,28 @@ export async function logoutUser(opts?: RequestOpts) {
  * Get user by user name
  */
 export async function getUserByName(username: string, opts?: RequestOpts) {
-    return await _.fetchJson(`/user/${username}`, {
+    return await _.fetchJson(`/user/${username}`, { responseCodes: ["200", "400", "404"] }, {
         ...opts
-    }) as User;
+    }) as User | string | string;
 }
 /**
  * Updated user
  */
 export async function updateUser(username: string, user: User, opts?: RequestOpts) {
-    return await _.fetch(`/user/${username}`, _.json({
+    return await _.fetch(`/user/${username}`, { responseCodes: ["400", "404"] }, _.json({
         ...opts,
         method: "PUT",
         body: user
-    }));
+    })) as string | string;
 }
 /**
  * Delete user
  */
 export async function deleteUser(username: string, opts?: RequestOpts) {
-    return await _.fetch(`/user/${username}`, {
+    return await _.fetch(`/user/${username}`, { responseCodes: ["400", "404"] }, {
         ...opts,
         method: "DELETE"
-    });
+    }) as string | string;
 }
 export async function customizePet({ furColor, color, xColorOptions }: {
     furColor?: string;
@@ -443,7 +447,7 @@ export async function customizePet({ furColor, color, xColorOptions }: {
     return await _.fetch(`/pet/customize${QS.query(QS.form({
         "fur.color": furColor,
         color
-    }))}`, {
+    }))}`, { responseCodes: ["204"] }, {
         ...opts,
         method: "POST",
         headers: {

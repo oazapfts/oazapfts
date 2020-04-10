@@ -20,6 +20,10 @@ type FetchRequestOpts = RequestOpts & {
   body?: string | FormData;
 };
 
+type ValidationOpts = {
+  responseCodes: string[];
+};
+
 type JsonRequestOpts = RequestOpts & {
   body: object;
 };
@@ -29,7 +33,7 @@ type MultipartRequestOpts = RequestOpts & {
 };
 
 export const _ = {
-  async fetch(url: string, req?: FetchRequestOpts) {
+  async fetch(url: string, validation: ValidationOpts, req?: FetchRequestOpts) {
     const { baseUrl, headers, fetch: customFetch, ...init } = {
       ...defaults,
       ...req
@@ -39,14 +43,23 @@ export const _ = {
       ...init,
       headers: _.stripUndefined({ ...defaults.headers, ...headers })
     });
-    if (!res.ok) {
-      throw new HttpError(res.status, res.statusText, href);
+
+    if (
+      validation.responseCodes.includes("default") ||
+      validation.responseCodes.includes(res.status.toString())
+    ) {
+      return res.text();
     }
-    return res.text();
+
+    throw new HttpError(res.status, res.statusText, href);
   },
 
-  async fetchJson(url: string, req: FetchRequestOpts = {}) {
-    const res = await _.fetch(url, {
+  async fetchJson(
+    url: string,
+    validation: ValidationOpts,
+    req: FetchRequestOpts = {}
+  ) {
+    const res = await _.fetch(url, validation, {
       ...req,
       headers: {
         ...req.headers,
