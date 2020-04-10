@@ -23,7 +23,7 @@ export async function generateSource(spec: string) {
     v3Doc = doc as OpenAPIV3.Document;
   } else {
     const result = await converter.convertObj(doc, {});
-    v3Doc = result.openapi as OpenAPIV3.Document;
+    v3Doc = result.openapi;
   }
   const ast = generateAst(v3Doc);
   const { title, version } = v3Doc.info;

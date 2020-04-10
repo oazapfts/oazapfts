@@ -4,6 +4,7 @@
  * DO NOT MODIFY - This file has been generated using oazapfts.
  * See https://www.npmjs.com/package/oazapfts
  */
+import { Schema, Validator } from "jsonschema";
 export const defaults: RequestOpts = {
     baseUrl: "https://petstore.swagger.io/v2"
 };
@@ -20,8 +21,17 @@ export type RequestOpts = {
 type FetchRequestOpts = RequestOpts & {
     body?: string | FormData;
 };
+type JsonSchemaFormat = {
+    json: object;
+};
+type TextSchemaFormat = {
+    text: true;
+};
+type ResponseSchemaFormat = JsonSchemaFormat | TextSchemaFormat;
 type ValidationOpts = {
-    responseCodes: string[];
+    responseSchemas: {
+        [code: string]: ResponseSchemaFormat;
+    };
 };
 type JsonRequestOpts = RequestOpts & {
     body: object;
@@ -30,31 +40,45 @@ type MultipartRequestOpts = RequestOpts & {
     body: Record<string, string | Blob | undefined | any>;
 };
 export const _ = {
-    async fetch(url: string, validation: ValidationOpts, req?: FetchRequestOpts) {
+    validator: new Validator(),
+    async fetch(url: string, validation: ValidationOpts, req: FetchRequestOpts = {}) {
         const { baseUrl, headers, fetch: customFetch, ...init } = {
             ...defaults,
             ...req
         };
         const href = _.joinUrl(baseUrl, url);
+        const anyResponsesUsesJsonFormat = Object.keys(Object.values(validation.responseSchemas)).some(responseFormat => responseFormat === "json");
+        const extraHeaders = anyResponsesUsesJsonFormat
+            ? { Accept: "application/json" }
+            : {};
         const res = await (customFetch || fetch)(href, {
             ...init,
-            headers: _.stripUndefined({ ...defaults.headers, ...headers })
+            headers: _.stripUndefined({
+                ...defaults.headers,
+                ...req,
+                headers: {
+                    ...req.headers,
+                    ...extraHeaders
+                }
+            })
         });
-        if (validation.responseCodes.includes("default") ||
-            validation.responseCodes.includes(res.status.toString())) {
-            return res.text();
+        const responseSchemaFormat: ResponseSchemaFormat = validation.responseSchemas[res.status.toString()] ||
+            validation.responseSchemas["default"];
+        if (responseSchemaFormat === undefined) {
+            throw new HttpError(res.status, `Response status ${res.status} does not have a schema defined.`, href);
         }
-        throw new HttpError(res.status, res.statusText, href);
-    },
-    async fetchJson(url: string, validation: ValidationOpts, req: FetchRequestOpts = {}) {
-        const res = await _.fetch(url, validation, {
-            ...req,
-            headers: {
-                ...req.headers,
-                Accept: "application/json"
+        const text = await res.text();
+        if ("json" in responseSchemaFormat) {
+            const responseJson = JSON.parse(text);
+            const validationOptions = { allowUnknownAttributes: true };
+            const responseSchema: Schema = responseSchemaFormat["json"];
+            const validationResponse = _.validator.validate(responseJson, responseSchema, validationOptions);
+            if (validationResponse.valid) {
+                return responseJson;
             }
-        });
-        return res && JSON.parse(res);
+            throw new HttpError(res.status, `Failed to validate schema of response with status ${res.status} and body:\n${text}`, href);
+        }
+        return text;
     },
     json({ body, headers, ...req }: JsonRequestOpts) {
         return {
@@ -241,7 +265,7 @@ export type User = {
  * Update an existing pet
  */
 export async function updatePet(pet: Pet, opts?: RequestOpts) {
-    return await _.fetch("/pet", { responseCodes: ["400", "404", "405"] }, _.json({
+    return await _.fetch("/pet", { responseSchemas: { "400": { "text": true }, "404": { "text": true }, "405": { "text": true } } }, _.json({
         ...opts,
         method: "PUT",
         body: pet
@@ -251,7 +275,7 @@ export async function updatePet(pet: Pet, opts?: RequestOpts) {
  * Add a new pet to the store
  */
 export async function addPet(pet: Pet, opts?: RequestOpts) {
-    return await _.fetch("/pet", { responseCodes: ["405"] }, _.json({
+    return await _.fetch("/pet", { responseSchemas: { "405": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
         body: pet
@@ -261,9 +285,19 @@ export async function addPet(pet: Pet, opts?: RequestOpts) {
  * Finds Pets by status
  */
 export async function findPetsByStatus(status: ("available" | "pending" | "sold")[], opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/findByStatus${QS.query(QS.explode({
+    return await _.fetch(`/pet/findByStatus${QS.query(QS.explode({
         status
-    }))}`, { responseCodes: ["200", "400"] }, {
+    }))}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "array", "items": { "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer",
+                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array",
+                                "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
         ...opts
     }) as Pet[] | string;
 }
@@ -271,9 +305,19 @@ export async function findPetsByStatus(status: ("available" | "pending" | "sold"
  * Finds Pets by tags
  */
 export async function findPetsByTags(tags: string[], opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/findByTags${QS.query(QS.explode({
+    return await _.fetch(`/pet/findByTags${QS.query(QS.explode({
         tags
-    }))}`, { responseCodes: ["200", "400"] }, {
+    }))}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "array", "items": { "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer",
+                                        "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array",
+                                "items": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } } }, "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
         ...opts
     }) as Pet[] | string;
 }
@@ -281,7 +325,19 @@ export async function findPetsByTags(tags: string[], opts?: RequestOpts) {
  * Find pet by ID
  */
 export async function getPetById(petId: number, opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/${petId}`, { responseCodes: ["200", "400", "404"] }, {
+    return await _.fetch(`/pet/${petId}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "required": ["name", "photoUrls"], "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "category": { "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000 }, "name": { "type": "string" } } }, "name": { "type": "string" }, "photoUrls": { "type": "array", "items": { "type": "string" } }, "tags": { "type": "array", "items": { "type": "object",
+                                "properties": { "id": { "type": "integer", "format": "int64", "minimum": -9223372036854776000, "maximum": 9223372036854776000
+                                    }, "name": { "type": "string" } } } },
+                        "status": { "type": "string", "description": "pet status in the store", "enum": ["available", "pending", "sold"] } },
+                    "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
         ...opts
     }) as Pet | string | string;
 }
@@ -292,7 +348,7 @@ export async function updatePetWithForm(petId: number, body: {
     name?: string;
     status?: string;
 }, opts?: RequestOpts) {
-    return await _.fetch(`/pet/${petId}`, { responseCodes: ["405"] }, _.form({
+    return await _.fetch(`/pet/${petId}`, { responseSchemas: { "405": { "text": true } } }, _.form({
         ...opts,
         method: "POST",
         body
@@ -304,7 +360,7 @@ export async function updatePetWithForm(petId: number, body: {
 export async function deletePet(petId: number, { apiKey }: {
     apiKey?: string;
 } = {}, opts?: RequestOpts) {
-    return await _.fetch(`/pet/${petId}`, { responseCodes: ["400", "404"] }, {
+    return await _.fetch(`/pet/${petId}`, { responseSchemas: { "400": { "text": true }, "404": { "text": true } } }, {
         ...opts,
         method: "DELETE",
         headers: {
@@ -320,7 +376,16 @@ export async function uploadFile(petId: number, body: {
     additionalMetadata?: string;
     file?: Blob;
 }, opts?: RequestOpts) {
-    return await _.fetchJson(`/pet/${petId}/uploadImage`, { responseCodes: ["200"] }, _.multipart({
+    return await _.fetch(`/pet/${petId}/uploadImage`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "object", "properties": { "code": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647 },
+                        "type": { "type": "string" }, "message": { "type": "string" } }, "$schema": "http://json-schema.org/draft-04/schema#" } } } }, _.multipart({
         ...opts,
         method: "POST",
         body
@@ -330,7 +395,17 @@ export async function uploadFile(petId: number, body: {
  * Returns pet inventories by status
  */
 export async function getInventory(opts?: RequestOpts) {
-    return await _.fetchJson("/store/inventory", { responseCodes: ["200"] }, {
+    return await _.fetch("/store/inventory", { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "object", "additionalProperties": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647
+                    },
+                    "$schema": "http://json-schema.org/draft-04/schema#" } } } }, {
         ...opts
     }) as {
         [key: string]: number;
@@ -340,7 +415,19 @@ export async function getInventory(opts?: RequestOpts) {
  * Place an order for a pet
  */
 export async function placeOrder(order: Order, opts?: RequestOpts) {
-    return await _.fetchJson("/store/order", { responseCodes: ["200", "400"] }, _.json({
+    return await _.fetch("/store/order", { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": //www.npmjs.com/package/oazapfts
+                            -9223372036854776000, "maximum": 9223372036854776000 }, "petId": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
+                            "maximum": 9223372036854776000 }, "quantity": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647 },
+                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved", "delivered"] }, "complete": { "type": "boolean",
+                            "default": false } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
         body: order
@@ -350,7 +437,19 @@ export async function placeOrder(order: Order, opts?: RequestOpts) {
  * Find purchase order by ID
  */
 export async function getOrderById(orderId: number, opts?: RequestOpts) {
-    return await _.fetchJson(`/store/order/${orderId}`, { responseCodes: ["200", "400", "404"] }, {
+    return await _.fetch(`/store/order/${orderId}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": //www.npmjs.com/package/oazapfts
+                            -9223372036854776000, "maximum": 9223372036854776000 }, "petId": { "type": "integer", "format": "int64", "minimum": -9223372036854776000,
+                            "maximum": 9223372036854776000 }, "quantity": { "type": "integer", "format": "int32", "minimum": -2147483648, "maximum": 2147483647 },
+                        "shipDate": { "type": "string", "format": "date-time" }, "status": { "type": "string", "description": "Order Status", "enum": ["placed", "approved", "delivered"] }, "complete": { "type": "boolean",
+                            "default": false } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
         ...opts
     }) as Order | string | string;
 }
@@ -358,7 +457,7 @@ export async function getOrderById(orderId: number, opts?: RequestOpts) {
  * Delete purchase order by ID
  */
 export async function deleteOrder(orderId: number, opts?: RequestOpts) {
-    return await _.fetch(`/store/order/${orderId}`, { responseCodes: ["400", "404"] }, {
+    return await _.fetch(`/store/order/${orderId}`, { responseSchemas: { "400": { "text": true }, "404": { "text": true } } }, {
         ...opts,
         method: "DELETE"
     }) as string | string;
@@ -367,7 +466,7 @@ export async function deleteOrder(orderId: number, opts?: RequestOpts) {
  * Create user
  */
 export async function createUser(user: User, opts?: RequestOpts) {
-    return await _.fetch("/user", { responseCodes: ["default"] }, _.json({
+    return await _.fetch("/user", { responseSchemas: { "default": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
         body: user
@@ -377,7 +476,7 @@ export async function createUser(user: User, opts?: RequestOpts) {
  * Creates list of users with given input array
  */
 export async function createUsersWithArrayInput(body: User[], opts?: RequestOpts) {
-    return await _.fetch("/user/createWithArray", { responseCodes: ["default"] }, _.json({
+    return await _.fetch("/user/createWithArray", { responseSchemas: { "default": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
         body
@@ -387,7 +486,7 @@ export async function createUsersWithArrayInput(body: User[], opts?: RequestOpts
  * Creates list of users with given input array
  */
 export async function createUsersWithListInput(body: User[], opts?: RequestOpts) {
-    return await _.fetch("/user/createWithList", { responseCodes: ["default"] }, _.json({
+    return await _.fetch("/user/createWithList", { responseSchemas: { "default": { "text": true } } }, _.json({
         ...opts,
         method: "POST",
         body
@@ -397,10 +496,18 @@ export async function createUsersWithListInput(body: User[], opts?: RequestOpts)
  * Logs user into the system
  */
 export async function loginUser(username: string, password: string, opts?: RequestOpts) {
-    return await _.fetchJson(`/user/login${QS.query(QS.form({
+    return await _.fetch(`/user/login${QS.query(QS.form({
         username,
         password
-    }))}`, { responseCodes: ["200", "400"] }, {
+    }))}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "string", "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true } } }, {
         ...opts
     }) as string | string;
 }
@@ -408,7 +515,7 @@ export async function loginUser(username: string, password: string, opts?: Reque
  * Logs out current logged in user session
  */
 export async function logoutUser(opts?: RequestOpts) {
-    return await _.fetch("/user/logout", { responseCodes: ["default"] }, {
+    return await _.fetch("/user/logout", { responseSchemas: { "default": { "text": true } } }, {
         ...opts
     }) as string;
 }
@@ -416,7 +523,19 @@ export async function logoutUser(opts?: RequestOpts) {
  * Get user by user name
  */
 export async function getUserByName(username: string, opts?: RequestOpts) {
-    return await _.fetchJson(`/user/${username}`, { responseCodes: ["200", "400", "404"] }, {
+    return await _.fetch(`/user/${username}`, { responseSchemas: { "200": { "json": /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */ /**
+                 * DO NOT MODIFY - This file has been generated using oazapfts.
+                 * See https://www.npmjs.com/package/oazapfts
+                 */
+                {
+                    "type": "object", "properties": { "id": { "type": "integer", "format": "int64", "minimum": //www.npmjs.com/package/oazapfts
+                            -9223372036854776000, "maximum": 9223372036854776000 }, "username": { "type": "string" }, "firstName": { "type": "string" }, "lastName": { "type": "string" },
+                        "email": { "type": "string" }, "password": { "type": "string" }, "phone": { "type": "string"
+                        }, "userStatus": { "type": "integer", "description": "User Status", "format": "int32", "minimum": -2147483648, "maximum": 2147483647
+                        } }, "$schema": "http://json-schema.org/draft-04/schema#" } }, "400": { "text": true }, "404": { "text": true } } }, {
         ...opts
     }) as User | string | string;
 }
@@ -424,7 +543,7 @@ export async function getUserByName(username: string, opts?: RequestOpts) {
  * Updated user
  */
 export async function updateUser(username: string, user: User, opts?: RequestOpts) {
-    return await _.fetch(`/user/${username}`, { responseCodes: ["400", "404"] }, _.json({
+    return await _.fetch(`/user/${username}`, { responseSchemas: { "400": { "text": true }, "404": { "text": true } } }, _.json({
         ...opts,
         method: "PUT",
         body: user
@@ -434,7 +553,7 @@ export async function updateUser(username: string, user: User, opts?: RequestOpt
  * Delete user
  */
 export async function deleteUser(username: string, opts?: RequestOpts) {
-    return await _.fetch(`/user/${username}`, { responseCodes: ["400", "404"] }, {
+    return await _.fetch(`/user/${username}`, { responseSchemas: { "400": { "text": true }, "404": { "text": true } } }, {
         ...opts,
         method: "DELETE"
     }) as string | string;
@@ -447,7 +566,7 @@ export async function customizePet({ furColor, color, xColorOptions }: {
     return await _.fetch(`/pet/customize${QS.query(QS.form({
         "fur.color": furColor,
         color
-    }))}`, { responseCodes: ["204"] }, {
+    }))}`, { responseSchemas: { "204": { "text": true } } }, {
         ...opts,
         method: "POST",
         headers: {

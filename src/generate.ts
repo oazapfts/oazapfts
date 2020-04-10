@@ -4,6 +4,7 @@ import path from "path";
 import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
+import toJsonSchema from "@openapi-contrib/openapi-schema-to-json-schema";
 
 const verbs = [
   "GET",
@@ -197,6 +198,60 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     return array ? array.map(resolve) : [];
   }
 
+  function resolveSchemaWithChildren(
+    obj: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
+  ): OpenAPIV3.SchemaObject {
+    const schemaObject = resolve<OpenAPIV3.SchemaObject>(obj);
+
+    const properties =
+      schemaObject.properties !== undefined
+        ? Object.entries(schemaObject.properties).reduce(
+            (obj, [name, schema]) => {
+              return { ...obj, [name]: resolveSchemaWithChildren(schema) };
+            },
+            {}
+          )
+        : schemaObject.properties;
+
+    const maybeItems =
+      schemaObject.type == "array"
+        ? { items: resolveSchemaWithChildren(schemaObject.items) }
+        : {};
+
+    return {
+      ...schemaObject,
+      ...maybeItems,
+      additionalProperties:
+        typeof schemaObject.additionalProperties !== "boolean" &&
+        schemaObject.additionalProperties !== undefined
+          ? resolveSchemaWithChildren(schemaObject.additionalProperties)
+          : schemaObject.additionalProperties,
+      properties,
+      allOf:
+        schemaObject.allOf !== undefined
+          ? resolveSchemaWithChildrenArray(schemaObject.allOf)
+          : schemaObject.allOf,
+      oneOf:
+        schemaObject.oneOf !== undefined
+          ? resolveSchemaWithChildrenArray(schemaObject.oneOf)
+          : schemaObject.oneOf,
+      anyOf:
+        schemaObject.anyOf !== undefined
+          ? resolveSchemaWithChildrenArray(schemaObject.anyOf)
+          : schemaObject.anyOf,
+      not:
+        schemaObject.not !== undefined
+          ? resolveSchemaWithChildren(schemaObject.not)
+          : schemaObject.not
+    };
+  }
+
+  function resolveSchemaWithChildrenArray(
+    array: Array<OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject>
+  ) {
+    return array.map(resolveSchemaWithChildren);
+  }
+
   // Collect the types of all referenced schemas so we can export them later
   const refs: { [ref: string]: ts.TypeReferenceNode } = {};
 
@@ -356,23 +411,6 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     );
   }
 
-  function hasJsonContent(
-    responses: OpenAPIV3.ResponsesObject | undefined
-  ): boolean {
-    return (
-      responses !== undefined &&
-      Object.values(responses).some(response => {
-        const resolvedResponse = isReference(response)
-          ? resolve<OpenAPIV3.ResponseObject>(response)
-          : response;
-
-        return Object.keys(jsonContentTypes).some(
-          contentType => !!_.get(resolvedResponse.content, [contentType])
-        );
-      })
-    );
-  }
-
   // Parse ApiStub.ts so that we don't have to generate everything manually
   const stub = cg.parseFile(path.resolve(__dirname, "../src/ApiStub.ts"));
 
@@ -498,8 +536,6 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       );
 
       // Next, build the method body...
-
-      const returnsJson = hasJsonContent(responses);
       const query = parameters.filter(p => p.in === "query");
       const header = parameters.filter(p => p.in === "header").map(p => p.name);
       let qs;
@@ -566,14 +602,61 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       const args: ts.Expression[] = [url];
 
       if (responses !== undefined) {
-        const responseCodes = Object.keys(responses).map(code =>
-          ts.createStringLiteral(code)
+        const responseCodes = Object.entries(responses).map(
+          ([code, response]) => {
+            const resolvedResponse = resolve<OpenAPIV3.ResponseObject>(
+              response
+            );
+            // When schema is not json
+            const textSchema: OpenAPIV3.SchemaObject = {
+              type: "string"
+            };
+
+            if (
+              resolvedResponse.content !== undefined &&
+              Object.keys(resolvedResponse.content).some(contentType =>
+                Object.keys(jsonContentTypes).includes(contentType)
+              )
+            ) {
+              const openapiResponseSchema = resolveSchemaWithChildren(
+                getSchemaFromContent(resolvedResponse.content)
+              );
+              const responseJsonSchema = toJsonSchema(openapiResponseSchema, {
+                cloneSchema: true
+              });
+              const jsonSchemaLiteral = ts.parseJsonText(
+                "someFileName.ts",
+                JSON.stringify(responseJsonSchema)
+              ).statements[0].expression;
+
+              return ts.createPropertyAssignment(
+                ts.createStringLiteral(code),
+                ts.createObjectLiteral([
+                  ts.createPropertyAssignment(
+                    ts.createStringLiteral("json"),
+                    jsonSchemaLiteral
+                  )
+                ])
+              );
+            }
+
+            return ts.createPropertyAssignment(
+              ts.createStringLiteral(code),
+              ts.createObjectLiteral([
+                ts.createPropertyAssignment(
+                  ts.createStringLiteral("text"),
+                  ts.createLiteral(true)
+                )
+              ])
+            );
+          }
         );
+
         args.push(
           ts.createObjectLiteral([
             ts.createPropertyAssignment(
-              "responseCodes",
-              ts.createArrayLiteral(responseCodes)
+              "responseSchemas",
+              ts.createObjectLiteral(responseCodes)
             )
           ])
         );
@@ -598,12 +681,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
             cg.block(
               ts.createReturn(
                 ts.createAsExpression(
-                  ts.createAwait(
-                    callUnderscoreFunction(
-                      returnsJson ? "fetchJson" : "fetch",
-                      args
-                    )
-                  ),
+                  ts.createAwait(callUnderscoreFunction("fetch", args)),
                   getTypeFromResponses(responses!)
                 )
               )

@@ -15,7 +15,11 @@ describe("Api", () => {
       text: () => "hello"
     }));
 
-    await _.fetch("bar", { responseCodes: ["200"] }, { baseUrl: "foo/" });
+    await _.fetch(
+      "bar",
+      { responseSchemas: { "200": { text: true } } },
+      { baseUrl: "foo/" }
+    );
 
     expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
@@ -46,7 +50,7 @@ describe("Api", () => {
 
     await _.fetch(
       "bar",
-      { responseCodes: ["200"] },
+      { responseSchemas: { "200": { text: true } } },
       { baseUrl: "foo/", fetch: customFetch }
     );
 
@@ -63,12 +67,12 @@ describe("Api", () => {
 
     const response = _.fetch(
       "bar",
-      { responseCodes: ["200"] },
+      { responseSchemas: { "200": { text: true } } },
       { baseUrl: "foo/" }
     );
 
     return expect(response).rejects.toMatchInlineSnapshot(
-      `[Error: foo/bar - BadRequest (400)]`
+      `[Error: foo/bar - Response status 400 does not have a schema defined. (400)]`
     );
   });
 });

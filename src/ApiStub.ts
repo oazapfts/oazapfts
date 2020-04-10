@@ -2,6 +2,9 @@
  * DO NOT MODIFY - This file has been generated using oazapfts.
  * See https://www.npmjs.com/package/oazapfts
  */
+
+import { Schema, Validator } from "jsonschema";
+
 export const defaults: RequestOpts = {
   baseUrl: "/"
 };
@@ -20,8 +23,16 @@ type FetchRequestOpts = RequestOpts & {
   body?: string | FormData;
 };
 
+type JsonSchemaFormat = {
+  json: object;
+};
+type TextSchemaFormat = {
+  text: true;
+};
+type ResponseSchemaFormat = JsonSchemaFormat | TextSchemaFormat;
+
 type ValidationOpts = {
-  responseCodes: string[];
+  responseSchemas: { [code: string]: ResponseSchemaFormat };
 };
 
 type JsonRequestOpts = RequestOpts & {
@@ -33,40 +44,69 @@ type MultipartRequestOpts = RequestOpts & {
 };
 
 export const _ = {
-  async fetch(url: string, validation: ValidationOpts, req?: FetchRequestOpts) {
+  validator: new Validator(),
+
+  async fetch(
+    url: string,
+    validation: ValidationOpts,
+    req: FetchRequestOpts = {}
+  ) {
     const { baseUrl, headers, fetch: customFetch, ...init } = {
       ...defaults,
       ...req
     };
     const href = _.joinUrl(baseUrl, url);
+    const anyResponsesUsesJsonFormat = Object.keys(
+      Object.values(validation.responseSchemas)
+    ).some(responseFormat => responseFormat === "json");
+    const extraHeaders = anyResponsesUsesJsonFormat
+      ? { Accept: "application/json" }
+      : {};
     const res = await (customFetch || fetch)(href, {
       ...init,
-      headers: _.stripUndefined({ ...defaults.headers, ...headers })
+      headers: _.stripUndefined({
+        ...headers,
+        ...extraHeaders
+      })
     });
 
-    if (
-      validation.responseCodes.includes("default") ||
-      validation.responseCodes.includes(res.status.toString())
-    ) {
-      return res.text();
+    const responseSchemaFormat: ResponseSchemaFormat =
+      validation.responseSchemas[res.status.toString()] ||
+      validation.responseSchemas["default"];
+
+    if (responseSchemaFormat === undefined) {
+      throw new HttpError(
+        res.status,
+        `Response status ${res.status} does not have a schema defined.`,
+        href
+      );
     }
 
-    throw new HttpError(res.status, res.statusText, href);
-  },
+    const text = await res.text();
 
-  async fetchJson(
-    url: string,
-    validation: ValidationOpts,
-    req: FetchRequestOpts = {}
-  ) {
-    const res = await _.fetch(url, validation, {
-      ...req,
-      headers: {
-        ...req.headers,
-        Accept: "application/json"
+    if ("json" in responseSchemaFormat) {
+      const responseJson = JSON.parse(text);
+      const validationOptions = { allowUnknownAttributes: true };
+      const responseSchema: Schema = responseSchemaFormat["json"];
+
+      const validationResponse = _.validator.validate(
+        responseJson,
+        responseSchema,
+        validationOptions
+      );
+
+      if (validationResponse.valid) {
+        return responseJson;
       }
-    });
-    return res && JSON.parse(res);
+
+      throw new HttpError(
+        res.status,
+        `Failed to validate schema of response with status ${res.status} and body:\n${text}`,
+        href
+      );
+    }
+
+    return text;
   },
 
   json({ body, headers, ...req }: JsonRequestOpts) {
