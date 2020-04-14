@@ -53,5 +53,9 @@
     "transform": {
       "\\.ts$": "ts-jest"
     }
+  },
+  "prettier": {
+    "trailingComma": "none",
+    "arrowParens": "avoid"
   }
 }
