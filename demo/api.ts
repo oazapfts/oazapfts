@@ -435,15 +435,20 @@ export async function deleteUser(username: string, opts?: RequestOpts) {
         method: "DELETE"
     });
 }
-export async function customizePet({ furColor, color }: {
+export async function customizePet({ furColor, color, xColorOptions }: {
     furColor?: string;
     color?: string;
+    xColorOptions?: string;
 } = {}, opts?: RequestOpts) {
     return await _.fetch(`/pet/customize${QS.query(QS.form({
         "fur.color": furColor,
         color
     }))}`, {
         ...opts,
-        method: "POST"
+        method: "POST",
+        headers: {
+            ...opts && opts.headers,
+            "x-color-options": xColorOptions
+        }
     }) as string;
 }

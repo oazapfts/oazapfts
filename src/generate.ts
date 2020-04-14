@@ -536,7 +536,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
                   )
                 ),
                 ...header.map(name =>
-                  ts.createPropertyAssignment(
+                  cg.createPropertyAssignment(
                     name,
                     ts.createIdentifier(argNames[name])
                   )

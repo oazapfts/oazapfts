@@ -852,6 +852,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-color-options",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
