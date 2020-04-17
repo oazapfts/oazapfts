@@ -13,7 +13,7 @@ const [, , spec, dest] = process.argv;
 
 if (!spec) {
   console.error("Usage: oazapfts <spec> [filename]");
-  process.exit(1);
+  process.exitCode = 1;
+} else {
+  generate(spec, dest);
 }
-
-generate(spec, dest);
