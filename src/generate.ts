@@ -180,14 +180,18 @@ function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
 export default function generateApi(spec: OpenAPIV3.Document) {
   const aliases: ts.TypeAliasDeclaration[] = [];
 
-  function resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
-    if (!isReference(obj)) return obj;
-    const ref = obj.$ref;
-    if (!ref.startsWith("#/")) {
-      throw new Error(`External refs are not supported: ${ref}`);
+  function resolve<T>(obj: T | OpenAPIV3.ReferenceObject): T {
+    function resolveAux<T>(obj: T | OpenAPIV3.ReferenceObject): T {
+      if (!isReference(obj)) return obj;
+      const ref = obj.$ref;
+      if (!ref.startsWith("#/")) {
+        throw new Error(`External refs are not supported: ${ref}`);
+      }
+      const path = ref.slice(2).split("/");
+      return resolveAux(_.get(spec, path));
     }
-    const path = ref.slice(2).split("/");
-    return _.get(spec, path) as T;
+
+    return resolveAux(obj);
   }
 
   function resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
