@@ -34,18 +34,18 @@ describe("petstore.swagger.io", () => {
     const order = await placeOrder({
       petId: id,
       status: "placed",
-      quantity: 1
+      quantity: 1,
     });
     expect(order).toMatchObject({
       quantity: 1,
-      status: "placed"
+      status: "placed",
     });
   });
 
   xit("should upload files", async () => {
     const res = await uploadFile(id, {
       additionalMetadata: "test",
-      file: fs.readFileSync(__dirname + "/pet.jpg") as any
+      file: fs.readFileSync(__dirname + "/pet.jpg") as any,
     });
     expect(res.code).toBe(200);
   });

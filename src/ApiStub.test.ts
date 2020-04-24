@@ -12,7 +12,7 @@ describe("Api", () => {
   it("should use global fetch", () => {
     jest.spyOn(g, "fetch").mockImplementationOnce(() => ({
       ok: true,
-      text: () => "hello"
+      text: () => "hello",
     }));
 
     _.fetch("bar", { baseUrl: "foo/" });
@@ -40,7 +40,7 @@ describe("Api", () => {
       () =>
         ({
           ok: true,
-          text: () => "hello"
+          text: () => "hello",
         } as any)
     );
 

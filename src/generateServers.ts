@@ -33,7 +33,7 @@ function createTemplate(url: string): TemplateLiteral {
           ? ts.createTemplateTail
           : ts.createTemplateMiddle)(literal)
       );
-    })
+    }),
   ]);
 }
 
@@ -47,7 +47,7 @@ function createServerFunction(
         Object.entries(vars || {}).map(([name, value]) => {
           return {
             name,
-            initializer: createLiteral(value.default)
+            initializer: createLiteral(value.default),
           };
         })
       ),
@@ -61,13 +61,13 @@ function createServerFunction(
                 : ts.createUnionTypeNode([
                     cg.keywordType.string,
                     cg.keywordType.number,
-                    cg.keywordType.boolean
-                  ])
+                    cg.keywordType.boolean,
+                  ]),
             });
           })
-        )
+        ),
       }
-    )
+    ),
   ];
 
   return cg.createArrowFunction(params, createTemplate(template));
