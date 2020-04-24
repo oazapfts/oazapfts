@@ -3,7 +3,7 @@
  * See https://www.npmjs.com/package/oazapfts
  */
 export const defaults: RequestOpts = {
-  baseUrl: "/"
+  baseUrl: "/",
 };
 
 export const servers = {};
@@ -32,12 +32,12 @@ export const _ = {
   async fetch(url: string, req?: FetchRequestOpts) {
     const { baseUrl, headers, fetch: customFetch, ...init } = {
       ...defaults,
-      ...req
+      ...req,
     };
     const href = _.joinUrl(baseUrl, url);
     const res = await (customFetch || fetch)(href, {
       ...init,
-      headers: _.stripUndefined({ ...defaults.headers, ...headers })
+      headers: _.stripUndefined({ ...defaults.headers, ...headers }),
     });
     let text;
     try {
@@ -54,8 +54,8 @@ export const _ = {
       ...req,
       headers: {
         ...req.headers,
-        Accept: "application/json"
-      }
+        Accept: "application/json",
+      },
     });
     return res && JSON.parse(res);
   },
@@ -66,8 +66,8 @@ export const _ = {
       body: JSON.stringify(body),
       headers: {
         ...headers,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     };
   },
 
@@ -77,8 +77,8 @@ export const _ = {
       body: QS.form(body),
       headers: {
         ...headers,
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
     };
   },
 
@@ -89,7 +89,7 @@ export const _ = {
     });
     return {
       ...req,
-      body: data
+      body: data,
     };
   },
 
@@ -147,7 +147,7 @@ export const _ = {
       .filter(Boolean)
       .join("/")
       .replace(/([^:]\/)\/+/, "$1");
-  }
+  },
 };
 
 /**
@@ -167,8 +167,8 @@ export const QS = {
    * https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#style-values
    */
   deep(params: Record<string, any>, [k, v] = _.encodeReserved): string {
-    const qk = _.encode([s => s, k]);
-    const qv = _.encode([s => s, v]);
+    const qk = _.encode([(s) => s, k]);
+    const qv = _.encode([(s) => s, v]);
     // don't add index to arrays
     // https://github.com/expressjs/body-parser/issues/289
     const visit = (obj: any, prefix = ""): string =>
@@ -199,7 +199,7 @@ export const QS = {
       .filter(([, value]) => value !== undefined)
       .map(([name, value]) => {
         if (Array.isArray(value)) {
-          return value.map(v => q`${name}=${v}`).join("&");
+          return value.map((v) => q`${name}=${v}`).join("&");
         }
         if (typeof value === "object") {
           return QS.explode(value, encoders);
@@ -211,7 +211,7 @@ export const QS = {
 
   form: _.delimited(),
   pipe: _.delimited("|"),
-  space: _.delimited("%20")
+  space: _.delimited("%20"),
 };
 
 export class HttpError extends Error {

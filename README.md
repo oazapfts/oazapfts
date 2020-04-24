@@ -31,7 +31,7 @@ The generated file exports a `defaults` constant that can be used to override th
 import * as api from "./api.ts";
 
 api.defaults.headers = {
-  access_token: "secret"
+  access_token: "secret",
 };
 ```
 

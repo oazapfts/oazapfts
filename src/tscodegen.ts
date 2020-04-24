@@ -47,12 +47,12 @@ export const keywordType: {
   string: ts.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
   boolean: ts.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
   undefined: ts.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
-  null: ts.createKeywordTypeNode(ts.SyntaxKind.NullKeyword)
+  null: ts.createKeywordTypeNode(ts.SyntaxKind.NullKeyword),
 };
 
 export const modifier = {
   async: ts.createModifier(ts.SyntaxKind.AsyncKeyword),
-  export: ts.createModifier(ts.SyntaxKind.ExportKeyword)
+  export: ts.createModifier(ts.SyntaxKind.ExportKeyword),
 };
 
 export function createTypeAliasDeclaration({
@@ -60,7 +60,7 @@ export function createTypeAliasDeclaration({
   modifiers,
   name,
   typeParameters,
-  type
+  type,
 }: {
   decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
@@ -86,7 +86,7 @@ export function createCall(
   expression: ts.Expression | string,
   {
     typeArgs,
-    args
+    args,
   }: {
     typeArgs?: Array<ts.TypeNode>;
     args?: Array<ts.Expression>;
@@ -137,7 +137,7 @@ export function createArrowFunction(
     modifiers,
     typeParameters,
     type,
-    equalsGreaterThanToken
+    equalsGreaterThanToken,
   }: {
     modifiers?: ts.Modifier[];
     typeParameters?: ts.TypeParameterDeclaration[];
@@ -162,7 +162,7 @@ export function createFunctionDeclaration(
     modifiers,
     asteriskToken,
     typeParameters,
-    type
+    type,
   }: {
     decorators?: ts.Decorator[];
     modifiers?: ts.Modifier[];
@@ -191,7 +191,7 @@ export function createClassDeclaration({
   name,
   typeParameters,
   heritageClauses,
-  members
+  members,
 }: {
   decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
@@ -214,7 +214,7 @@ export function createConstructor({
   decorators,
   modifiers,
   parameters,
-  body
+  body,
 }: {
   decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
@@ -237,7 +237,7 @@ export function createMethod(
     asteriskToken,
     questionToken,
     typeParameters,
-    type
+    type,
   }: {
     decorators?: ts.Decorator[];
     modifiers?: ts.Modifier[];
@@ -270,7 +270,7 @@ export function createParameter(
     dotDotDotToken,
     questionToken,
     type,
-    initializer
+    initializer,
   }: {
     decorators?: Array<ts.Decorator>;
     modifiers?: Array<ts.Modifier>;
@@ -305,7 +305,7 @@ export function createPropertySignature({
   name,
   questionToken,
   type,
-  initializer
+  initializer,
 }: {
   modifiers?: Array<ts.Modifier>;
   name: ts.PropertyName | string;
@@ -328,7 +328,7 @@ export function createIndexSignature(
     decorators,
     modifiers,
     indexName = "key",
-    indexType = keywordType.string
+    indexType = keywordType.string,
   }: {
     indexName?: string;
     indexType?: ts.TypeNode;
@@ -382,7 +382,9 @@ export function findNode<T extends ts.Node>(
   kind: T extends { kind: infer K } ? K : never,
   test?: (node: T) => boolean | undefined
 ): T {
-  const node = nodes.find(s => s.kind === kind && (!test || test(s as T))) as T;
+  const node = nodes.find(
+    (s) => s.kind === kind && (!test || test(s as T))
+  ) as T;
   if (!node) throw new Error(`Node not found: ${kind}`);
   return node;
 }
@@ -409,7 +411,7 @@ export function findFirstVariableDeclaration(
   const statement = findNode<ts.VariableStatement>(
     nodes,
     ts.SyntaxKind.VariableStatement,
-    n => getFirstDeclarationName(n) === name
+    (n) => getFirstDeclarationName(n) === name
   );
   const [first] = statement.declarationList.declarations;
   if (!first) throw new Error("Missing declaration");
@@ -422,7 +424,7 @@ export function changePropertyValue(
   value: ts.Expression
 ) {
   const p = o.properties.find(
-    p => ts.isPropertyAssignment(p) && getName(p.name) === property
+    (p) => ts.isPropertyAssignment(p) && getName(p.name) === property
   );
   if (p && ts.isPropertyAssignment(p)) {
     p.initializer = value;
@@ -459,7 +461,7 @@ export function parseFile(file: string) {
 }
 
 const printer = ts.createPrinter({
-  newLine: ts.NewLineKind.LineFeed
+  newLine: ts.NewLineKind.LineFeed,
 });
 
 export function printNode(node: ts.Node) {
@@ -482,7 +484,7 @@ export function printNodes(nodes: ts.Node[]) {
     ts.ScriptKind.TS
   );
   return nodes
-    .map(node => printer.printNode(ts.EmitHint.Unspecified, node, file))
+    .map((node) => printer.printNode(ts.EmitHint.Unspecified, node, file))
     .join("\n");
 }
 

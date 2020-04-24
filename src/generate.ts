@@ -13,14 +13,14 @@ const verbs = [
   "OPTIONS",
   "HEAD",
   "PATCH",
-  "TRACE"
+  "TRACE",
 ];
 
 const contentTypes = {
   "*/*": "json",
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
-  "multipart/form-data": "multipart"
+  "multipart/form-data": "multipart",
 };
 
 /**
@@ -149,7 +149,7 @@ function callUnderscoreFunction(name: string, args: ts.Expression[]) {
 function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
   const res: OpenAPIV3.ParameterObject[] = [];
   const merged: any = {};
-  params.forEach(p => {
+  params.forEach((p) => {
     const m = /^(.+?)\[(.*?)\]/.exec(p.name);
     if (!m) {
       res.push(p);
@@ -164,8 +164,8 @@ function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
         style: "deepObject",
         schema: {
           type: "object",
-          properties: {}
-        }
+          properties: {},
+        },
       };
       res.push(obj);
     }
@@ -214,7 +214,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
           name,
-          type
+          type,
         })
       );
     }
@@ -272,7 +272,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     if (schema.enum) {
       // enum -> union of literal types
       return ts.createUnionTypeNode(
-        schema.enum.map(s =>
+        schema.enum.map((s) =>
           ts.createLiteralTypeNode(ts.createStringLiteral(s))
         )
       );
@@ -302,13 +302,13 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       | OpenAPIV3.SchemaObject
       | OpenAPIV3.ReferenceObject
   ) {
-    const members: ts.TypeElement[] = Object.keys(props).map(name => {
+    const members: ts.TypeElement[] = Object.keys(props).map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
       return cg.createPropertySignature({
         questionToken: !isRequired,
         name,
-        type: getTypeFromSchema(schema)
+        type: getTypeFromSchema(schema),
       });
     });
     if (additionalProperties) {
@@ -325,11 +325,11 @@ export default function generateApi(spec: OpenAPIV3.Document) {
   function getOkResponse(res: OpenAPIV3.ResponsesObject) {
     const codes = Object.keys(res);
     const okCodes = codes.filter(
-      code => codes.length === 1 || parseInt(code, 10) < 400
+      (code) => codes.length === 1 || parseInt(code, 10) < 400
     );
 
     // as a side effect also export types for other response codes
-    codes.forEach(code => getTypeFromResponse(res[code]));
+    codes.forEach((code) => getTypeFromResponse(res[code]));
     return res[okCodes[0]];
   }
 
@@ -346,14 +346,14 @@ export default function generateApi(spec: OpenAPIV3.Document) {
   }
 
   function getSchemaFromContent(content: any) {
-    const contentType = Object.keys(contentTypes).find(t => t in content);
+    const contentType = Object.keys(contentTypes).find((t) => t in content);
     let schema;
     if (contentType) {
       schema = _.get(content, [contentType, "schema"]);
     }
     return (
       schema || {
-        type: "string"
+        type: "string",
       }
     );
   }
@@ -385,9 +385,9 @@ export default function generateApi(spec: OpenAPIV3.Document) {
   // Keep track of names to detect duplicates
   const names: Record<string, number> = {};
 
-  Object.keys(spec.paths).forEach(path => {
+  Object.keys(spec.paths).forEach((path) => {
     const item: OpenAPIV3.PathItemObject = spec.paths[path];
-    Object.keys(resolve(item)).forEach(verb => {
+    Object.keys(resolve(item)).forEach((verb) => {
       const method = verb.toUpperCase();
       // skip summary/description/parameters etc...
       if (!verbs.includes(method)) return;
@@ -407,7 +407,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       // merge item and op parameters
       const parameters = supportDeepObjects([
         ...resolveArray(item.parameters),
-        ...resolveArray(op.parameters)
+        ...resolveArray(op.parameters),
       ]);
 
       // split into required/optional
@@ -416,9 +416,9 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       // convert parameter names to argument names ...
       const argNames: any = {};
       parameters
-        .map(p => p.name)
+        .map((p) => p.name)
         .sort((a, b) => a.length - b.length)
-        .forEach(name => {
+        .forEach((name) => {
           // strip leading namespaces, eg. foo.name -> name
           const stripped = _.camelCase(name.replace(/.+\./, ""));
           // keep the prefix if the stripped-down name is already taken
@@ -426,9 +426,9 @@ export default function generateApi(spec: OpenAPIV3.Document) {
         });
 
       // build the method signature - first all the required parameters
-      const methodParams = required.map(p =>
+      const methodParams = required.map((p) =>
         cg.createParameter(argNames[resolve(p).name], {
-          type: getTypeFromSchema(isReference(p) ? p : p.schema)
+          type: getTypeFromSchema(isReference(p) ? p : p.schema),
         })
       );
 
@@ -445,7 +445,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
         );
         methodParams.push(
           cg.createParameter(bodyVar, {
-            type
+            type,
           })
         );
       }
@@ -462,14 +462,14 @@ export default function generateApi(spec: OpenAPIV3.Document) {
             {
               initializer: ts.createObjectLiteral(),
               type: ts.createTypeLiteralNode(
-                optional.map(p =>
+                optional.map((p) =>
                   cg.createPropertySignature({
                     name: argNames[resolve(p).name],
                     questionToken: true,
-                    type: getTypeFromSchema(isReference(p) ? p : p.schema)
+                    type: getTypeFromSchema(isReference(p) ? p : p.schema),
                   })
                 )
-              )
+              ),
             }
           )
         );
@@ -478,15 +478,17 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       methodParams.push(
         cg.createParameter("opts", {
           type: ts.createTypeReferenceNode("RequestOpts", undefined),
-          questionToken: true
+          questionToken: true,
         })
       );
 
       // Next, build the method body...
 
       const returnsJson = hasJsonContent(getOkResponse(responses!));
-      const query = parameters.filter(p => p.in === "query");
-      const header = parameters.filter(p => p.in === "header").map(p => p.name);
+      const query = parameters.filter((p) => p.in === "query");
+      const header = parameters
+        .filter((p) => p.in === "header")
+        .map((p) => p.name);
       let qs;
       if (query.length) {
         const paramsByFormatter = _.groupBy(query, getFormatter);
@@ -496,8 +498,8 @@ export default function generateApi(spec: OpenAPIV3.Document) {
             //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
             return callQsFunction(format, [
               cg.createObjectLiteral(
-                params.map(p => [p.name, argNames[p.name]])
-              )
+                params.map((p) => [p.name, argNames[p.name]])
+              ),
             ]);
           })
         );
@@ -505,7 +507,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
 
       const url = createUrlExpression(path, qs);
       const init: ts.ObjectLiteralElementLike[] = [
-        ts.createSpreadAssignment(ts.createIdentifier("opts"))
+        ts.createSpreadAssignment(ts.createIdentifier("opts")),
       ];
 
       if (method !== "GET") {
@@ -535,12 +537,12 @@ export default function generateApi(spec: OpenAPIV3.Document) {
                     )
                   )
                 ),
-                ...header.map(name =>
+                ...header.map((name) =>
                   cg.createPropertyAssignment(
                     name,
                     ts.createIdentifier(argNames[name])
                   )
-                )
+                ),
               ],
               true
             )
@@ -563,7 +565,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
           cg.createFunctionDeclaration(
             name,
             {
-              modifiers: [cg.modifier.export, cg.modifier.async]
+              modifiers: [cg.modifier.export, cg.modifier.async],
             },
             methodParams,
             cg.block(
