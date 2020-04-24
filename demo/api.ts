@@ -37,10 +37,14 @@ export const _ = {
       ...init,
       headers: _.stripUndefined({ ...defaults.headers, ...headers }),
     });
+    let text;
+    try {
+      text = await res.text();
+    } catch (err) {}
     if (!res.ok) {
-      throw new HttpError(res.status, res.statusText, href);
+      throw new HttpError(res.status, res.statusText, href, text);
     }
-    return res.text();
+    return text;
   },
   async fetchJson(url: string, req: FetchRequestOpts = {}) {
     const res = await _.fetch(url, {
@@ -193,9 +197,15 @@ export const QS = {
 };
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string, url: string) {
+  data?: object;
+  constructor(status: number, message: string, url: string, text?: string) {
     super(`${url} - ${message} (${status})`);
     this.status = status;
+    if (text) {
+      try {
+        this.data = JSON.parse(text);
+      } catch (err) {}
+    }
   }
 }
 export type ApiResult<Fn> = Fn extends (...args: any) => Promise<infer T>
