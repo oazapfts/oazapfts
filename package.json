@@ -24,7 +24,9 @@
     "@types/lodash": "^4.14.149",
     "@types/node": "^13.9.3",
     "form-data": "^3.0.0",
+    "husky": "^4.2.5",
     "jest": "^25.1.0",
+    "lint-staged": "^10.1.7",
     "node-fetch": "^2.6.0",
     "openapi-types": "^1.3.5",
     "prettier": "^2.0.1",
@@ -54,8 +56,12 @@
       "\\.ts$": "ts-jest"
     }
   },
-  "prettier": {
-    "trailingComma": "none",
-    "arrowParens": "avoid"
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write"
   }
 }
