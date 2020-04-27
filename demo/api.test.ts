@@ -1,40 +1,29 @@
 import fs from "fs";
-import { findPetsByStatus, getPetById, placeOrder, uploadFile } from "./api";
-import { ok } from "oazapfts/index";
+import * as api from "./api";
+import { ok, handle } from "oazapfts/index";
+
+api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
 (global as any).fetch = require("node-fetch");
 (global as any).FormData = require("form-data");
 
-describe("petstore.swagger.io", () => {
-  let pet: any;
-  let id = 0;
-
-  beforeAll(async () => {
-    const pets = await ok(findPetsByStatus(["available"]));
-    expect(pets.length).toBeGreaterThan(0);
-    [pet] = pets;
-    id = pet.id || 0;
-    expect(id).toBeTruthy();
+describe("petstore", () => {
+  it("should get pets by id", async () => {
+    const pet = await ok(api.getPetById(1));
+    expect(pet).toMatchObject({ id: 1, name: "doggie" });
   });
 
-  // petstore API seems to have changed. TODO: investigate and update test
-  xit("should get pets by id", async () => {
-    const pet2 = await ok(getPetById(id));
-    expect(pet2).toMatchObject(pet);
-  });
-
-  it("should reject invalid ids", () => {
-    const promise = ok(getPetById(-130976));
-    expect(promise).rejects.toThrow("Error: 404");
+  it("should throw if status != 200", async () => {
+    const promise = ok(
+      api.getPetById(1, { headers: { Prefer: "statusCode=404" } })
+    );
     expect(promise).rejects.toHaveProperty("status", 404);
   });
 
-  // petstore API seems to have changed. TODO: investigate and update test
-  xit("should place orders", async () => {
-    expect(id).toBeGreaterThan(0);
+  it("should foo", async () => {
     const order = await ok(
-      placeOrder({
-        petId: id,
+      api.placeOrder({
+        petId: 1,
         status: "placed",
         quantity: 1,
       })
@@ -45,11 +34,12 @@ describe("petstore.swagger.io", () => {
     });
   });
 
-  xit("should upload files", async () => {
-    const res = await uploadFile(id, {
+  it.skip("should upload files", async () => {
+    const res = await api.uploadFile(1, {
       additionalMetadata: "test",
       file: fs.readFileSync(__dirname + "/pet.jpg") as any,
     });
+    console.log(res);
     expect(res.status).toBe(200);
   });
 });

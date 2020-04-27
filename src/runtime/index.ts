@@ -51,7 +51,11 @@ export function runtime(defaults: RequestOpts) {
         Accept: "application/json",
       },
     });
-    return { status, data: data && JSON.parse(data) } as T;
+    try {
+      return { status, data: data && JSON.parse(data) } as T;
+    } catch (err) {
+      throw new Error(`Expected JSON but got: ${data}`);
+    }
   }
 
   return {
