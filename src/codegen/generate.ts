@@ -72,30 +72,12 @@ function getReferenceName(obj: any) {
   }
 }
 
-function hasJsonContent(obj: any) {
-  return (
-    !!_.get(obj, ["content", "application/json"]) ||
-    !!_.get(obj, ["content", "*/*"])
+function hasJsonContent(responses: OpenAPIV3.ResponsesObject) {
+  return Object.values(responses).some(
+    (res) =>
+      !!_.get(res, ["content", "application/json"]) ||
+      !!_.get(res, ["content", "*/*"])
   );
-}
-
-/**
- * If the spec contains a URL use that value as default baseUrl in the
- * constructor of the Api class.
- */
-function setBaseUrl(apiClass: ts.ClassDeclaration, spec: OpenAPIV3.Document) {
-  const baseUrl = _.get(spec, "servers[0].url");
-  if (baseUrl) {
-    const ctor = cg.findNode<ts.ConstructorDeclaration>(
-      apiClass.members,
-      ts.SyntaxKind.Constructor
-    );
-    _.set(
-      ctor,
-      "parameters[0].name.elements[0].initializer",
-      ts.createLiteral(baseUrl)
-    );
-  }
 }
 
 /**
@@ -134,10 +116,14 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 /**
  * Create a call expression for one of the _unerscore functions defined in ApiStub.
  */
-function callUnderscoreFunction(name: string, args: ts.Expression[]) {
+function callOazapftsFunction(
+  name: string,
+  args: ts.Expression[],
+  typeArgs?: ts.TypeNode[]
+) {
   return cg.createCall(
-    ts.createPropertyAccess(ts.createIdentifier("_"), name),
-    { args }
+    ts.createPropertyAccess(ts.createIdentifier("oazapfts"), name),
+    { args, typeArgs }
   );
 }
 
@@ -322,19 +308,23 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     return ts.createTypeLiteralNode(members);
   }
 
-  function getOkResponse(res: OpenAPIV3.ResponsesObject) {
-    const codes = Object.keys(res);
-    const okCodes = codes.filter(
-      (code) => codes.length === 1 || parseInt(code, 10) < 400
+  function getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
+    return ts.createUnionTypeNode(
+      Object.entries(responses).map(([code, res]) =>
+        ts.createTypeLiteralNode([
+          cg.createPropertySignature({
+            name: "status",
+            type: ts.createLiteralTypeNode(
+              ts.createNumericLiteral(code.toString())
+            ),
+          }),
+          cg.createPropertySignature({
+            name: "data",
+            type: getTypeFromResponse(res),
+          }),
+        ])
+      )
     );
-
-    // as a side effect also export types for other response codes
-    codes.forEach((code) => getTypeFromResponse(res[code]));
-    return res[okCodes[0]];
-  }
-
-  function getTypeFromResponses(res: OpenAPIV3.ResponsesObject) {
-    return getTypeFromResponse(getOkResponse(res));
   }
 
   function getTypeFromResponse(
@@ -359,7 +349,9 @@ export default function generateApi(spec: OpenAPIV3.Document) {
   }
 
   // Parse ApiStub.ts so that we don't have to generate everything manually
-  const stub = cg.parseFile(path.resolve(__dirname, "../src/ApiStub.ts"));
+  const stub = cg.parseFile(
+    path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
+  );
 
   // ApiStub contains a class declaration, find it ...
   const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
@@ -477,14 +469,14 @@ export default function generateApi(spec: OpenAPIV3.Document) {
 
       methodParams.push(
         cg.createParameter("opts", {
-          type: ts.createTypeReferenceNode("RequestOpts", undefined),
+          type: ts.createTypeReferenceNode("Oazapfts.RequestOpts", undefined),
           questionToken: true,
         })
       );
 
       // Next, build the method body...
 
-      const returnsJson = hasJsonContent(getOkResponse(responses!));
+      const returnsJson = hasJsonContent(responses!);
       const query = parameters.filter((p) => p.in === "query");
       const header = parameters
         .filter((p) => p.in === "header")
@@ -557,7 +549,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
           return !!_.get(body, ["content", type]);
         });
         const initObj = ts.createObjectLiteral(init, true);
-        args.push(m ? callUnderscoreFunction(m[1], [initObj]) : initObj);
+        args.push(m ? callOazapftsFunction(m[1], [initObj]) : initObj); // json, form, multipart
       }
 
       functions.push(
@@ -570,14 +562,17 @@ export default function generateApi(spec: OpenAPIV3.Document) {
             methodParams,
             cg.block(
               ts.createReturn(
-                ts.createAsExpression(
-                  ts.createAwait(
-                    callUnderscoreFunction(
-                      returnsJson ? "fetchJson" : "fetch",
-                      args
-                    )
-                  ),
-                  getTypeFromResponses(responses!)
+                ts.createAwait(
+                  callOazapftsFunction(
+                    returnsJson ? "fetchJson" : "fetchText",
+                    args,
+                    returnsJson
+                      ? [
+                          getTypeFromResponses(responses!) ||
+                            ts.SyntaxKind.AnyKeyword,
+                        ]
+                      : undefined
+                  )
                 )
               )
             )

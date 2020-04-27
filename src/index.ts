@@ -1,33 +1,45 @@
-import * as cg from "./tscodegen";
-import generate from "./generate";
-import ts from "typescript";
-import SwaggerParser from "@apidevtools/swagger-parser";
-import converter from "swagger2openapi";
-import { OpenAPIV3 } from "openapi-types";
+import { ApiResponse } from "./runtime";
 
-export { cg };
+type DataType<T extends ApiResponse, S extends number> = T extends { status: S }
+  ? T["data"]
+  : never;
 
-export function generateAst(spec: OpenAPIV3.Document) {
-  return generate(spec);
+type DefaultHandler = {
+  default?: (status: number, data: any) => any;
+};
+
+type ResponseHandler<T extends ApiResponse> = {
+  [P in T["status"]]: (res: DataType<T, P>) => any;
+} &
+  DefaultHandler;
+
+export async function handle<
+  T extends ApiResponse,
+  H extends ResponseHandler<T>
+>(promise: Promise<T>, handler: H): Promise<ReturnType<H[keyof H]>> {
+  const { status, data } = await promise;
+  const statusHandler = (handler as any)[status];
+  if (statusHandler) return statusHandler(data);
+  if (handler.default) return handler.default(status, data);
+  throw new Error(`Unhandled status code: ${status}`);
 }
 
-export function printAst(ast: ts.SourceFile) {
-  return cg.printFile(ast);
+type SuccessCodes = 200 | 201 | 202 | 204;
+
+export async function ok<T extends ApiResponse>(
+  promise: Promise<T>
+): Promise<DataType<T, SuccessCodes>> {
+  const res = await promise;
+  if (res.status === 200) return res.data;
+  throw new HttpError(res.status, res.data);
 }
 
-export async function generateSource(spec: string) {
-  let v3Doc;
-  const doc = await SwaggerParser.parse(spec);
-  const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
-  if (isOpenApiV3) {
-    v3Doc = doc as OpenAPIV3.Document;
-  } else {
-    const result = await converter.convertObj(doc, {});
-    v3Doc = result.openapi as OpenAPIV3.Document;
+export class HttpError extends Error {
+  status: number;
+  data?: any;
+  constructor(status: number, data: any) {
+    super(`Error: ${status}`);
+    this.status = status;
+    this.data = data;
   }
-  const ast = generateAst(v3Doc);
-  const { title, version } = v3Doc.info;
-  const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
-  const src = printAst(ast);
-  return src.replace(/^\/\*\*/, preamble);
 }

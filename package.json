@@ -4,13 +4,13 @@
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
-    "oazapfts": "./lib/cli.js"
+    "oazapfts": "./lib/codegen/cli.js"
   },
   "scripts": {
     "test": "npm run generate-demo && jest",
     "build": "tsc",
-    "generate-demo": "npm run prepare && ./lib/cli.js ./demo/petstore.json ./demo/api.ts",
-    "prepare": "npm run build && chmod +x ./lib/cli.js"
+    "generate-demo": "npm run prepare && ./lib/codegen/cli.js ./demo/petstore.json ./demo/api.ts",
+    "prepare": "npm run build && chmod +x ./lib/codegen/cli.js"
   },
   "keywords": [
     "openapi",
@@ -51,6 +51,9 @@
       "ts",
       "d.ts"
     ],
+    "moduleNameMapper": {
+      "oazapfts/(.*)": "<rootDir>/src/$1"
+    },
     "restoreMocks": true,
     "transform": {
       "\\.ts$": "ts-jest"

@@ -1,5 +1,5 @@
 import fs from "fs";
-import ts, { createStringLiteral } from "typescript";
+import ts from "typescript";
 
 ts.parseIsolatedEntityName;
 type KeywordTypeName =
