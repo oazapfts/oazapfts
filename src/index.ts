@@ -17,7 +17,7 @@ export function printAst(ast: ts.SourceFile) {
 
 export async function generateSource(spec: string) {
   let v3Doc;
-  const doc = await SwaggerParser.parse(spec);
+  const doc = await SwaggerParser.bundle(spec);
   const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
   if (isOpenApiV3) {
     v3Doc = doc as OpenAPIV3.Document;
