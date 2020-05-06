@@ -1,0 +1,14 @@
+PartnerInfo:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+    flavor:
+      type: string
+    bestBeforeDate:
+      type: string
+      format: date
+    numInPack:
+      type: integer

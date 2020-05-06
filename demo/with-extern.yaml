@@ -1,0 +1,43 @@
+openapi: 3.0.1
+
+info:
+  title: awesome corporate api
+  version: 0.0.0
+
+paths:
+  /partners:
+    post:
+      operationId: createPartner
+      description: >-
+        create a new partner
+
+      requestBody:
+        $ref: '#/components/requestBodies/CreatePartnerRequest'
+      responses:
+        # XXX: should be 202?
+        200:
+          $ref: '#/components/responses/AnyResponse'
+
+components:
+  schemas:
+    Any:
+      description: fake stub obj
+      type: object
+
+    PartnerInfo:
+      $ref: './extern.yaml#/PartnerInfo'
+
+  requestBodies:
+    CreatePartnerRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PartnerInfo'
+
+  responses:
+    AnyResponse:
+      description: eat shit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Any'
