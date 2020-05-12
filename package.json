@@ -7,7 +7,7 @@
     "oazapfts": "./lib/codegen/cli.js"
   },
   "scripts": {
-    "test": "npm run generate-demo && with-server --grep 'Mocking API at \\d+' 'jest --watch'",
+    "test": "npm run generate-demo && with-server --grep 'Mocking API at \\d+' jest",
     "build": "tsc",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && ./lib/codegen/cli.js ./demo/petstore.json ./demo/api.ts",
