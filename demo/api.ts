@@ -4,8 +4,8 @@
  * DO NOT MODIFY - This file has been generated using oazapfts.
  * See https://www.npmjs.com/package/oazapfts
  */
-import * as Oazapfts from "oazapfts/runtime";
-import * as QS from "oazapfts/runtime/query";
+import * as Oazapfts from "oazapfts/lib/runtime";
+import * as QS from "oazapfts/lib/runtime/query";
 export const defaults: Oazapfts.RequestOpts = {
     baseUrl: "https://petstore.swagger.io/v2",
 };

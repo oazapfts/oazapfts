@@ -15,7 +15,7 @@
     "noUnusedLocals": false,
     "baseUrl": ".",
     "paths": {
-      "oazapfts/*": ["src/*"]
+      "oazapfts/lib/*": ["src/*"]
     }
   },
   "include": ["src", "demo"],

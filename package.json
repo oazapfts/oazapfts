@@ -1,6 +1,6 @@
 {
   "name": "oazapfts",
-  "version": "3.0.0",
+  "version": "3.0.0-rc1",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
@@ -55,7 +55,7 @@
       "d.ts"
     ],
     "moduleNameMapper": {
-      "oazapfts/(.*)": "<rootDir>/src/$1"
+      "oazapfts/lib/(.*)": "<rootDir>/src/$1"
     },
     "restoreMocks": true,
     "transform": {
