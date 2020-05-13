@@ -24,13 +24,14 @@ export async function handle<
   throw new Error(`Unhandled status code: ${status}`);
 }
 
-type SuccessCodes = 200 | 201 | 202 | 204;
+const SUCCESS_CODES = [200, 201, 202, 204] as const;
+type SuccessCodes = typeof SUCCESS_CODES[number];
 
 export async function ok<T extends ApiResponse>(
   promise: Promise<T>
 ): Promise<DataType<T, SuccessCodes>> {
   const res = await promise;
-  if (res.status === 200) return res.data;
+  if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
   throw new HttpError(res.status, res.data);
 }
 

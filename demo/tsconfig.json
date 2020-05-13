@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
-    "rootDir": "src",
     "target": "esnext",
     "sourceMap": true,
     "declaration": true,
@@ -13,7 +11,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "noUnusedLocals": false
-  },
-  "exclude": ["demo", "lib", "src/codegen/ApiStub.ts"]
+    "noUnusedLocals": false,
+    "baseUrl": ".",
+    "paths": {
+      "oazapfts/lib/*": ["../lib/*"]
+    }
+  }
 }

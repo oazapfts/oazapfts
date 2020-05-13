@@ -1,6 +1,6 @@
 import fs from "fs";
-import * as api from "./api";
 import { ok, handle } from "oazapfts/lib/index";
+import * as api from "./api";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 

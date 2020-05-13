@@ -1,14 +1,16 @@
 {
   "name": "oazapfts",
-  "version": "3.0.0-rc1",
+  "version": "3.0.0-rc2",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
     "oazapfts": "./lib/codegen/cli.js"
   },
   "scripts": {
-    "test": "npm run generate-demo && with-server --grep 'Mocking API at \\d+' jest",
     "build": "tsc",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "jest",
+    "test:e2e": "npm run generate-demo && with-server --grep 'Mocking API at \\d+' 'cd demo && jest'",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && ./lib/codegen/cli.js ./demo/petstore.json ./demo/api.ts",
     "prepare": "npm run build && chmod +x ./lib/codegen/cli.js"
@@ -41,26 +43,6 @@
     "lodash": "^4.17.15",
     "swagger2openapi": "^6.0.3",
     "typescript": "^3.8.3"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testMatch": [
-      "**/*.test.ts"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "node",
-      "ts",
-      "d.ts"
-    ],
-    "moduleNameMapper": {
-      "oazapfts/lib/(.*)": "<rootDir>/src/$1"
-    },
-    "restoreMocks": true,
-    "transform": {
-      "\\.ts$": "ts-jest"
-    }
   },
   "husky": {
     "hooks": {
