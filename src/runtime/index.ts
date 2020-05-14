@@ -37,25 +37,28 @@ export function runtime(defaults: RequestOpts) {
       data = await res.text();
     } catch (err) {}
 
-    return { status: res.status, data };
+    return {
+      status: res.status,
+      contentType: res.headers.get("content-type"),
+      data,
+    };
   }
 
   async function fetchJson<T extends ApiResponse>(
     url: string,
     req: FetchRequestOpts = {}
   ) {
-    const { status, data } = await fetchText(url, {
+    const { status, contentType, data } = await fetchText(url, {
       ...req,
       headers: {
         ...req.headers,
         Accept: "application/json",
       },
     });
-    try {
+    if (contentType && contentType.includes("application/json")) {
       return { status, data: data && JSON.parse(data) } as T;
-    } catch (err) {
-      throw new Error(`Expected JSON but got: ${data}`);
     }
+    return { status, data } as T;
   }
 
   return {
