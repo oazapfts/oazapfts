@@ -1,6 +1,6 @@
 {
   "name": "oazapfts",
-  "version": "3.0.0-rc3",
+  "version": "3.0.0-rc4",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
