@@ -72,14 +72,6 @@ function getReferenceName(obj: any) {
   }
 }
 
-function hasJsonContent(responses: OpenAPIV3.ResponsesObject) {
-  return Object.values(responses).some(
-    (res) =>
-      !!_.get(res, ["content", "application/json"]) ||
-      !!_.get(res, ["content", "*/*"])
-  );
-}
-
 /**
  * Create a template string literal from the given OpenAPI urlTemplate.
  * Curly braces in the path are turned into identifier expressions,
@@ -328,11 +320,22 @@ export default function generateApi(spec: OpenAPIV3.Document) {
   }
 
   function getTypeFromResponse(
-    res: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
+    resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
   ) {
-    if (isReference(res)) return getRefAlias(res);
+    const res = resolve(resOrRef);
     if (!res || !res.content) return cg.keywordType.void;
     return getTypeFromSchema(getSchemaFromContent(res.content));
+  }
+
+  function hasJsonContent(responses?: OpenAPIV3.ResponsesObject) {
+    if (!responses) return false;
+    return Object.values(responses)
+      .map(resolve)
+      .some(
+        (res) =>
+          !!_.get(res, ["content", "application/json"]) ||
+          !!_.get(res, ["content", "*/*"])
+      );
   }
 
   function getSchemaFromContent(content: any) {
@@ -476,7 +479,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
 
       // Next, build the method body...
 
-      const returnsJson = hasJsonContent(responses!);
+      const returnsJson = hasJsonContent(responses);
       const query = parameters.filter((p) => p.in === "query");
       const header = parameters
         .filter((p) => p.in === "header")
