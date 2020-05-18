@@ -7,15 +7,20 @@ import { OpenAPIV3 } from "openapi-types";
 
 export { cg };
 
-export function generateAst(spec: OpenAPIV3.Document) {
-  return generate(spec);
+export type Opts = {
+  include?: string[];
+  exclude?: string[];
+};
+
+export function generateAst(spec: OpenAPIV3.Document, opts: Opts) {
+  return generate(spec, opts);
 }
 
 export function printAst(ast: ts.SourceFile) {
   return cg.printFile(ast);
 }
 
-export async function generateSource(spec: string) {
+export async function generateSource(spec: string, opts: Opts) {
   let v3Doc;
   const doc = await SwaggerParser.bundle(spec);
   const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
@@ -25,7 +30,7 @@ export async function generateSource(spec: string) {
     const result = await converter.convertObj(doc, {});
     v3Doc = result.openapi as OpenAPIV3.Document;
   }
-  const ast = generateAst(v3Doc);
+  const ast = generateAst(v3Doc, opts);
   const { title, version } = v3Doc.info;
   const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
   const src = printAst(ast);

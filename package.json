@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/jest": "^25.2.1",
     "@types/lodash": "^4.14.150",
+    "@types/minimist": "^1.2.0",
     "@types/node": "^13.13.5",
     "form-data": "^3.0.0",
     "husky": "^4.2.5",
@@ -41,8 +42,9 @@
   "dependencies": {
     "@apidevtools/swagger-parser": "^9.0.1",
     "lodash": "^4.17.15",
+    "minimist": "^1.2.5",
     "swagger2openapi": "^6.0.3",
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.2"
   },
   "husky": {
     "hooks": {

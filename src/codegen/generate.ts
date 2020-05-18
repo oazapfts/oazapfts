@@ -4,6 +4,7 @@ import path from "path";
 import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
+import { Opts } from ".";
 
 const verbs = [
   "GET",
@@ -64,7 +65,7 @@ function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
 }
 
 /**
- * If the given object is a ReferenceObject, return the last part of its path
+ * If the given object is a ReferenceObject, return the last part of its path.
  */
 function getReferenceName(obj: any) {
   if (isReference(obj)) {
@@ -96,7 +97,7 @@ function createUrlExpression(path: string, qs?: ts.Expression) {
 }
 
 /**
- * Create a call expression for one of the QS functions defined in ApiStub.
+ * Create a call expression for one of the QS runtime functions.
  */
 function callQsFunction(name: string, args: ts.Expression[]) {
   return cg.createCall(
@@ -106,7 +107,7 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 }
 
 /**
- * Create a call expression for one of the _unerscore functions defined in ApiStub.
+ * Create a call expression for one of the oazapfts runtime functions.
  */
 function callOazapftsFunction(
   name: string,
@@ -155,13 +156,14 @@ function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
 /**
  * Main entry point that generates TypeScript code from a given API spec.
  */
-export default function generateApi(spec: OpenAPIV3.Document) {
+export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
   const aliases: ts.TypeAliasDeclaration[] = [];
 
   function resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith("#/")) {
+      // NOTE: This should never happen as we use SwaggerParser.bundle()
       throw new Error(`External refs are not supported: ${ref}`);
     }
     const path = ref.slice(2).split("/");
@@ -170,6 +172,18 @@ export default function generateApi(spec: OpenAPIV3.Document) {
 
   function resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
     return array ? array.map(resolve) : [];
+  }
+
+  function skip(tags?: string[]) {
+    const excluded = tags && tags.some((t) => opts?.exclude?.includes(t));
+    if (excluded) {
+      return true;
+    }
+    if (opts?.include) {
+      const included = tags && tags.some((t) => opts.include?.includes(t));
+      return !included;
+    }
+    return false;
   }
 
   // Collect the types of all referenced schemas so we can export them later
@@ -356,7 +370,7 @@ export default function generateApi(spec: OpenAPIV3.Document) {
     path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
   );
 
-  // ApiStub contains a class declaration, find it ...
+  // ApiStub contains `const servers = {}`, find it ...
   const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
   servers.initializer = generateServers(spec.servers || []);
 
@@ -388,7 +402,18 @@ export default function generateApi(spec: OpenAPIV3.Document) {
       if (!verbs.includes(method)) return;
 
       const op: OpenAPIV3.OperationObject = (item as any)[verb];
-      const { operationId, requestBody, responses, summary, description } = op;
+      const {
+        operationId,
+        requestBody,
+        responses,
+        summary,
+        description,
+        tags,
+      } = op;
+
+      if (skip(tags)) {
+        return;
+      }
 
       let name = getOperationName(verb, path, operationId);
       const count = (names[name] = (names[name] || 0) + 1);

@@ -1,19 +1,37 @@
 #!/usr/bin/env node
 
 import fs from "fs";
-import { generateSource } from "./";
+import minimist from "minimist";
 
-async function generate(spec: string, dest: string) {
-  const code = await generateSource(spec);
+import { generateSource, Opts } from "./";
+
+const argv = minimist(process.argv.slice(2), {
+  alias: {
+    i: "include",
+  },
+});
+
+async function generate(spec: string, dest: string, opts: Opts) {
+  const code = await generateSource(spec, opts);
   if (dest) fs.writeFileSync(dest, code);
   else console.log(code);
 }
 
-const [, , spec, dest] = process.argv;
-
+const { include, exclude } = argv;
+const [spec, dest] = argv._;
 if (!spec) {
-  console.error("Usage: oazapfts <spec> [filename]");
+  console.error(`
+    Usage:
+    oazapfts <spec> [filename]
+
+    Options:
+    --exclude, -e tag to exclude
+    --include, -i tag to include
+`);
   process.exit(1);
 }
 
-generate(spec, dest);
+generate(spec, dest, {
+  include,
+  exclude,
+});
