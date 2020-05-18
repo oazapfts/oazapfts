@@ -13,5 +13,7 @@ describe("util", () => {
     );
     expect(util.joinUrl("//example.com/", "/foo")).toEqual("//example.com/foo");
     expect(util.joinUrl(undefined, "/foo")).toEqual("/foo");
+    expect(util.joinUrl("/", "/foo")).toEqual("/foo");
+    expect(util.joinUrl("", "/foo/")).toEqual("/foo/");
   });
 });

@@ -52,6 +52,7 @@ export function stripUndefined<T>(obj: T) {
 export function joinUrl(...parts: Array<string | undefined>) {
   return parts
     .filter(Boolean)
-    .join("/")
-    .replace(/([^:]\/)\/+/, "$1");
+    .map((s, i) => (i === 0 ? s : s!.replace(/^\/+/, "")))
+    .map((s, i, a) => (i === a.length - 1 ? s : s!.replace(/\/+$/, "")))
+    .join("/");
 }

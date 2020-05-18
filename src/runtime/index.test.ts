@@ -2,6 +2,14 @@ import * as Oazapfts from ".";
 
 const oazapfts = Oazapfts.runtime({});
 
+const fetchMock = () => ({
+  ok: true,
+  text: "hello",
+  headers: {
+    get: (name: string) => undefined,
+  },
+});
+
 describe("request", () => {
   let g: any;
 
@@ -10,28 +18,22 @@ describe("request", () => {
     g.fetch = g.fetch || (() => {});
   });
 
-  it("should use global fetch", () => {
-    jest.spyOn(g, "fetch").mockImplementationOnce(() => ({
-      ok: true,
-      text: () => "hello",
-    }));
+  it("should use global fetch", async () => {
+    jest.spyOn(g, "fetch").mockImplementationOnce(fetchMock);
 
-    oazapfts.fetchText("bar", { baseUrl: "foo/" });
+    await oazapfts.fetchText("bar", { baseUrl: "foo/" });
 
     expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
 
-  it("should not use global fetch if local is provided", () => {
+  it("should not use global fetch if local is provided", async () => {
     jest.spyOn(g, "fetch");
-    const customFetch = jest.fn(
-      () =>
-        ({
-          ok: true,
-          text: () => "hello",
-        } as any)
-    );
+    const customFetch = jest.fn(fetchMock);
 
-    oazapfts.fetchText("bar", { baseUrl: "foo/", fetch: customFetch });
+    await oazapfts.fetchText("bar", {
+      baseUrl: "foo/",
+      fetch: customFetch as any,
+    });
 
     expect(customFetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
     expect(g.fetch).not.toHaveBeenCalled();
