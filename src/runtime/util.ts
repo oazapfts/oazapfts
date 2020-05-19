@@ -10,6 +10,9 @@ export const allowReserved = [encodeURIComponent, encodeURI];
 export function encode(encoders: Encoders, delimiter = ",") {
   const q = (v: any, i: number) => {
     const encoder = encoders[i % encoders.length];
+    if (typeof v === "undefined") {
+      return "";
+    }
     if (typeof v === "object") {
       if (Array.isArray(v)) {
         return v.map(encoder).join(delimiter);
@@ -26,7 +29,7 @@ export function encode(encoders: Encoders, delimiter = ",") {
 
   return (strings: TemplateStringsArray, ...values: any[]) => {
     return strings.reduce((prev, s, i) => {
-      return `${prev}${s}${q(values[i] || "", i)}`;
+      return `${prev}${s}${q(values[i], i)}`;
     }, "");
   };
 }

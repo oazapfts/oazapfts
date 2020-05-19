@@ -18,6 +18,9 @@ describe("delimited", () => {
   it("should omit undefined values", () => {
     expect(qs.form({ id: 23, foo: undefined })).toEqual("id=23");
   });
+  it("should keep zeros", () => {
+    expect(qs.form({ id: 0 })).toEqual("id=0");
+  });
 });
 
 describe("explode", () => {
