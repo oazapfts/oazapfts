@@ -243,6 +243,10 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // oneOf -> union
       return ts.createUnionTypeNode(schema.oneOf.map(getTypeFromSchema));
     }
+    if (schema.anyOf) {
+      // anyOf -> union
+      return ts.createUnionTypeNode(schema.anyOf.map(getTypeFromSchema));
+    }
     if (schema.allOf) {
       // allOf -> intersection
       return ts.createIntersectionTypeNode(schema.allOf.map(getTypeFromSchema));
@@ -251,7 +255,6 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // items -> array
       return ts.createArrayTypeNode(getTypeFromSchema(schema.items));
     }
-
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
       return getTypeFromProperties(
@@ -260,14 +263,14 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
         schema.additionalProperties
       );
     }
-
     if (schema.enum) {
       // enum -> union of literal types
-      return ts.createUnionTypeNode(
-        schema.enum.map((s) =>
-          ts.createLiteralTypeNode(ts.createStringLiteral(s))
-        )
+      const types = schema.enum.map((s) =>
+        s === null
+          ? cg.keywordType.null
+          : ts.createLiteralTypeNode(ts.createStringLiteral(s))
       );
+      return types.length > 1 ? ts.createUnionTypeNode(types) : types[0];
     }
     if (schema.format == "binary") {
       return ts.createTypeReferenceNode("Blob", []);
