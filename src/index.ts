@@ -40,9 +40,7 @@ export async function handle<
 const SUCCESS_CODES = [200, 201, 202, 204] as const;
 type SuccessCodes = typeof SUCCESS_CODES[number];
 
-type SuccessResponse<T extends ApiResponse> = Promise<
-  DataType<T, SuccessCodes>
->;
+type SuccessResponse<T extends ApiResponse> = DataType<T, SuccessCodes>;
 
 /**
  * Utility function to directly return any successful response
@@ -59,7 +57,7 @@ type SuccessResponse<T extends ApiResponse> = Promise<
  */
 export async function ok<T extends ApiResponse>(
   promise: Promise<T>
-): SuccessResponse<T> {
+): Promise<SuccessResponse<T>> {
   const res = await promise;
   if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
   throw new HttpError(res.status, res.data);
@@ -71,12 +69,16 @@ type AsyncReturnType<T> = T extends (...args: any[]) => Promise<infer V>
   ? V
   : never;
 
+export type OkResponse<T extends ApiFunction> = SuccessResponse<
+  AsyncReturnType<T>
+>;
+
 /**
  * Utility function to wrap an API function with `ok(...)`.
  */
 export function okify<T extends ApiFunction>(
   fn: T
-): (...args: Args<T>) => SuccessResponse<AsyncReturnType<T>> {
+): (...args: Args<T>) => Promise<OkResponse<T>> {
   return (...args: Args<T>) => ok(fn(...args));
 }
 
