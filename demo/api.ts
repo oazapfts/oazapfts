@@ -56,8 +56,8 @@ export type User = {
 /**
  * Update an existing pet
  */
-export async function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/pet", oazapfts.json({
+export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/pet", oazapfts.json({
         ...opts,
         method: "PUT",
         body: pet
@@ -66,8 +66,8 @@ export async function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
 /**
  * Add a new pet to the store
  */
-export async function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/pet", oazapfts.json({
+export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/pet", oazapfts.json({
         ...opts,
         method: "POST",
         body: pet
@@ -76,8 +76,8 @@ export async function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
 /**
  * Finds Pets by status
  */
-export async function findPetsByStatus(status: ("available" | "pending" | "sold")[], opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function findPetsByStatus(status: ("available" | "pending" | "sold")[], opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: Pet[];
     } | {
@@ -92,8 +92,8 @@ export async function findPetsByStatus(status: ("available" | "pending" | "sold"
 /**
  * Finds Pets by tags
  */
-export async function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: Pet[];
     } | {
@@ -108,8 +108,8 @@ export async function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts
 /**
  * Find pet by ID
  */
-export async function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: Pet;
     } | {
@@ -125,11 +125,11 @@ export async function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
 /**
  * Updates a pet in the store with form data
  */
-export async function updatePetWithForm(petId: number, body: {
+export function updatePetWithForm(petId: number, body: {
     name?: string;
     status?: string;
 }, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/pet/${petId}`, oazapfts.form({
+    return oazapfts.fetchText(`/pet/${petId}`, oazapfts.form({
         ...opts,
         method: "POST",
         body
@@ -138,10 +138,10 @@ export async function updatePetWithForm(petId: number, body: {
 /**
  * Deletes a pet
  */
-export async function deletePet(petId: number, { apiKey }: {
+export function deletePet(petId: number, { apiKey }: {
     apiKey?: string;
 } = {}, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/pet/${petId}`, {
+    return oazapfts.fetchText(`/pet/${petId}`, {
         ...opts,
         method: "DELETE",
         headers: {
@@ -153,11 +153,11 @@ export async function deletePet(petId: number, { apiKey }: {
 /**
  * uploads an image
  */
-export async function uploadFile(petId: number, body: {
+export function uploadFile(petId: number, body: {
     additionalMetadata?: string;
     file?: Blob;
 }, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+    return oazapfts.fetchJson<{
         status: 200;
         data: ApiResponse;
     }>(`/pet/${petId}/uploadImage`, oazapfts.multipart({
@@ -169,8 +169,8 @@ export async function uploadFile(petId: number, body: {
 /**
  * Returns pet inventories by status
  */
-export async function getInventory(opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function getInventory(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: {
             [key: string]: number;
@@ -182,8 +182,8 @@ export async function getInventory(opts?: Oazapfts.RequestOpts) {
 /**
  * Place an order for a pet
  */
-export async function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: Order;
     } | {
@@ -198,8 +198,8 @@ export async function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
 /**
  * Find purchase order by ID
  */
-export async function getOrderById(orderId: number, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function getOrderById(orderId: number, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: Order;
     } | {
@@ -215,8 +215,8 @@ export async function getOrderById(orderId: number, opts?: Oazapfts.RequestOpts)
 /**
  * Delete purchase order by ID
  */
-export async function deleteOrder(orderId: number, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/store/order/${orderId}`, {
+export function deleteOrder(orderId: number, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/store/order/${orderId}`, {
         ...opts,
         method: "DELETE"
     });
@@ -224,8 +224,8 @@ export async function deleteOrder(orderId: number, opts?: Oazapfts.RequestOpts) 
 /**
  * Create user
  */
-export async function createUser(user: User, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/user", oazapfts.json({
+export function createUser(user: User, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/user", oazapfts.json({
         ...opts,
         method: "POST",
         body: user
@@ -234,8 +234,8 @@ export async function createUser(user: User, opts?: Oazapfts.RequestOpts) {
 /**
  * Creates list of users with given input array
  */
-export async function createUsersWithArrayInput(body: User[], opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/user/createWithArray", oazapfts.json({
+export function createUsersWithArrayInput(body: User[], opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/user/createWithArray", oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -244,8 +244,8 @@ export async function createUsersWithArrayInput(body: User[], opts?: Oazapfts.Re
 /**
  * Creates list of users with given input array
  */
-export async function createUsersWithListInput(body: User[], opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/user/createWithList", oazapfts.json({
+export function createUsersWithListInput(body: User[], opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/user/createWithList", oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -254,8 +254,8 @@ export async function createUsersWithListInput(body: User[], opts?: Oazapfts.Req
 /**
  * Logs user into the system
  */
-export async function loginUser(username: string, password: string, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function loginUser(username: string, password: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: string;
     } | {
@@ -271,16 +271,16 @@ export async function loginUser(username: string, password: string, opts?: Oazap
 /**
  * Logs out current logged in user session
  */
-export async function logoutUser(opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText("/user/logout", {
+export function logoutUser(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/user/logout", {
         ...opts
     });
 }
 /**
  * Get user by user name
  */
-export async function getUserByName(username: string, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchJson<{
+export function getUserByName(username: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
         status: 200;
         data: User;
     } | {
@@ -296,8 +296,8 @@ export async function getUserByName(username: string, opts?: Oazapfts.RequestOpt
 /**
  * Updated user
  */
-export async function updateUser(username: string, user: User, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/user/${username}`, oazapfts.json({
+export function updateUser(username: string, user: User, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/user/${username}`, oazapfts.json({
         ...opts,
         method: "PUT",
         body: user
@@ -306,18 +306,18 @@ export async function updateUser(username: string, user: User, opts?: Oazapfts.R
 /**
  * Delete user
  */
-export async function deleteUser(username: string, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/user/${username}`, {
+export function deleteUser(username: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/user/${username}`, {
         ...opts,
         method: "DELETE"
     });
 }
-export async function customizePet({ furColor, color, xColorOptions }: {
+export function customizePet({ furColor, color, xColorOptions }: {
     furColor?: string;
     color?: string;
     xColorOptions?: string;
 } = {}, opts?: Oazapfts.RequestOpts) {
-    return await oazapfts.fetchText(`/pet/customize${QS.query(QS.form({
+    return oazapfts.fetchText(`/pet/customize${QS.query(QS.form({
         "fur.color": furColor,
         color
     }))}`, {

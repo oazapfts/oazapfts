@@ -588,22 +588,20 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
           cg.createFunctionDeclaration(
             name,
             {
-              modifiers: [cg.modifier.export, cg.modifier.async],
+              modifiers: [cg.modifier.export],
             },
             methodParams,
             cg.block(
               ts.createReturn(
-                ts.createAwait(
-                  callOazapftsFunction(
-                    returnsJson ? "fetchJson" : "fetchText",
-                    args,
-                    returnsJson
-                      ? [
-                          getTypeFromResponses(responses!) ||
-                            ts.SyntaxKind.AnyKeyword,
-                        ]
-                      : undefined
-                  )
+                callOazapftsFunction(
+                  returnsJson ? "fetchJson" : "fetchText",
+                  args,
+                  returnsJson
+                    ? [
+                        getTypeFromResponses(responses!) ||
+                          ts.SyntaxKind.AnyKeyword,
+                      ]
+                    : undefined
                 )
               )
             )

@@ -20,7 +20,7 @@ describe("petstore", () => {
     expect(promise).rejects.toHaveProperty("status", 404);
   });
 
-  it("should foo", async () => {
+  it("should place an order", async () => {
     const order = await ok(
       api.placeOrder({
         petId: 1,
