@@ -258,8 +258,7 @@
             "content": {}
           },
           "404": {
-            "description": "Pet not found",
-            "content": {}
+            "description": "Pet not found"
           }
         },
         "security": [

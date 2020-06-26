@@ -319,20 +319,26 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
 
   function getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
     return ts.createUnionTypeNode(
-      Object.entries(responses).map(([code, res]) =>
-        ts.createTypeLiteralNode([
+      Object.entries(responses).map(([code, res]) => {
+        const props = [
           cg.createPropertySignature({
             name: "status",
             type: ts.createLiteralTypeNode(
               ts.createNumericLiteral(code.toString())
             ),
           }),
-          cg.createPropertySignature({
-            name: "data",
-            type: getTypeFromResponse(res),
-          }),
-        ])
-      )
+        ];
+        const dataType = getTypeFromResponse(res);
+        if (dataType !== cg.keywordType.void) {
+          props.push(
+            cg.createPropertySignature({
+              name: "data",
+              type: dataType,
+            })
+          );
+        }
+        return ts.createTypeLiteralNode(props);
+      })
     );
   }
 

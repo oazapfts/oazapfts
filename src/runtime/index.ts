@@ -15,7 +15,7 @@ type JsonRequestOpts = RequestOpts & {
   body: object;
 };
 
-export type ApiResponse = { status: number; data: any };
+export type ApiResponse = { status: number; data?: any };
 
 type MultipartRequestOpts = RequestOpts & {
   body: Record<string, string | Blob | undefined | any>;

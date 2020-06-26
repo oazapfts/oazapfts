@@ -117,7 +117,6 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
         data: string;
     } | {
         status: 404;
-        data: string;
     }>(`/pet/${petId}`, {
         ...opts
     });
