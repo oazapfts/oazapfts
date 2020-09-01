@@ -8,7 +8,9 @@ import { generateSource, Opts } from "./";
 const argv = minimist(process.argv.slice(2), {
   alias: {
     i: "include",
+    e: "exclude",
   },
+  boolean: ["optimistic"],
 });
 
 async function generate(spec: string, dest: string, opts: Opts) {
@@ -17,7 +19,7 @@ async function generate(spec: string, dest: string, opts: Opts) {
   else console.log(code);
 }
 
-const { include, exclude } = argv;
+const { include, exclude, optimistic } = argv;
 const [spec, dest] = argv._;
 if (!spec) {
   console.error(`
@@ -25,8 +27,9 @@ if (!spec) {
     oazapfts <spec> [filename]
 
     Options:
-    --exclude, -e tag to exclude
-    --include, -i tag to include
+    --exclude, -e <tag to exclude>
+    --include, -i <tag to include>
+    --optimistic
 `);
   process.exit(1);
 }
@@ -34,4 +37,5 @@ if (!spec) {
 generate(spec, dest, {
   include,
   exclude,
+  optimistic,
 });

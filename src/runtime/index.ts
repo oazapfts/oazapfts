@@ -1,5 +1,6 @@
 import * as qs from "./query";
 import { joinUrl, stripUndefined } from "./util";
+import { ok } from "../";
 
 export type RequestOpts = {
   baseUrl?: string;
@@ -62,6 +63,7 @@ export function runtime(defaults: RequestOpts) {
   }
 
   return {
+    ok,
     fetchText,
     fetchJson,
 

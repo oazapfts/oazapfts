@@ -1,7 +1,9 @@
 import { ok, handle, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
+import * as optimisticApi from "./optimisticApi";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
+optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
 (global as any).fetch = require("node-fetch");
 (global as any).FormData = require("form-data");
@@ -64,7 +66,7 @@ describe("handle", () => {
 
   it("should throw if status is unhandled", async () => {
     const promise = handle(api.updatePet({ name: "Gizmo", photoUrls: [] }), {});
-    expect(promise).rejects.toHaveProperty("status", 204);
+    await expect(promise).rejects.toHaveProperty("status", 204);
   });
 });
 
@@ -81,5 +83,38 @@ describe("optimistic", () => {
     const optimisticApi = optimistic(api);
     const pet = await optimisticApi.getPetById(1);
     expect(pet).toMatchObject({ id: 1, name: "doggie" });
+  });
+});
+
+describe.only("--optimistic", () => {
+  it("should get pets by id", async () => {
+    const pet = await optimisticApi.getPetById(1);
+    expect(pet).toMatchObject({ id: 1, name: "doggie" });
+  });
+
+  it("should throw if status != 200", async () => {
+    const promise = optimisticApi.getPetById(1, {
+      headers: { Prefer: "statusCode=404" },
+    });
+    expect(promise).rejects.toHaveProperty("status", 404);
+  });
+
+  it("should post json", async () => {
+    const order = await optimisticApi.placeOrder({
+      petId: 1,
+      status: "placed",
+      quantity: 1,
+    });
+
+    expect(order).toMatchObject({
+      quantity: 1,
+      status: "placed",
+    });
+  });
+
+  it("should type response as Pet|string", async () => {
+    const pet = await optimisticApi.addPet({ name: "doggie", photoUrls: [] });
+    //@ts-expect-error
+    expect(pet.name).toBe("doggie");
   });
 });

@@ -378,6 +378,10 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     );
   }
 
+  function wrapResult(ex: ts.Expression) {
+    return opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
+  }
+
   // Parse ApiStub.ts so that we don't have to generate everything manually
   const stub = cg.parseFile(
     path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
@@ -603,15 +607,17 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
             methodParams,
             cg.block(
               ts.createReturn(
-                callOazapftsFunction(
-                  returnsJson ? "fetchJson" : "fetchText",
-                  args,
-                  returnsJson
-                    ? [
-                        getTypeFromResponses(responses!) ||
-                          ts.SyntaxKind.AnyKeyword,
-                      ]
-                    : undefined
+                wrapResult(
+                  callOazapftsFunction(
+                    returnsJson ? "fetchJson" : "fetchText",
+                    args,
+                    returnsJson
+                      ? [
+                          getTypeFromResponses(responses!) ||
+                            ts.SyntaxKind.AnyKeyword,
+                        ]
+                      : undefined
+                  )
                 )
               )
             )

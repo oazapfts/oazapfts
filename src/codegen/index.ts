@@ -10,6 +10,7 @@ export { cg };
 export type Opts = {
   include?: string[];
   exclude?: string[];
+  optimistic?: boolean;
 };
 
 export function generateAst(spec: OpenAPIV3.Document, opts: Opts) {

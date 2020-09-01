@@ -146,6 +146,10 @@ const api = optimistic(rawApi);
 const pet = await api.getPetById(1);
 ```
 
+### CLI
+
+Since version 3.1.0 you can also use the `--optimistic` flag on the command line to generate an optimistic API by default.
+
 ## About the name
 
 The name comes from a combination of syllables **oa** (OpenAPI) and **ts** (TypeScript) and is [pronounced 🗣](https://youtu.be/chvb-K95rBE) like the Bavarian _O'zapt'is!_ (it's tapped), the famous words that mark the beginning of the Oktoberfest.
