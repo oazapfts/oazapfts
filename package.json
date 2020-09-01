@@ -23,28 +23,28 @@
   "license": "MIT",
   "repository": "cellular/oazapfts",
   "devDependencies": {
-    "@types/jest": "^26.0.3",
-    "@types/lodash": "^4.14.157",
+    "@types/jest": "^26.0.12",
+    "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^14.0.14",
+    "@types/node": "^14.6.2",
     "form-data": "^3.0.0",
     "husky": "^4.2.5",
-    "jest": "^26.1.0",
-    "lint-staged": "^10.2.11",
+    "jest": "^26.4.2",
+    "lint-staged": "^10.2.13",
     "node-fetch": "^2.6.0",
-    "open-api-mocker": "^1.3.1",
+    "open-api-mocker": "^1.4.0",
     "openapi-types": "^1.3.5",
-    "prettier": "^2.0.5",
-    "ts-jest": "^26.1.1",
+    "prettier": "^2.1.1",
+    "ts-jest": "^26.3.0",
     "ts-node": "^8.10.2",
     "with-server": "^1.1.0"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^9.0.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.20",
     "minimist": "^1.2.5",
-    "swagger2openapi": "^6.0.3",
-    "typescript": "^3.9.5"
+    "swagger2openapi": "^6.2.3",
+    "typescript": "^3.9.7"
   },
   "husky": {
     "hooks": {
