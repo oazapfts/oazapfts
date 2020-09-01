@@ -320,14 +320,18 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
   function getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
     return ts.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
+        const statusType =
+          code === "default"
+            ? cg.keywordType.number
+            : ts.createLiteralTypeNode(ts.createNumericLiteral(code));
+
         const props = [
           cg.createPropertySignature({
             name: "status",
-            type: ts.createLiteralTypeNode(
-              ts.createNumericLiteral(code.toString())
-            ),
+            type: statusType,
           }),
         ];
+
         const dataType = getTypeFromResponse(res);
         if (dataType !== cg.keywordType.void) {
           props.push(
