@@ -34,7 +34,7 @@ export async function handle<
   const statusHandler = (handler as any)[status];
   if (statusHandler) return statusHandler(data);
   if (handler.default) return handler.default(status, data);
-  throw new Error(`Unhandled status code: ${status}`);
+  throw new HttpError(status, data);
 }
 
 const SUCCESS_CODES = [200, 201, 202, 204] as const;
@@ -73,13 +73,32 @@ export type OkResponse<T extends ApiFunction> = SuccessResponse<
   AsyncReturnType<T>
 >;
 
+type Okify<T extends ApiFunction> = (
+  ...args: Args<T>
+) => Promise<OkResponse<T>>;
+
 /**
  * Utility function to wrap an API function with `ok(...)`.
  */
-export function okify<T extends ApiFunction>(
-  fn: T
-): (...args: Args<T>) => Promise<OkResponse<T>> {
+export function okify<T extends ApiFunction>(fn: T): Okify<T> {
   return (...args: Args<T>) => ok(fn(...args));
+}
+
+type OptimisticApi<T> = {
+  [K in keyof T]: T[K] extends ApiFunction ? Okify<T[K]> : T[K];
+};
+
+/**
+ * Utility to `okify` each function of an API.
+ */
+export function optimistic<T extends Record<string, ApiFunction | unknown>>(
+  api: T
+): OptimisticApi<T> {
+  const okApi: any = {};
+  Object.entries(api).forEach(([key, value]) => {
+    okApi[key] = typeof value === "function" ? okify(value as any) : value;
+  });
+  return okApi;
 }
 
 export class HttpError extends Error {

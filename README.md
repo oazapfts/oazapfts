@@ -86,14 +86,47 @@ In this case the `data` property is typed as `Pet|string`. We can use a type gua
 const res = await api.getPetById(1);
 if (res.status === 200) {
   const pet = res.data;
-  // ...
-} else {
+  // pet is properly typed as Pet
+}
+if (res.status === 404) {
   const message = res.data;
+  // message is a string
+} else {
   // handle the error
 }
 ```
 
-Alternatively we can use the `ok`-helper provided by oazapfts:
+The above code can be simplified by using the `handle` helper:
+
+```ts
+import { handle } from "oazapfts";
+
+await handle(api.getPetById(1), {
+  200(pet) {
+    // pet is properly typed as Pet
+  },
+  404(message) {
+    // message is as string
+  },
+});
+```
+
+The helper will throw an `HttpError` error for any unhanled status code unless you add a `default` handler:
+
+```ts
+await handle(api.getPetById(1), {
+  200(pet) {
+    // ...
+  },
+  default(status, data) {
+    // handle error
+  },
+});
+```
+
+## Optimistic APIs
+
+Instead of handling errors right in place we can also use the `ok` helper:
 
 ```ts
 import { ok } from "oazapfts";
@@ -102,6 +135,16 @@ const pet = await ok(api.getPetById(1));
 ```
 
 With this pattern `pet` will be typed as `Pet` and a `HttpError` will be thrown in case of an error.
+
+You can even turn your whole API into an optimistic one:
+
+```ts
+import { optimistic } from "oazapfts";
+import * as rawApi from "./api.ts";
+
+const api = optimistic(rawApi);
+const pet = await api.getPetById(1);
+```
 
 ## About the name
 
