@@ -57,7 +57,18 @@ export type User = {
  * Update an existing pet
  */
 export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchText("/pet", oazapfts.json({
+    return oazapfts.fetchJson<{
+        status: 204;
+        data: string;
+    } | {
+        status: 404;
+        data: string;
+    } | {
+        status: number;
+        data: {
+            errors?: string[];
+        };
+    }>("/pet", oazapfts.json({
         ...opts,
         method: "PUT",
         body: pet
@@ -67,7 +78,15 @@ export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
  * Add a new pet to the store
  */
 export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchText("/pet", oazapfts.json({
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Pet;
+    } | {
+        status: 201;
+        data: {
+            id?: string;
+        };
+    }>("/pet", oazapfts.json({
         ...opts,
         method: "POST",
         body: pet

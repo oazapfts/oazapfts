@@ -1,5 +1,4 @@
-import fs from "fs";
-import { ok, handle } from "oazapfts/lib/index";
+import { ok, handle, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
@@ -7,7 +6,7 @@ api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 (global as any).fetch = require("node-fetch");
 (global as any).FormData = require("form-data");
 
-describe("petstore", () => {
+describe("ok", () => {
   it("should get pets by id", async () => {
     const pet = await ok(api.getPetById(1));
     expect(pet).toMatchObject({ id: 1, name: "doggie" });
@@ -20,7 +19,7 @@ describe("petstore", () => {
     expect(promise).rejects.toHaveProperty("status", 404);
   });
 
-  it("should place an order", async () => {
+  it("should post json", async () => {
     const order = await ok(
       api.placeOrder({
         petId: 1,
@@ -34,12 +33,53 @@ describe("petstore", () => {
     });
   });
 
-  it.skip("should upload files", async () => {
-    const res = await api.uploadFile(1, {
-      additionalMetadata: "test",
-      file: fs.readFileSync(__dirname + "/pet.jpg") as any,
+  it("should type response as Pet|string", async () => {
+    const pet = await ok(api.addPet({ name: "doggie", photoUrls: [] }));
+    //@ts-expect-error
+    expect(pet.name).toBe("doggie");
+  });
+});
+
+describe("handle", () => {
+  it("should call the matching handler", async () => {
+    const res = await handle(api.updatePet({ name: "Gizmo", photoUrls: [] }), {
+      204() {
+        return "204 called";
+      },
     });
-    console.log(res);
-    expect(res.status).toBe(200);
+    expect(res).toBe("204 called");
+  });
+
+  it("should call the default handler", async () => {
+    const res = await handle(
+      api.updatePet({} as any), // provoke 404 error
+      {
+        default(status, data) {
+          return "default called";
+        },
+      }
+    );
+    expect(res).toBe("default called");
+  });
+
+  it("should throw if status is unhandled", async () => {
+    const promise = handle(api.updatePet({ name: "Gizmo", photoUrls: [] }), {});
+    expect(promise).rejects.toHaveProperty("status", 204);
+  });
+});
+
+describe("okify", () => {
+  it("should okify a single function", async () => {
+    const getPetById = okify(api.getPetById);
+    const pet = await getPetById(1);
+    expect(pet).toMatchObject({ id: 1, name: "doggie" });
+  });
+});
+
+describe("optimistic", () => {
+  it("should okify all functions", async () => {
+    const optimisticApi = optimistic(api);
+    const pet = await optimisticApi.getPetById(1);
+    expect(pet).toMatchObject({ id: 1, name: "doggie" });
   });
 });
