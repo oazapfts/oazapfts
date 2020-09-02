@@ -53,6 +53,8 @@ export type User = {
     phone?: string;
     userStatus?: number;
 };
+export type Schema = string;
+export type Schema2 = number;
 /**
  * Update an existing pet
  */
@@ -345,5 +347,20 @@ export function customizePet({ furColor, color, xColorOptions }: {
             ...opts && opts.headers,
             "x-color-options": xColorOptions
         }
+    });
+}
+export function getIssue31({ foo, bar, baz, boo }: {
+    foo?: string;
+    bar?: Schema;
+    baz?: number;
+    boo?: Schema2;
+} = {}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/issue31${QS.query(QS.form({
+        foo,
+        bar,
+        baz,
+        boo
+    }))}`, {
+        ...opts
     });
 }

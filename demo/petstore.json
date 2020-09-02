@@ -878,6 +878,45 @@
           }
         }
       }
+    },
+    "/issue31": {
+      "get": {
+        "parameters": [
+          {
+            "name": "foo",
+            "schema": {
+              "$ref": "./string.yaml"
+            },
+            "in": "query"
+          },
+          {
+            "name": "bar",
+            "schema": {
+              "$ref": "./string.yaml"
+            },
+            "in": "query"
+          },
+          {
+            "name": "baz",
+            "schema": {
+              "$ref": "./number.yaml"
+            },
+            "in": "query"
+          },
+          {
+            "name": "boo",
+            "schema": {
+              "$ref": "./number.yaml"
+            },
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
     }
   },
   "components": {

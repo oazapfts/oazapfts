@@ -1,5 +1,7 @@
 import generate, { getOperationName } from "./generate";
 import { printAst } from "./index";
+import SwaggerParser from "@apidevtools/swagger-parser";
+import { OpenAPIV3 } from "openapi-types";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -19,14 +21,20 @@ describe("getOperationName", () => {
 
 describe("generate", () => {
   let artefact: string;
-  it("should generate an api", () => {
-    artefact = printAst(generate(require("../../demo/petstore.json")));
+  let spec: OpenAPIV3.Document;
+
+  beforeAll(async () => {
+    spec = (await SwaggerParser.bundle(
+      __dirname + "/../../demo/petstore.json"
+    )) as any;
+  });
+
+  it("should generate an api", async () => {
+    artefact = printAst(generate(spec));
   });
 
   /* https://github.com/cotype/build-client/issues/5 */
-  it("should generate same api a second time", () => {
-    expect(printAst(generate(require("../../demo/petstore.json")))).toBe(
-      artefact
-    );
+  it("should generate same api a second time", async () => {
+    expect(printAst(generate(spec))).toBe(artefact);
   });
 });

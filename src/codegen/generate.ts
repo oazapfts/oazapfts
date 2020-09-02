@@ -64,6 +64,15 @@ function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
   return obj && "$ref" in obj;
 }
 
+//See https://swagger.io/docs/specification/using-ref/
+function getReference(spec: any, ref: string) {
+  const path = ref
+    .slice(2)
+    .split("/")
+    .map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
+
+  return _.get(spec, path);
+}
 /**
  * If the given object is a ReferenceObject, return the last part of its path.
  */
@@ -163,11 +172,11 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith("#/")) {
-      // NOTE: This should never happen as we use SwaggerParser.bundle()
-      throw new Error(`External refs are not supported: ${ref}`);
+      throw new Error(
+        `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
+      );
     }
-    const path = ref.slice(2).split("/");
-    return _.get(spec, path) as T;
+    return getReference(spec, ref) as T;
   }
 
   function resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
@@ -187,7 +196,20 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
   }
 
   // Collect the types of all referenced schemas so we can export them later
-  const refs: { [ref: string]: ts.TypeReferenceNode } = {};
+  const refs: Record<string, ts.TypeReferenceNode> = {};
+
+  // Keep track of already used type aliases
+  const typeAliases: Record<string, number> = {};
+
+  function getUniqueAlias(name: string) {
+    let used = typeAliases[name] || 0;
+    if (used) {
+      typeAliases[name] = ++used;
+      name += used;
+    }
+    typeAliases[name] = 1;
+    return name;
+  }
 
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
@@ -197,8 +219,10 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     let ref = refs[$ref];
     if (!ref) {
       const schema = resolve<OpenAPIV3.SchemaObject>(obj);
+      const name = getUniqueAlias(
+        _.upperFirst(schema.title || $ref.replace(/.+\//, ""))
+      );
 
-      const name = schema.title || $ref.replace(/.+\//, "");
       ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
 
       const type = getTypeFromSchema(schema);
