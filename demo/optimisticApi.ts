@@ -349,14 +349,12 @@ export function customizePet({ furColor, color, xColorOptions }: {
         }
     }));
 }
-export function getIssue31({ foo, bar, baz, boo }: {
-    foo?: string;
+export function getIssue31ByFoo(foo: string, { bar, baz, boo }: {
     bar?: Schema;
     baz?: number;
     boo?: Schema2;
 } = {}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/issue31${QS.query(QS.form({
-        foo,
+    return oazapfts.ok(oazapfts.fetchText(`/issue31/${foo}${QS.query(QS.form({
         bar,
         baz,
         boo

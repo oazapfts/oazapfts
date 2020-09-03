@@ -69,9 +69,13 @@ function getReference(spec: any, ref: string) {
   const path = ref
     .slice(2)
     .split("/")
-    .map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
+    .map((s) => unescape(s.replace(/~1/g, "/").replace(/~0/g, "~")));
 
-  return _.get(spec, path);
+  const ret = _.get(spec, path);
+  if (typeof ret === "undefined") {
+    throw new Error(`Can't find ${path}`);
+  }
+  return ret;
 }
 /**
  * If the given object is a ReferenceObject, return the last part of its path.

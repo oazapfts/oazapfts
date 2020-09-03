@@ -879,7 +879,7 @@
         }
       }
     },
-    "/issue31": {
+    "/issue31/{foo}": {
       "get": {
         "parameters": [
           {
@@ -887,7 +887,8 @@
             "schema": {
               "$ref": "./string.yaml"
             },
-            "in": "query"
+            "in": "path",
+            "required": true
           },
           {
             "name": "bar",
