@@ -215,6 +215,10 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return name;
   }
 
+  function getRefBasename(ref: string): string {
+    return ref.replace(/.+\//, "");
+  }
+
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
@@ -224,7 +228,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     if (!ref) {
       const schema = resolve<OpenAPIV3.SchemaObject>(obj);
       const name = getUniqueAlias(
-        _.upperFirst(schema.title || $ref.replace(/.+\//, ""))
+        _.upperFirst(schema.title || getRefBasename($ref))
       );
 
       ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
@@ -239,6 +243,70 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       );
     }
     return ref;
+  }
+
+  function getUnionType(
+    variants: (OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject)[],
+    discriminator?: OpenAPIV3.DiscriminatorObject
+  ): ts.TypeNode {
+    if (discriminator) {
+      // oneOf + discriminator -> tagged union (polymorphism)
+      if (discriminator.propertyName === undefined) {
+        throw new Error("Discriminators require a propertyName");
+      }
+
+      // By default, the last component of the ref name (i.e., after the last trailing slash) is
+      // used as the discriminator value for each variant. This can be overridden using the
+      // discriminator.mapping property.
+      const mappedValues = new Set(
+        Object.values(discriminator.mapping || {}).map((ref) =>
+          getRefBasename(ref)
+        )
+      );
+
+      return ts.createUnionTypeNode(
+        ([
+          ...Object.entries(
+            discriminator.mapping || {}
+          ).map(([discriminatorValue, variantRef]) => [
+            discriminatorValue,
+            { $ref: variantRef },
+          ]),
+          ...variants
+            .filter((variant) => {
+              if (!isReference(variant)) {
+                // From the Swagger spec: "When using the discriminator, inline schemas will not be
+                // considered."
+                throw new Error(
+                  "Discriminators require references, not inline schemas"
+                );
+              }
+              return !mappedValues.has(getRefBasename(variant.$ref));
+            })
+            .map((schema) => [
+              getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
+              schema,
+            ]),
+        ] as [string, OpenAPIV3.ReferenceObject][]).map(
+          ([discriminatorValue, variant]) =>
+            // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
+            ts.createIntersectionTypeNode([
+              ts.createTypeLiteralNode([
+                cg.createPropertySignature({
+                  name: discriminator.propertyName,
+                  type: ts.createLiteralTypeNode(
+                    ts.createStringLiteral(discriminatorValue)
+                  ),
+                }),
+              ]),
+              getTypeFromSchema(variant),
+            ])
+        )
+      );
+    } else {
+      // oneOf -> untagged union
+      return ts.createUnionTypeNode(variants.map(getTypeFromSchema));
+    }
   }
 
   /**
@@ -269,7 +337,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
 
     if (schema.oneOf) {
       // oneOf -> union
-      return ts.createUnionTypeNode(schema.oneOf.map(getTypeFromSchema));
+      return getUnionType(schema.oneOf, schema.discriminator);
     }
     if (schema.anyOf) {
       // anyOf -> union
