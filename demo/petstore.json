@@ -1053,6 +1053,13 @@
             "type": "string",
             "description": "pet status in the store",
             "enum": ["available", "pending", "sold"]
+          },
+          "animal": {
+            "description": "Always true for a pet",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
           }
         },
         "xml": {
