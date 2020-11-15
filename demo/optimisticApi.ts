@@ -29,6 +29,7 @@ export type Pet = {
     photoUrls: string[];
     tags?: Tag[];
     status?: "available" | "pending" | "sold";
+    animal?: true;
 };
 export type ApiResponse = {
     code?: number;

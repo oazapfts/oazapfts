@@ -361,11 +361,11 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     }
     if (schema.enum) {
       // enum -> union of literal types
-      const types = schema.enum.map((s) =>
-        s === null
-          ? cg.keywordType.null
-          : ts.createLiteralTypeNode(ts.createStringLiteral(s))
-      );
+      const types = schema.enum.map((s) => {
+        if (s === null) return cg.keywordType.null;
+        if (typeof s === "boolean") return s ? ts.createTrue() : ts.createFalse();
+        return ts.createLiteralTypeNode(ts.createStringLiteral(s));
+      });
       return types.length > 1 ? ts.createUnionTypeNode(types) : types[0];
     }
     if (schema.format == "binary") {
