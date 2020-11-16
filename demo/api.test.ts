@@ -86,7 +86,7 @@ describe("optimistic", () => {
   });
 });
 
-describe.only("--optimistic", () => {
+describe("--optimistic", () => {
   it("should get pets by id", async () => {
     const pet = await optimisticApi.getPetById(1);
     expect(pet).toMatchObject({ id: 1, name: "doggie" });
