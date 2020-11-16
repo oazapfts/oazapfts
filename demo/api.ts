@@ -146,7 +146,7 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
 /**
  * Updates a pet in the store with form data
  */
-export function updatePetWithForm(petId: number, body: {
+export function updatePetWithForm(petId: number, body?: {
     name?: string;
     status?: string;
 }, opts?: Oazapfts.RequestOpts) {
@@ -174,7 +174,7 @@ export function deletePet(petId: number, { apiKey }: {
 /**
  * uploads an image
  */
-export function uploadFile(petId: number, body: {
+export function uploadFile(petId: number, body?: {
     additionalMetadata?: string;
     file?: Blob;
 }, opts?: Oazapfts.RequestOpts) {

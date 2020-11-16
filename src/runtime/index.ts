@@ -13,13 +13,13 @@ type FetchRequestOpts = RequestOpts & {
 };
 
 type JsonRequestOpts = RequestOpts & {
-  body: object;
+  body?: object;
 };
 
 export type ApiResponse = { status: number; data?: any };
 
 type MultipartRequestOpts = RequestOpts & {
-  body: Record<string, string | Blob | undefined | any>;
+  body?: Record<string, string | Blob | undefined | any>;
 };
 
 export function runtime(defaults: RequestOpts) {
@@ -70,7 +70,7 @@ export function runtime(defaults: RequestOpts) {
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {
         ...req,
-        body: JSON.stringify(body),
+        ...(body && { body: JSON.stringify(body) }),
         headers: {
           ...headers,
           "Content-Type": "application/json",
@@ -81,7 +81,7 @@ export function runtime(defaults: RequestOpts) {
     form({ body, headers, ...req }: JsonRequestOpts) {
       return {
         ...req,
-        body: qs.form(body),
+        ...(body && { body: qs.form(body) }),
         headers: {
           ...headers,
           "Content-Type": "application/x-www-form-urlencoded",
@@ -90,6 +90,7 @@ export function runtime(defaults: RequestOpts) {
     },
 
     multipart({ body, ...req }: MultipartRequestOpts) {
+      if (!body) return req;
       const data = new FormData();
       Object.entries(body).forEach(([name, value]) => {
         data.append(name, value);
