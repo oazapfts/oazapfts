@@ -579,6 +579,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
         methodParams.push(
           cg.createParameter(bodyVar, {
             type,
+            questionToken: !body.required
           })
         );
       }
