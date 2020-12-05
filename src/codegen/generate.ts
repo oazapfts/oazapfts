@@ -7,7 +7,7 @@ import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
 import { threadId } from "worker_threads";
 
-const verbs = [
+export const verbs = [
   "GET",
   "PUT",
   "POST",
@@ -18,7 +18,7 @@ const verbs = [
   "TRACE",
 ];
 
-const contentTypes = {
+export const contentTypes = {
   "*/*": "json",
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
@@ -28,14 +28,14 @@ const contentTypes = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
+export function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   if (style === "deepObject") return "deep";
   return explode ? "explode" : "form";
 }
 
-function getOperationIdentifier(id?: string) {
+export function getOperationIdentifier(id?: string) {
   if (!id) return;
   if (id.match(/[^\w\s]/)) return;
   id = _.camelCase(id);
@@ -57,16 +57,16 @@ export function getOperationName(
   return _.camelCase(`${verb} ${path}`);
 }
 
-function isNullable(schema: any) {
+export function isNullable(schema: any) {
   return !!(schema && schema.nullable);
 }
 
-function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
+export function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
   return obj && "$ref" in obj;
 }
 
 //See https://swagger.io/docs/specification/using-ref/
-function getReference(spec: any, ref: string) {
+export function getReference(spec: any, ref: string) {
   const path = ref
     .slice(2)
     .split("/")
@@ -81,7 +81,7 @@ function getReference(spec: any, ref: string) {
 /**
  * If the given object is a ReferenceObject, return the last part of its path.
  */
-function getReferenceName(obj: any) {
+export function getReferenceName(obj: any) {
   if (isReference(obj)) {
     return _.camelCase(obj.$ref.split("/").slice(-1)[0]);
   }
@@ -92,7 +92,7 @@ function getReferenceName(obj: any) {
  * Curly braces in the path are turned into identifier expressions,
  * which are read from the local scope during runtime.
  */
-function createUrlExpression(path: string, qs?: ts.Expression) {
+export function createUrlExpression(path: string, qs?: ts.Expression) {
   const spans: Array<{ expression: ts.Expression; literal: string }> = [];
   // Use a replacer function to collect spans as a side effect:
   const head = path.replace(
@@ -113,7 +113,7 @@ function createUrlExpression(path: string, qs?: ts.Expression) {
 /**
  * Create a call expression for one of the QS runtime functions.
  */
-function callQsFunction(name: string, args: ts.Expression[]) {
+export function callQsFunction(name: string, args: ts.Expression[]) {
   return cg.createCall(
     ts.createPropertyAccess(ts.createIdentifier("QS"), name),
     { args }
@@ -123,7 +123,7 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 /**
  * Create a call expression for one of the oazapfts runtime functions.
  */
-function callOazapftsFunction(
+export function callOazapftsFunction(
   name: string,
   args: ts.Expression[],
   typeArgs?: ts.TypeNode[]
@@ -139,7 +139,7 @@ function callOazapftsFunction(
  * deeply nested objects. As a workaround we detect parameters that contain
  * square brackets and merge them into a single object.
  */
-function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
+export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
   const res: OpenAPIV3.ParameterObject[] = [];
   const merged: any = {};
   params.forEach((p) => {
