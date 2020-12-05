@@ -5,6 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
+import { threadId } from "worker_threads";
 
 const verbs = [
   "GET",
@@ -174,6 +175,18 @@ export default class ApiGenerator {
 
   private aliases: ts.TypeAliasDeclaration[] = [];
 
+  // Collect the types of all referenced schemas so we can export them later
+  private refs: Record<string, ts.TypeReferenceNode> = {};
+
+  // Keep track of already used type aliases
+  private typeAliases: Record<string, number> = {};
+
+  reset() {
+    this.aliases = [];
+    this.refs = {};
+    this.typeAliases = {};
+  }
+
   resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
@@ -200,12 +213,6 @@ export default class ApiGenerator {
     }
     return false;
   }
-
-  // Collect the types of all referenced schemas so we can export them later
-  private refs: Record<string, ts.TypeReferenceNode> = {};
-
-  // Keep track of already used type aliases
-  private typeAliases: Record<string, number> = {};
 
   getUniqueAlias(name: string) {
     let used = this.typeAliases[name] || 0;
@@ -486,6 +493,8 @@ export default class ApiGenerator {
   }
 
   generateApi() {
+    this.reset();
+
     // Parse ApiStub.ts so that we don't have to generate everything manually
     const stub = cg.parseFile(
       path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
