@@ -1,23 +1,23 @@
 import _ from "lodash";
 import * as cg from "./tscodegen";
-import ts, { TypeNode, TemplateLiteral } from "typescript";
+import ts, { TypeNode, TemplateLiteral, factory } from "typescript";
 import { OpenAPIV3 } from "openapi-types";
 
 function createLiteral(v: string | boolean | number) {
   switch (typeof v) {
     case "string":
-      return ts.createStringLiteral(v);
+      return factory.createStringLiteral(v);
     case "boolean":
-      return v ? ts.createTrue() : ts.createFalse();
+      return v ? factory.createTrue() : factory.createFalse();
     case "number":
-      return ts.createNumericLiteral(String(v));
+      return factory.createNumericLiteral(String(v));
   }
 }
 
 function createUnion(strs: (string | boolean | number)[]): TypeNode[] {
   return strs.map(
     (e): TypeNode => {
-      return ts.createLiteralTypeNode(createLiteral(e));
+      return factory.createLiteralTypeNode(createLiteral(e));
     }
   );
 }
@@ -25,16 +25,19 @@ function createUnion(strs: (string | boolean | number)[]): TypeNode[] {
 function createTemplate(url: string): TemplateLiteral {
   const tokens = url.split(/{([\s\S]+?)}/g);
   const chunks = _.chunk(tokens.slice(1), 2);
-  return ts.createTemplateExpression(ts.createTemplateHead(tokens[0]), [
-    ...chunks.map(([expression, literal], i) => {
-      return ts.createTemplateSpan(
-        ts.createIdentifier(expression),
-        (i === chunks.length - 1
-          ? ts.createTemplateTail
-          : ts.createTemplateMiddle)(literal)
-      );
-    }),
-  ]);
+  return factory.createTemplateExpression(
+    factory.createTemplateHead(tokens[0]),
+    [
+      ...chunks.map(([expression, literal], i) => {
+        return factory.createTemplateSpan(
+          factory.createIdentifier(expression),
+          (i === chunks.length - 1
+            ? factory.createTemplateTail
+            : factory.createTemplateMiddle)(literal)
+        );
+      }),
+    ]
+  );
 }
 
 function createServerFunction(
@@ -52,13 +55,13 @@ function createServerFunction(
         })
       ),
       {
-        type: ts.createTypeLiteralNode(
+        type: factory.createTypeLiteralNode(
           Object.entries(vars || {}).map(([name, value]) => {
             return cg.createPropertySignature({
               name,
               type: value.enum
-                ? ts.createUnionTypeNode(createUnion(value.enum))
-                : ts.createUnionTypeNode([
+                ? factory.createUnionTypeNode(createUnion(value.enum))
+                : factory.createUnionTypeNode([
                     cg.keywordType.string,
                     cg.keywordType.number,
                     cg.keywordType.boolean,
@@ -76,7 +79,7 @@ function createServerFunction(
 function generateServerExpression(server: OpenAPIV3.ServerObject) {
   return server.variables
     ? createServerFunction(server.url, server.variables)
-    : ts.createStringLiteral(server.url);
+    : factory.createStringLiteral(server.url);
 }
 
 function defaultUrl(server?: OpenAPIV3.ServerObject) {
@@ -89,7 +92,7 @@ function defaultUrl(server?: OpenAPIV3.ServerObject) {
 }
 
 export function defaultBaseUrl(servers: OpenAPIV3.ServerObject[]) {
-  return ts.createStringLiteral(defaultUrl(servers[0]));
+  return factory.createStringLiteral(defaultUrl(servers[0]));
 }
 
 function serverName(server: OpenAPIV3.ServerObject, index: number) {
