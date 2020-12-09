@@ -219,6 +219,8 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return ref.replace(/.+\//, "");
   }
 
+  const removeChars = ['\/', '.', '-'] as const
+
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
@@ -227,8 +229,11 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     let ref = refs[$ref];
     if (!ref) {
       const schema = resolve<OpenAPIV3.SchemaObject>(obj);
+
       const name = getUniqueAlias(
-        _.upperFirst(schema.title || getRefBasename($ref))
+        _.upperFirst(
+          (schema.title || getRefBasename($ref)).split(new RegExp(`[${removeChars.join('|')}]`)).map((s, i) => `${i === 0 ? '' : '__'}${s.charAt(0).toUpperCase()}${s.slice(1)}`).join('')
+        )
       );
 
       ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
