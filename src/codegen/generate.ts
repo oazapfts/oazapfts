@@ -177,15 +177,18 @@ export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
  * Main entry point that generates TypeScript code from a given API spec.
  */
 export default class ApiGenerator {
-  constructor(private spec: OpenAPIV3.Document, private opts: Opts = {}) {}
+  constructor(
+    public readonly spec: OpenAPIV3.Document,
+    public readonly opts: Opts = {}
+  ) {}
 
-  private aliases: ts.TypeAliasDeclaration[] = [];
+  aliases: ts.TypeAliasDeclaration[] = [];
 
   // Collect the types of all referenced schemas so we can export them later
-  private refs: Record<string, ts.TypeReferenceNode> = {};
+  refs: Record<string, ts.TypeReferenceNode> = {};
 
   // Keep track of already used type aliases
-  private typeAliases: Record<string, number> = {};
+  typeAliases: Record<string, number> = {};
 
   reset() {
     this.aliases = [];
@@ -514,9 +517,10 @@ export default class ApiGenerator {
 
     // ApiStub contains `const servers = {}`, find it ...
     const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
-    (servers as any) /*hack?*/.initializer = generateServers(
-      this.spec.servers || []
-    );
+    // servers.initializer is readonly, this might break in a future TS version, but works fine for now.
+    Object.assign(servers, {
+      initializer: generateServers(this.spec.servers || []),
+    });
 
     const { initializer } = cg.findFirstVariableDeclaration(
       stub.statements,
@@ -768,10 +772,12 @@ export default class ApiGenerator {
       });
     });
 
-    (stub as any) /*hack*/.statements = cg.appendNodes(
-      stub.statements,
-      ...[...this.aliases, ...functions]
-    );
+    Object.assign(stub, {
+      statements: cg.appendNodes(
+        stub.statements,
+        ...[...this.aliases, ...functions]
+      ),
+    });
 
     return stub;
   }

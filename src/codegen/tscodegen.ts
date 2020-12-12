@@ -317,20 +317,17 @@ export function createPropertySignature({
   name,
   questionToken,
   type,
-}: // initializer,
-{
+}: {
   modifiers?: Array<ts.Modifier>;
   name: ts.PropertyName | string;
   questionToken?: ts.QuestionToken | boolean;
   type?: ts.TypeNode;
-  //initializer?: ts.Expression;
 }) {
   return factory.createPropertySignature(
     modifiers,
     propertyName(name),
     createQuestionToken(questionToken),
     type
-    //initializer
   );
 }
 
@@ -444,7 +441,8 @@ export function changePropertyValue(
     (p) => ts.isPropertyAssignment(p) && getName(p.name) === property
   );
   if (p && ts.isPropertyAssignment(p)) {
-    (p as any) /* is this hack okay? */.initializer = value;
+    // p.initializer is readonly, this might break in a future TS version, but works fine for now.
+    Object.assign(p, { initializer: value });
   } else {
     throw new Error(`No such property: ${property}`);
   }
