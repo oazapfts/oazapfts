@@ -22,8 +22,6 @@ const contentTypes = {
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
-  // XXX don’t really know what the value is used for?
-  "application/octet-stream": "binary"
 };
 
 /**
@@ -723,7 +721,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
                   callOazapftsFunction(
                     returnsJson ? "fetchJson" : (returnsBinary ? "fetchBlob" : "fetchText"),
                     args,
-                    returnsJson || returnsBinary
+                    returnsJson
                       ? [
                           getTypeFromResponses(responses!) ||
                             ts.SyntaxKind.AnyKeyword,
