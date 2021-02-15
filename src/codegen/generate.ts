@@ -461,16 +461,24 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       );
   }
 
-  function hasBinaryContent(responses?: OpenAPIV3.ResponsesObject) {
+  function hasTextContent(responses?: OpenAPIV3.ResponsesObject) {
     if (!responses) return false;
     return Object.values(responses)
       .map(resolve)
       .some(
         (res) =>
-          // for sure, there are further types
-          // https://stackoverflow.com/a/20509354
-          !!_.get(res, ["content", "application/octet-stream"])
-      );
+          Object.keys(res.content ?? []).some((type) => type.startsWith("text/"))
+      );    
+  }
+
+  function hasContent(responses?: OpenAPIV3.ResponsesObject) {
+    if (!responses) return false;
+    return Object.values(responses)
+      .map(resolve)
+      .map(
+        (res) => 
+          Object.keys(res.content ?? []).length)
+            .reduce((current, previous) => current + previous, 0)
   }
 
   function getSchemaFromContent(content: any) {
@@ -631,7 +639,8 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // Next, build the method body...
 
       const returnsJson = hasJsonContent(responses);
-      const returnsBinary = hasBinaryContent(responses);
+      const returnsText = hasTextContent(responses);
+      const returnsContent = hasContent(responses);
       const query = parameters.filter((p) => p.in === "query");
       const header = parameters
         .filter((p) => p.in === "header")
@@ -719,7 +728,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
               ts.createReturn(
                 wrapResult(
                   callOazapftsFunction(
-                    returnsJson ? "fetchJson" : (returnsBinary ? "fetchBlob" : "fetchText"),
+                    returnsJson ? "fetchJson" : ((returnsText || !returnsContent) ? "fetchText" : "fetchBlob"),
                     args,
                     returnsJson
                       ? [
