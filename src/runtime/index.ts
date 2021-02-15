@@ -24,15 +24,7 @@ type MultipartRequestOpts = RequestOpts & {
 
 export function runtime(defaults: RequestOpts) {
   async function fetchText(url: string, req?: FetchRequestOpts) {
-    const { baseUrl, headers, fetch: customFetch, ...init } = {
-      ...defaults,
-      ...req,
-    };
-    const href = joinUrl(baseUrl, url);
-    const res = await (customFetch || fetch)(href, {
-      ...init,
-      headers: stripUndefined({ ...defaults.headers, ...headers }),
-    });
+    const res = await doFetch(url, req);
     let data;
     try {
       data = await res.text();
@@ -62,8 +54,19 @@ export function runtime(defaults: RequestOpts) {
     return { status, data } as T;
   }
 
-  // TODO deduplicate this a bit more
   async function fetchBlob(
+    url: string,
+    req: FetchRequestOpts = {}
+  ) {
+    const res = await doFetch(url, req);
+    let data;
+    try {
+      data = await res.blob();
+    } catch (err) {}
+    return { status: res.status, data };
+  }
+
+  async function doFetch(
     url: string,
     req: FetchRequestOpts = {}
   ) {
@@ -76,11 +79,7 @@ export function runtime(defaults: RequestOpts) {
       ...init,
       headers: stripUndefined({ ...defaults.headers, ...headers }),
     });
-    let data;
-    try {
-      data = await res.blob();
-    } catch (err) {}
-    return { status: res.status, data };
+    return res;    
   }
 
   return {
