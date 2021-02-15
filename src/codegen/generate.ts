@@ -450,35 +450,33 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return getTypeFromSchema(getSchemaFromContent(res.content));
   }
 
-  function hasJsonContent(responses?: OpenAPIV3.ResponsesObject) {
-    if (!responses) return false;
-    return Object.values(responses)
-      .map(resolve)
-      .some(
-        (res) =>
-          !!_.get(res, ["content", "application/json"]) ||
-          !!_.get(res, ["content", "*/*"])
-      );
-  }
+  function getResponseType(responses?: OpenAPIV3.ResponsesObject): 'json' | 'text' | 'blob' {
+    // backwards-compatibility
+    if (!responses) return 'text';
+   
+    const resolvedResponses = Object.values(responses).map(resolve);
 
-  function hasTextContent(responses?: OpenAPIV3.ResponsesObject) {
-    if (!responses) return false;
-    return Object.values(responses)
-      .map(resolve)
-      .some(
-        (res) =>
-          Object.keys(res.content ?? []).some((type) => type.startsWith("text/"))
-      );    
-  }
+    // if no content is specified, assume `text` (backwards-compatibility)
+    if (!resolvedResponses.some((res) =>
+      Object.keys(res.content ?? []).length > 0)) {
+      return 'text';
+    }
 
-  function hasContent(responses?: OpenAPIV3.ResponsesObject) {
-    if (!responses) return false;
-    return Object.values(responses)
-      .map(resolve)
-      .map(
-        (res) => 
-          Object.keys(res.content ?? []).length)
-            .reduce((current, previous) => current + previous, 0)
+    // if there’s `application/json` or `*/*`, assume `json`
+    if (resolvedResponses.some((res) =>
+      !!_.get(res, ["content", "application/json"]) ||
+      !!_.get(res, ["content", "*/*"]))) {
+      return 'json';
+    }
+
+    // if there’s `text/*`, assume `text`
+    if (resolvedResponses.some((res) =>
+      Object.keys(res.content ?? []).some((type) => type.startsWith("text/")))) {
+      return 'text';
+    }
+
+    // for the rest, assume `blob`
+    return 'blob';
   }
 
   function getSchemaFromContent(content: any) {
@@ -638,9 +636,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
 
       // Next, build the method body...
 
-      const returnsJson = hasJsonContent(responses);
-      const returnsText = hasTextContent(responses);
-      const returnsContent = hasContent(responses);
+      const returnType = getResponseType(responses);
       const query = parameters.filter((p) => p.in === "query");
       const header = parameters
         .filter((p) => p.in === "header")
@@ -728,9 +724,9 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
               ts.createReturn(
                 wrapResult(
                   callOazapftsFunction(
-                    returnsJson ? "fetchJson" : ((returnsText || !returnsContent) ? "fetchText" : "fetchBlob"),
+                    { json: 'fetchJson', text: 'fetchText', blob: 'fetchBlob' }[returnType],
                     args,
-                    returnsJson
+                    returnType === 'json'
                       ? [
                           getTypeFromResponses(responses!) ||
                             ts.SyntaxKind.AnyKeyword,
