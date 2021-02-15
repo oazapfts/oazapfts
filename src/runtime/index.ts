@@ -62,10 +62,32 @@ export function runtime(defaults: RequestOpts) {
     return { status, data } as T;
   }
 
+  // TODO deduplicate this a bit more
+  async function fetchBlob(
+    url: string,
+    req: FetchRequestOpts = {}
+  ) {
+    const { baseUrl, headers, fetch: customFetch, ...init } = {
+      ...defaults,
+      ...req,
+    };
+    const href = joinUrl(baseUrl, url);
+    const res = await (customFetch || fetch)(href, {
+      ...init,
+      headers: stripUndefined({ ...defaults.headers, ...headers }),
+    });
+    let data;
+    try {
+      data = await res.blob();
+    } catch (err) {}
+    return { status: res.status, data };
+  }
+
   return {
     ok,
     fetchText,
     fetchJson,
+    fetchBlob,
 
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {

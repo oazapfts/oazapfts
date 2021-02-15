@@ -38,3 +38,18 @@ describe("generate", () => {
     expect(printAst(generate(spec))).toBe(artefact);
   });
 });
+
+describe('generate with blob download', () => {
+  let spec: OpenAPIV3.Document;
+
+  beforeAll(async () => {
+    spec = (await SwaggerParser.bundle(
+      __dirname + "/../../demo/binary.json"
+    )) as any;
+  });
+
+  it('should generate an api using fetchBlob', async () => {
+    const artefact = printAst(generate(spec));
+    expect(artefact).toContain('data: Blob;');
+  });
+});

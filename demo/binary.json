@@ -1,0 +1,43 @@
+{
+  "info": {
+    "title": "example with binary data download",
+    "version": "0.0.1"
+  },
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/file/{fileId}/download": {
+      "get": {
+        "operationId": "DownloadFile",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get the content of a file.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

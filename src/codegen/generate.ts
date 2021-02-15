@@ -22,6 +22,8 @@ const contentTypes = {
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
+  // XXX don’t really know what the value is used for?
+  "application/octet-stream": "binary"
 };
 
 /**
@@ -461,6 +463,18 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       );
   }
 
+  function hasBinaryContent(responses?: OpenAPIV3.ResponsesObject) {
+    if (!responses) return false;
+    return Object.values(responses)
+      .map(resolve)
+      .some(
+        (res) =>
+          // for sure, there are further types
+          // https://stackoverflow.com/a/20509354
+          !!_.get(res, ["content", "application/octet-stream"])
+      );
+  }
+
   function getSchemaFromContent(content: any) {
     const contentType = Object.keys(contentTypes).find((t) => t in content);
     let schema;
@@ -619,6 +633,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // Next, build the method body...
 
       const returnsJson = hasJsonContent(responses);
+      const returnsBinary = hasBinaryContent(responses);
       const query = parameters.filter((p) => p.in === "query");
       const header = parameters
         .filter((p) => p.in === "header")
@@ -706,9 +721,9 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
               ts.createReturn(
                 wrapResult(
                   callOazapftsFunction(
-                    returnsJson ? "fetchJson" : "fetchText",
+                    returnsJson ? "fetchJson" : (returnsBinary ? "fetchBlob" : "fetchText"),
                     args,
-                    returnsJson
+                    returnsJson || returnsBinary
                       ? [
                           getTypeFromResponses(responses!) ||
                             ts.SyntaxKind.AnyKeyword,
