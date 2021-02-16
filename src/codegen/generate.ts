@@ -22,8 +22,6 @@ const contentTypes = {
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
-  // FIXME need to cover additional cases here
-  "application/octet-stream": "binary"
 };
 
 /**
@@ -487,11 +485,20 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     if (contentType) {
       schema = _.get(content, [contentType, "schema"]);
     }
-    return (
-      schema || {
-        type: "string",
-      }
-    );
+    if (schema) {
+      return schema;
+    }
+    
+    // if no content is specified -> string
+    // `text/*` -> string
+    if (
+      Object.keys(content).length === 0 || 
+      Object.keys(content).some(type => type.startsWith("text/"))) {
+      return { type: "string" };
+    }
+
+    // rest (e.g. `application/octet-stream`, `application/gzip`, …) -> binary
+    return { type: "string", format: "binary" };
   }
 
   function wrapResult(ex: ts.Expression) {
