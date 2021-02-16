@@ -22,6 +22,8 @@ const contentTypes = {
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
+  // FIXME need to cover additional cases here
+  "application/octet-stream": "binary"
 };
 
 /**
@@ -726,7 +728,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
                   callOazapftsFunction(
                     { json: 'fetchJson', text: 'fetchText', blob: 'fetchBlob' }[returnType],
                     args,
-                    returnType === 'json'
+                    returnType === 'json' || returnType === 'blob'
                       ? [
                           getTypeFromResponses(responses!) ||
                             ts.SyntaxKind.AnyKeyword,

@@ -50,6 +50,7 @@ describe('generate with blob download', () => {
 
   it('should generate an api using fetchBlob', async () => {
     const artefact = printAst(generate(spec));
-    expect(artefact).toContain('return oazapfts.fetchBlob(`/file/${fileId}/download`');
+    const oneLine = artefact.replace(/\s+/g, ' ');
+    expect(oneLine).toContain('return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${fileId}/download`, { ...opts });');
   });
 });

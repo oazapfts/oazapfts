@@ -54,7 +54,7 @@ export function runtime(defaults: RequestOpts) {
     return { status, data } as T;
   }
 
-  async function fetchBlob(
+  async function fetchBlob<T extends ApiResponse>(
     url: string,
     req: FetchRequestOpts = {}
   ) {
@@ -63,7 +63,7 @@ export function runtime(defaults: RequestOpts) {
     try {
       data = await res.blob();
     } catch (err) {}
-    return { status: res.status, data };
+    return { status: res.status, data } as T;
   }
 
   async function doFetch(
