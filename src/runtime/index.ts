@@ -5,6 +5,7 @@ import { ok } from "../";
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
+  formDataConstructor?: new () => FormData;
   headers?: Record<string, string | undefined>;
 } & Omit<RequestInit, "body" | "headers">;
 
@@ -110,9 +111,9 @@ export function runtime(defaults: RequestOpts) {
       };
     },
 
-    multipart({ body, ...req }: MultipartRequestOpts) {
+    multipart({ body, formDataConstructor, ...req }: MultipartRequestOpts) {
       if (!body) return req;
-      const data = new FormData();
+      const data = new (formDataConstructor ?? FormData)();
       Object.entries(body).forEach(([name, value]) => {
         data.append(name, value);
       });
