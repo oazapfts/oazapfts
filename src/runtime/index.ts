@@ -113,7 +113,7 @@ export function runtime(defaults: RequestOpts) {
 
     multipart({ body, ...req }: MultipartRequestOpts) {
       if (!body) return req;
-      const data = new (defaults.formDataConstructor ?? req.formDataConstructor ?? FormData)();
+      const data = new (defaults.formDataConstructor || req.formDataConstructor || FormData)();
       Object.entries(body).forEach(([name, value]) => {
         data.append(name, value);
       });
