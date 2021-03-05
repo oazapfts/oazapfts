@@ -40,7 +40,7 @@ describe("generate", () => {
   });
 });
 
-describe('generate with blob download', () => {
+describe("generate with blob download", () => {
   let spec: OpenAPIV3.Document;
 
   beforeAll(async () => {
@@ -49,9 +49,11 @@ describe('generate with blob download', () => {
     )) as any;
   });
 
-  it('should generate an api using fetchBlob', async () => {
-    const artefact = printAst(generate(spec));
-    const oneLine = artefact.replace(/\s+/g, ' ');
-    expect(oneLine).toContain('return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${fileId}/download`, { ...opts });');
+  it("should generate an api using fetchBlob", async () => {
+    const artefact = printAst(new ApiGenerator(spec).generateApi());
+    const oneLine = artefact.replace(/\s+/g, " ");
+    expect(oneLine).toContain(
+      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${fileId}/download`, { ...opts });"
+    );
   });
 });

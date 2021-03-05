@@ -16,9 +16,9 @@ describe("ok", () => {
 
   it("should throw if status != 200", async () => {
     const promise = ok(
-      api.getPetById(1, { headers: { Prefer: "statusCode=404" } })
+      api.getPetById(4, { headers: { Prefer: "statusCode=404" } })
     );
-    expect(promise).rejects.toHaveProperty("status", 404);
+    await expect(promise).rejects.toHaveProperty("status", 404);
   });
 
   it("should post json", async () => {
@@ -93,10 +93,10 @@ describe("--optimistic", () => {
   });
 
   it("should throw if status != 200", async () => {
-    const promise = optimisticApi.getPetById(1, {
+    const promise = optimisticApi.getPetById(4, {
       headers: { Prefer: "statusCode=404" },
     });
-    expect(promise).rejects.toHaveProperty("status", 404);
+    await expect(promise).rejects.toHaveProperty("status", 404);
   });
 
   it("should post json", async () => {

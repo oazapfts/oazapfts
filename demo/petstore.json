@@ -1056,9 +1056,7 @@
           },
           "animal": {
             "description": "Always true for a pet",
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
