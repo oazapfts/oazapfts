@@ -63,9 +63,10 @@ export async function ok<T extends ApiResponse>(
   throw new HttpError(res.status, res.data);
 }
 
-type Args<T> = T extends (...args: infer U) => any ? U : any;
-type ApiFunction = (...args: any[]) => Promise<ApiResponse>;
-type AsyncReturnType<T> = T extends (...args: any[]) => Promise<infer V>
+export type ApiResponse = { status: number; data?: any };
+export type Args<T> = T extends (...args: infer U) => any ? U : any;
+export type ApiFunction = (...args: any[]) => Promise<ApiResponse>;
+export type AsyncReturnType<T> = T extends (...args: any[]) => Promise<infer V>
   ? V
   : never;
 
@@ -73,7 +74,7 @@ export type OkResponse<T extends ApiFunction> = SuccessResponse<
   AsyncReturnType<T>
 >;
 
-type Okify<T extends ApiFunction> = (
+export type Okify<T extends ApiFunction> = (
   ...args: Args<T>
 ) => Promise<OkResponse<T>>;
 
