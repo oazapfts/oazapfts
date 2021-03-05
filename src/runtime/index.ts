@@ -67,10 +67,7 @@ export function runtime(defaults: RequestOpts) {
     return { status: res.status, data } as T;
   }
 
-  async function doFetch(
-    url: string,
-    req: FetchRequestOpts = {}
-  ) {
+  async function doFetch(url: string, req: FetchRequestOpts = {}) {
     const { baseUrl, headers, fetch: customFetch, ...init } = {
       ...defaults,
       ...req,
@@ -80,7 +77,7 @@ export function runtime(defaults: RequestOpts) {
       ...init,
       headers: stripUndefined({ ...defaults.headers, ...headers }),
     });
-    return res;    
+    return res;
   }
 
   return {
@@ -113,7 +110,9 @@ export function runtime(defaults: RequestOpts) {
 
     multipart({ body, ...req }: MultipartRequestOpts) {
       if (!body) return req;
-      const data = new (defaults.formDataConstructor || req.formDataConstructor || FormData)();
+      const data = new (defaults.formDataConstructor ||
+        req.formDataConstructor ||
+        FormData)();
       Object.entries(body).forEach(([name, value]) => {
         data.append(name, value);
       });

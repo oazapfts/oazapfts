@@ -363,7 +363,8 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // enum -> union of literal types
       const types = schema.enum.map((s) => {
         if (s === null) return cg.keywordType.null;
-        if (typeof s === "boolean") return s ? ts.createTrue() : ts.createFalse();
+        if (typeof s === "boolean")
+          return s ? ts.createTrue() : ts.createFalse();
         return ts.createLiteralTypeNode(ts.createStringLiteral(s));
       });
       return types.length > 1 ? ts.createUnionTypeNode(types) : types[0];
@@ -450,33 +451,45 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return getTypeFromSchema(getSchemaFromContent(res.content));
   }
 
-  function getResponseType(responses?: OpenAPIV3.ResponsesObject): 'json' | 'text' | 'blob' {
+  function getResponseType(
+    responses?: OpenAPIV3.ResponsesObject
+  ): "json" | "text" | "blob" {
     // backwards-compatibility
-    if (!responses) return 'text';
-   
+    if (!responses) return "text";
+
     const resolvedResponses = Object.values(responses).map(resolve);
 
     // if no content is specified, assume `text` (backwards-compatibility)
-    if (!resolvedResponses.some((res) =>
-      Object.keys(res.content ?? []).length > 0)) {
-      return 'text';
+    if (
+      !resolvedResponses.some(
+        (res) => Object.keys(res.content ?? []).length > 0
+      )
+    ) {
+      return "text";
     }
 
     // if there’s `application/json` or `*/*`, assume `json`
-    if (resolvedResponses.some((res) =>
-      !!_.get(res, ["content", "application/json"]) ||
-      !!_.get(res, ["content", "*/*"]))) {
-      return 'json';
+    if (
+      resolvedResponses.some(
+        (res) =>
+          !!_.get(res, ["content", "application/json"]) ||
+          !!_.get(res, ["content", "*/*"])
+      )
+    ) {
+      return "json";
     }
 
     // if there’s `text/*`, assume `text`
-    if (resolvedResponses.some((res) =>
-      Object.keys(res.content ?? []).some((type) => type.startsWith("text/")))) {
-      return 'text';
+    if (
+      resolvedResponses.some((res) =>
+        Object.keys(res.content ?? []).some((type) => type.startsWith("text/"))
+      )
+    ) {
+      return "text";
     }
 
     // for the rest, assume `blob`
-    return 'blob';
+    return "blob";
   }
 
   function getSchemaFromContent(content: any) {
@@ -488,12 +501,13 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     if (schema) {
       return schema;
     }
-    
+
     // if no content is specified -> string
     // `text/*` -> string
     if (
-      Object.keys(content).length === 0 || 
-      Object.keys(content).some(type => type.startsWith("text/"))) {
+      Object.keys(content).length === 0 ||
+      Object.keys(content).some((type) => type.startsWith("text/"))
+    ) {
       return { type: "string" };
     }
 
@@ -606,7 +620,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
         methodParams.push(
           cg.createParameter(bodyVar, {
             type,
-            questionToken: !body.required
+            questionToken: !body.required,
           })
         );
       }
@@ -733,9 +747,11 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
               ts.createReturn(
                 wrapResult(
                   callOazapftsFunction(
-                    { json: 'fetchJson', text: 'fetchText', blob: 'fetchBlob' }[returnType],
+                    { json: "fetchJson", text: "fetchText", blob: "fetchBlob" }[
+                      returnType
+                    ],
                     args,
-                    returnType === 'json' || returnType === 'blob'
+                    returnType === "json" || returnType === "blob"
                       ? [
                           getTypeFromResponses(responses!) ||
                             ts.SyntaxKind.AnyKeyword,
