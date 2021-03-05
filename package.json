@@ -10,7 +10,7 @@
     "build": "tsc",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "jest",
-    "test:e2e": "npm run generate-demo && with-server --grep 'Mocking API at \\d+' 'cd demo && jest'",
+    "test:e2e": "npm run generate-demo && with-server 'cd demo && jest'",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && ./lib/codegen/cli.js ./demo/petstore.json ./demo/api.ts && ./lib/codegen/cli.js --optimistic ./demo/petstore.json ./demo/optimisticApi.ts",
     "prepare": "npm run build && chmod +x ./lib/codegen/cli.js"
@@ -37,7 +37,7 @@
     "prettier": "^2.1.1",
     "ts-jest": "^26.3.0",
     "ts-node": "^8.10.2",
-    "with-server": "^1.1.0"
+    "with-server": "^2.0.0"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^9.0.1",
