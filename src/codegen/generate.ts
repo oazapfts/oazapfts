@@ -228,7 +228,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     if (!ref) {
       const schema = resolve<OpenAPIV3.SchemaObject>(obj);
       const name = getUniqueAlias(
-        _.upperFirst(schema.title || getRefBasename($ref))
+        _.upperFirst(_.camelCase(schema.title || getRefBasename($ref)))
       );
 
       ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
