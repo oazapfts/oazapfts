@@ -479,15 +479,47 @@ export default class ApiGenerator {
     return this.getTypeFromSchema(this.getSchemaFromContent(res.content));
   }
 
-  hasJsonContent(responses?: OpenAPIV3.ResponsesObject) {
-    if (!responses) return false;
-    return Object.values(responses)
-      .map(this.resolve.bind(this))
-      .some(
+  getResponseType(
+    responses?: OpenAPIV3.ResponsesObject
+  ): "json" | "text" | "blob" {
+    // backwards-compatibility
+    if (!responses) return "text";
+
+    const resolvedResponses = Object.values(responses).map(
+      this.resolve.bind(this)
+    );
+
+    // if no content is specified, assume `text` (backwards-compatibility)
+    if (
+      !resolvedResponses.some(
+        (res) => Object.keys(res.content ?? []).length > 0
+      )
+    ) {
+      return "text";
+    }
+
+    // if there’s `application/json` or `*/*`, assume `json`
+    if (
+      resolvedResponses.some(
         (res) =>
           !!_.get(res, ["content", "application/json"]) ||
           !!_.get(res, ["content", "*/*"])
-      );
+      )
+    ) {
+      return "json";
+    }
+
+    // if there’s `text/*`, assume `text`
+    if (
+      resolvedResponses.some((res) =>
+        Object.keys(res.content ?? []).some((type) => type.startsWith("text/"))
+      )
+    ) {
+      return "text";
+    }
+
+    // for the rest, assume `blob`
+    return "blob";
   }
 
   getSchemaFromContent(content: any) {
@@ -496,11 +528,21 @@ export default class ApiGenerator {
     if (contentType) {
       schema = _.get(content, [contentType, "schema"]);
     }
-    return (
-      schema || {
-        type: "string",
-      }
-    );
+    if (schema) {
+      return schema;
+    }
+
+    // if no content is specified -> string
+    // `text/*` -> string
+    if (
+      Object.keys(content).length === 0 ||
+      Object.keys(content).some((type) => type.startsWith("text/"))
+    ) {
+      return { type: "string" };
+    }
+
+    // rest (e.g. `application/octet-stream`, `application/gzip`, …) -> binary
+    return { type: "string", format: "binary" };
   }
 
   wrapResult(ex: ts.Expression) {
@@ -659,7 +701,7 @@ export default class ApiGenerator {
 
         // Next, build the method body...
 
-        const returnsJson = this.hasJsonContent(responses);
+        const returnType = this.getResponseType(responses);
         const query = parameters.filter((p) => p.in === "query");
         const header = parameters
           .filter((p) => p.in === "header")
@@ -753,9 +795,13 @@ export default class ApiGenerator {
                 factory.createReturnStatement(
                   this.wrapResult(
                     callOazapftsFunction(
-                      returnsJson ? "fetchJson" : "fetchText",
+                      {
+                        json: "fetchJson",
+                        text: "fetchText",
+                        blob: "fetchBlob",
+                      }[returnType],
                       args,
-                      returnsJson
+                      returnType === "json" || returnType === "blob"
                         ? [
                             this.getTypeFromResponses(responses!) ||
                               ts.SyntaxKind.AnyKeyword,

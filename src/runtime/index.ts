@@ -5,6 +5,7 @@ import { ok } from "../";
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
+  formDataConstructor?: new () => FormData;
   headers?: Record<string, string | undefined>;
 } & Omit<RequestInit, "body" | "headers">;
 
@@ -24,15 +25,7 @@ type MultipartRequestOpts = RequestOpts & {
 
 export function runtime(defaults: RequestOpts) {
   async function fetchText(url: string, req?: FetchRequestOpts) {
-    const { baseUrl, headers, fetch: customFetch, ...init } = {
-      ...defaults,
-      ...req,
-    };
-    const href = joinUrl(baseUrl, url);
-    const res = await (customFetch || fetch)(href, {
-      ...init,
-      headers: stripUndefined({ ...defaults.headers, ...headers }),
-    });
+    const res = await doFetch(url, req);
     let data;
     try {
       data = await res.text();
@@ -62,10 +55,39 @@ export function runtime(defaults: RequestOpts) {
     return { status, data } as T;
   }
 
+  async function fetchBlob<T extends ApiResponse>(
+    url: string,
+    req: FetchRequestOpts = {}
+  ) {
+    const res = await doFetch(url, req);
+    let data;
+    try {
+      data = await res.blob();
+    } catch (err) {}
+    return { status: res.status, data } as T;
+  }
+
+  async function doFetch(
+    url: string,
+    req: FetchRequestOpts = {}
+  ) {
+    const { baseUrl, headers, fetch: customFetch, ...init } = {
+      ...defaults,
+      ...req,
+    };
+    const href = joinUrl(baseUrl, url);
+    const res = await (customFetch || fetch)(href, {
+      ...init,
+      headers: stripUndefined({ ...defaults.headers, ...headers }),
+    });
+    return res;    
+  }
+
   return {
     ok,
     fetchText,
     fetchJson,
+    fetchBlob,
 
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {
@@ -91,7 +113,7 @@ export function runtime(defaults: RequestOpts) {
 
     multipart({ body, ...req }: MultipartRequestOpts) {
       if (!body) return req;
-      const data = new FormData();
+      const data = new (defaults.formDataConstructor || req.formDataConstructor || FormData)();
       Object.entries(body).forEach(([name, value]) => {
         data.append(name, value);
       });
