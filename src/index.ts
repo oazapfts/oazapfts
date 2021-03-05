@@ -63,7 +63,6 @@ export async function ok<T extends ApiResponse>(
   throw new HttpError(res.status, res.data);
 }
 
-export type ApiResponse = { status: number; data?: any };
 export type Args<T> = T extends (...args: infer U) => any ? U : any;
 export type ApiFunction = (...args: any[]) => Promise<ApiResponse>;
 export type AsyncReturnType<T> = T extends (...args: any[]) => Promise<infer V>
