@@ -2,6 +2,7 @@ import generate, { getOperationName } from "./generate";
 import { printAst } from "./index";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import { OpenAPIV3 } from "openapi-types";
+import ApiGenerator from "./generate";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -30,12 +31,12 @@ describe("generate", () => {
   });
 
   it("should generate an api", async () => {
-    artefact = printAst(generate(spec));
+    artefact = printAst(new ApiGenerator(spec).generateApi());
   });
 
   /* https://github.com/cotype/build-client/issues/5 */
   it("should generate same api a second time", async () => {
-    expect(printAst(generate(spec))).toBe(artefact);
+    expect(printAst(new ApiGenerator(spec).generateApi())).toBe(artefact);
   });
 });
 
@@ -49,7 +50,7 @@ describe("generate with blob download", () => {
   });
 
   it("should generate an api using fetchBlob", async () => {
-    const artefact = printAst(generate(spec));
+    const artefact = printAst(new ApiGenerator(spec).generateApi());
     const oneLine = artefact.replace(/\s+/g, " ");
     expect(oneLine).toContain(
       "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${fileId}/download`, { ...opts });"

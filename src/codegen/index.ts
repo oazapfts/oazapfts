@@ -1,5 +1,5 @@
 import * as cg from "./tscodegen";
-import generate from "./generate";
+import ApiGenerator from "./generate";
 import ts from "typescript";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import converter from "swagger2openapi";
@@ -14,7 +14,7 @@ export type Opts = {
 };
 
 export function generateAst(spec: OpenAPIV3.Document, opts: Opts) {
-  return generate(spec, opts);
+  return new ApiGenerator(spec, opts).generateApi();
 }
 
 export function printAst(ast: ts.SourceFile) {

@@ -1,12 +1,13 @@
 import _ from "lodash";
-import ts from "typescript";
+import ts, { factory } from "typescript";
 import path from "path";
 import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
+import { threadId } from "worker_threads";
 
-const verbs = [
+export const verbs = [
   "GET",
   "PUT",
   "POST",
@@ -17,7 +18,7 @@ const verbs = [
   "TRACE",
 ];
 
-const contentTypes = {
+export const contentTypes = {
   "*/*": "json",
   "application/json": "json",
   "application/x-www-form-urlencoded": "form",
@@ -27,14 +28,14 @@ const contentTypes = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
+export function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   if (style === "deepObject") return "deep";
   return explode ? "explode" : "form";
 }
 
-function getOperationIdentifier(id?: string) {
+export function getOperationIdentifier(id?: string) {
   if (!id) return;
   if (id.match(/[^\w\s]/)) return;
   id = _.camelCase(id);
@@ -56,16 +57,16 @@ export function getOperationName(
   return _.camelCase(`${verb} ${path}`);
 }
 
-function isNullable(schema: any) {
+export function isNullable(schema: any) {
   return !!(schema && schema.nullable);
 }
 
-function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
+export function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
   return obj && "$ref" in obj;
 }
 
 //See https://swagger.io/docs/specification/using-ref/
-function getReference(spec: any, ref: string) {
+export function getReference(spec: any, ref: string) {
   const path = ref
     .slice(2)
     .split("/")
@@ -80,7 +81,7 @@ function getReference(spec: any, ref: string) {
 /**
  * If the given object is a ReferenceObject, return the last part of its path.
  */
-function getReferenceName(obj: any) {
+export function getReferenceName(obj: any) {
   if (isReference(obj)) {
     return _.camelCase(obj.$ref.split("/").slice(-1)[0]);
   }
@@ -91,14 +92,14 @@ function getReferenceName(obj: any) {
  * Curly braces in the path are turned into identifier expressions,
  * which are read from the local scope during runtime.
  */
-function createUrlExpression(path: string, qs?: ts.Expression) {
+export function createUrlExpression(path: string, qs?: ts.Expression) {
   const spans: Array<{ expression: ts.Expression; literal: string }> = [];
   // Use a replacer function to collect spans as a side effect:
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
     (_substr, head, name, literal) => {
       const expression = _.camelCase(name);
-      spans.push({ expression: ts.createIdentifier(expression), literal });
+      spans.push({ expression: factory.createIdentifier(expression), literal });
       return head;
     }
   );
@@ -112,9 +113,12 @@ function createUrlExpression(path: string, qs?: ts.Expression) {
 /**
  * Create a call expression for one of the QS runtime functions.
  */
-function callQsFunction(name: string, args: ts.Expression[]) {
+export function callQsFunction(name: string, args: ts.Expression[]) {
   return cg.createCall(
-    ts.createPropertyAccess(ts.createIdentifier("QS"), name),
+    factory.createPropertyAccessExpression(
+      factory.createIdentifier("QS"),
+      name
+    ),
     { args }
   );
 }
@@ -122,13 +126,16 @@ function callQsFunction(name: string, args: ts.Expression[]) {
 /**
  * Create a call expression for one of the oazapfts runtime functions.
  */
-function callOazapftsFunction(
+export function callOazapftsFunction(
   name: string,
   args: ts.Expression[],
   typeArgs?: ts.TypeNode[]
 ) {
   return cg.createCall(
-    ts.createPropertyAccess(ts.createIdentifier("oazapfts"), name),
+    factory.createPropertyAccessExpression(
+      factory.createIdentifier("oazapfts"),
+      name
+    ),
     { args, typeArgs }
   );
 }
@@ -138,7 +145,7 @@ function callOazapftsFunction(
  * deeply nested objects. As a workaround we detect parameters that contain
  * square brackets and merge them into a single object.
  */
-function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
+export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
   const res: OpenAPIV3.ParameterObject[] = [];
   const merged: any = {};
   params.forEach((p) => {
@@ -169,10 +176,27 @@ function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
 /**
  * Main entry point that generates TypeScript code from a given API spec.
  */
-export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
-  const aliases: ts.TypeAliasDeclaration[] = [];
+export default class ApiGenerator {
+  constructor(
+    public readonly spec: OpenAPIV3.Document,
+    public readonly opts: Opts = {}
+  ) {}
 
-  function resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
+  aliases: ts.TypeAliasDeclaration[] = [];
+
+  // Collect the types of all referenced schemas so we can export them later
+  refs: Record<string, ts.TypeReferenceNode> = {};
+
+  // Keep track of already used type aliases
+  typeAliases: Record<string, number> = {};
+
+  reset() {
+    this.aliases = [];
+    this.refs = {};
+    this.typeAliases = {};
+  }
+
+  resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith("#/")) {
@@ -180,61 +204,55 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
         `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
       );
     }
-    return getReference(spec, ref) as T;
+    return getReference(this.spec, ref) as T;
   }
 
-  function resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
-    return array ? array.map(resolve) : [];
+  resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
+    return array ? array.map(this.resolve.bind(this)) : [];
   }
 
-  function skip(tags?: string[]) {
-    const excluded = tags && tags.some((t) => opts?.exclude?.includes(t));
+  skip(tags?: string[]) {
+    const excluded = tags && tags.some((t) => this.opts?.exclude?.includes(t));
     if (excluded) {
       return true;
     }
-    if (opts?.include) {
-      const included = tags && tags.some((t) => opts.include?.includes(t));
+    if (this.opts?.include) {
+      const included = tags && tags.some((t) => this.opts.include?.includes(t));
       return !included;
     }
     return false;
   }
 
-  // Collect the types of all referenced schemas so we can export them later
-  const refs: Record<string, ts.TypeReferenceNode> = {};
-
-  // Keep track of already used type aliases
-  const typeAliases: Record<string, number> = {};
-
-  function getUniqueAlias(name: string) {
-    let used = typeAliases[name] || 0;
+  getUniqueAlias(name: string) {
+    let used = this.typeAliases[name] || 0;
     if (used) {
-      typeAliases[name] = ++used;
+      this.typeAliases[name] = ++used;
       name += used;
     }
-    typeAliases[name] = 1;
+    this.typeAliases[name] = 1;
     return name;
   }
 
-  function getRefBasename(ref: string): string {
+  getRefBasename(ref: string): string {
     return ref.replace(/.+\//, "");
   }
 
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  function getRefAlias(obj: OpenAPIV3.ReferenceObject) {
+  getRefAlias(obj: OpenAPIV3.ReferenceObject) {
     const { $ref } = obj;
-    let ref = refs[$ref];
+    let ref = this.refs[$ref];
     if (!ref) {
-      const schema = resolve<OpenAPIV3.SchemaObject>(obj);
-      const name = getUniqueAlias(
-        _.upperFirst(_.camelCase(schema.title || getRefBasename($ref)))
+      const schema = this.resolve<OpenAPIV3.SchemaObject>(obj);
+      const name = this.getUniqueAlias(
+        _.upperFirst(_.camelCase(schema.title || this.getRefBasename($ref)))
       );
 
-      ref = refs[$ref] = ts.createTypeReferenceNode(name, undefined);
+      ref = this.refs[$ref] = factory.createTypeReferenceNode(name, undefined);
 
-      const type = getTypeFromSchema(schema);
-      aliases.push(
+      const type = this.getTypeFromSchema(schema);
+      this.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
           name,
@@ -245,7 +263,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return ref;
   }
 
-  function getUnionType(
+  getUnionType(
     variants: (OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject)[],
     discriminator?: OpenAPIV3.DiscriminatorObject
   ): ts.TypeNode {
@@ -260,11 +278,11 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       // discriminator.mapping property.
       const mappedValues = new Set(
         Object.values(discriminator.mapping || {}).map((ref) =>
-          getRefBasename(ref)
+          this.getRefBasename(ref)
         )
       );
 
-      return ts.createUnionTypeNode(
+      return factory.createUnionTypeNode(
         ([
           ...Object.entries(
             discriminator.mapping || {}
@@ -281,31 +299,31 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
                   "Discriminators require references, not inline schemas"
                 );
               }
-              return !mappedValues.has(getRefBasename(variant.$ref));
+              return !mappedValues.has(this.getRefBasename(variant.$ref));
             })
             .map((schema) => [
-              getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
+              this.getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
               schema,
             ]),
         ] as [string, OpenAPIV3.ReferenceObject][]).map(
           ([discriminatorValue, variant]) =>
             // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
-            ts.createIntersectionTypeNode([
-              ts.createTypeLiteralNode([
+            factory.createIntersectionTypeNode([
+              factory.createTypeLiteralNode([
                 cg.createPropertySignature({
                   name: discriminator.propertyName,
-                  type: ts.createLiteralTypeNode(
-                    ts.createStringLiteral(discriminatorValue)
+                  type: factory.createLiteralTypeNode(
+                    factory.createStringLiteral(discriminatorValue)
                   ),
                 }),
               ]),
-              getTypeFromSchema(variant),
+              this.getTypeFromSchema(variant),
             ])
         )
       );
     } else {
       // oneOf -> untagged union
-      return ts.createUnionTypeNode(variants.map(getTypeFromSchema));
+      return factory.createUnionTypeNode(variants.map(this.getTypeFromSchema));
     }
   }
 
@@ -314,12 +332,12 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
    * Delegates to getBaseTypeFromSchema internally and
    * optionally adds a union with null.
    */
-  function getTypeFromSchema(
+  getTypeFromSchema(
     schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
-    const type = getBaseTypeFromSchema(schema);
+    const type = this.getBaseTypeFromSchema(schema);
     return isNullable(schema)
-      ? ts.createUnionTypeNode([type, cg.keywordType.null])
+      ? factory.createUnionTypeNode([type, cg.keywordType.null])
       : type;
   }
 
@@ -327,33 +345,37 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
    * This is the very core of the OpenAPI to TS conversion - it takes a
    * schema and returns the appropriate type.
    */
-  function getBaseTypeFromSchema(
+  getBaseTypeFromSchema(
     schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
     if (!schema) return cg.keywordType.any;
     if (isReference(schema)) {
-      return getRefAlias(schema);
+      return this.getRefAlias(schema);
     }
 
     if (schema.oneOf) {
       // oneOf -> union
-      return getUnionType(schema.oneOf, schema.discriminator);
+      return this.getUnionType(schema.oneOf, schema.discriminator);
     }
     if (schema.anyOf) {
       // anyOf -> union
-      return ts.createUnionTypeNode(schema.anyOf.map(getTypeFromSchema));
+      return factory.createUnionTypeNode(
+        schema.anyOf.map(this.getTypeFromSchema.bind(this))
+      );
     }
     if (schema.allOf) {
       // allOf -> intersection
-      return ts.createIntersectionTypeNode(schema.allOf.map(getTypeFromSchema));
+      return factory.createIntersectionTypeNode(
+        schema.allOf.map(this.getTypeFromSchema.bind(this))
+      );
     }
     if ("items" in schema) {
       // items -> array
-      return ts.createArrayTypeNode(getTypeFromSchema(schema.items));
+      return factory.createArrayTypeNode(this.getTypeFromSchema(schema.items));
     }
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
-      return getTypeFromProperties(
+      return this.getTypeFromProperties(
         schema.properties || {},
         schema.required,
         schema.additionalProperties
@@ -364,13 +386,19 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       const types = schema.enum.map((s) => {
         if (s === null) return cg.keywordType.null;
         if (typeof s === "boolean")
-          return s ? ts.createTrue() : ts.createFalse();
-        return ts.createLiteralTypeNode(ts.createStringLiteral(s));
+          return s
+            ? factory.createLiteralTypeNode(
+                ts.factory.createToken(ts.SyntaxKind.TrueKeyword)
+              )
+            : factory.createLiteralTypeNode(
+                ts.factory.createToken(ts.SyntaxKind.FalseKeyword)
+              );
+        return factory.createLiteralTypeNode(factory.createStringLiteral(s));
       });
-      return types.length > 1 ? ts.createUnionTypeNode(types) : types[0];
+      return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
     }
     if (schema.format == "binary") {
-      return ts.createTypeReferenceNode("Blob", []);
+      return factory.createTypeReferenceNode("Blob", []);
     }
     if (schema.type) {
       // string, boolean, null, number
@@ -384,7 +412,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
   /**
    * Recursively creates a type literal with the given props.
    */
-  function getTypeFromProperties(
+  getTypeFromProperties(
     props: {
       [prop: string]: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
     },
@@ -400,27 +428,27 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
       return cg.createPropertySignature({
         questionToken: !isRequired,
         name,
-        type: getTypeFromSchema(schema),
+        type: this.getTypeFromSchema(schema),
       });
     });
     if (additionalProperties) {
       const type =
         additionalProperties === true
           ? cg.keywordType.any
-          : getTypeFromSchema(additionalProperties);
+          : this.getTypeFromSchema(additionalProperties);
 
       members.push(cg.createIndexSignature(type));
     }
-    return ts.createTypeLiteralNode(members);
+    return factory.createTypeLiteralNode(members);
   }
 
-  function getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
-    return ts.createUnionTypeNode(
+  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
+    return factory.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
         const statusType =
           code === "default"
             ? cg.keywordType.number
-            : ts.createLiteralTypeNode(ts.createNumericLiteral(code));
+            : factory.createLiteralTypeNode(factory.createNumericLiteral(code));
 
         const props = [
           cg.createPropertySignature({
@@ -429,7 +457,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
           }),
         ];
 
-        const dataType = getTypeFromResponse(res);
+        const dataType = this.getTypeFromResponse(res);
         if (dataType !== cg.keywordType.void) {
           props.push(
             cg.createPropertySignature({
@@ -438,26 +466,28 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
             })
           );
         }
-        return ts.createTypeLiteralNode(props);
+        return factory.createTypeLiteralNode(props);
       })
     );
   }
 
-  function getTypeFromResponse(
+  getTypeFromResponse(
     resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
   ) {
-    const res = resolve(resOrRef);
+    const res = this.resolve(resOrRef);
     if (!res || !res.content) return cg.keywordType.void;
-    return getTypeFromSchema(getSchemaFromContent(res.content));
+    return this.getTypeFromSchema(this.getSchemaFromContent(res.content));
   }
 
-  function getResponseType(
+  getResponseType(
     responses?: OpenAPIV3.ResponsesObject
   ): "json" | "text" | "blob" {
     // backwards-compatibility
     if (!responses) return "text";
 
-    const resolvedResponses = Object.values(responses).map(resolve);
+    const resolvedResponses = Object.values(responses).map(
+      this.resolve.bind(this)
+    );
 
     // if no content is specified, assume `text` (backwards-compatibility)
     if (
@@ -492,7 +522,7 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return "blob";
   }
 
-  function getSchemaFromContent(content: any) {
+  getSchemaFromContent(content: any) {
     const contentType = Object.keys(contentTypes).find((t) => t in content);
     let schema;
     if (contentType) {
@@ -515,263 +545,286 @@ export default function generateApi(spec: OpenAPIV3.Document, opts?: Opts) {
     return { type: "string", format: "binary" };
   }
 
-  function wrapResult(ex: ts.Expression) {
-    return opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
+  wrapResult(ex: ts.Expression) {
+    return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
-  // Parse ApiStub.ts so that we don't have to generate everything manually
-  const stub = cg.parseFile(
-    path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
-  );
+  generateApi() {
+    this.reset();
 
-  // ApiStub contains `const servers = {}`, find it ...
-  const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
-  servers.initializer = generateServers(spec.servers || []);
+    // Parse ApiStub.ts so that we don't have to generate everything manually
+    const stub = cg.parseFile(
+      path.resolve(__dirname, "../../src/codegen/ApiStub.ts")
+    );
 
-  const { initializer } = cg.findFirstVariableDeclaration(
-    stub.statements,
-    "defaults"
-  );
-  if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
-    throw new Error("No object literal: defaults");
-  }
+    // ApiStub contains `const servers = {}`, find it ...
+    const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
+    // servers.initializer is readonly, this might break in a future TS version, but works fine for now.
+    Object.assign(servers, {
+      initializer: generateServers(this.spec.servers || []),
+    });
 
-  cg.changePropertyValue(
-    initializer,
-    "baseUrl",
-    defaultBaseUrl(spec.servers || [])
-  );
+    const { initializer } = cg.findFirstVariableDeclaration(
+      stub.statements,
+      "defaults"
+    );
+    if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
+      throw new Error("No object literal: defaults");
+    }
 
-  // Collect class functions to be added...
-  const functions: ts.FunctionDeclaration[] = [];
+    cg.changePropertyValue(
+      initializer,
+      "baseUrl",
+      defaultBaseUrl(this.spec.servers || [])
+    );
 
-  // Keep track of names to detect duplicates
-  const names: Record<string, number> = {};
+    // Collect class functions to be added...
+    const functions: ts.FunctionDeclaration[] = [];
 
-  Object.keys(spec.paths).forEach((path) => {
-    const item: OpenAPIV3.PathItemObject = spec.paths[path];
-    Object.keys(resolve(item)).forEach((verb) => {
-      const method = verb.toUpperCase();
-      // skip summary/description/parameters etc...
-      if (!verbs.includes(method)) return;
+    // Keep track of names to detect duplicates
+    const names: Record<string, number> = {};
 
-      const op: OpenAPIV3.OperationObject = (item as any)[verb];
-      const {
-        operationId,
-        requestBody,
-        responses,
-        summary,
-        description,
-        tags,
-      } = op;
+    Object.keys(this.spec.paths).forEach((path) => {
+      const item: OpenAPIV3.PathItemObject = this.spec.paths[path];
+      Object.keys(this.resolve(item)).forEach((verb) => {
+        const method = verb.toUpperCase();
+        // skip summary/description/parameters etc...
+        if (!verbs.includes(method)) return;
 
-      if (skip(tags)) {
-        return;
-      }
+        const op: OpenAPIV3.OperationObject = (item as any)[verb];
+        const {
+          operationId,
+          requestBody,
+          responses,
+          summary,
+          description,
+          tags,
+        } = op;
 
-      let name = getOperationName(verb, path, operationId);
-      const count = (names[name] = (names[name] || 0) + 1);
-      if (count > 1) {
-        // The name is already taken, which means that the spec is probably
-        // invalid as operationIds must be unique. Since this is quite common
-        // nevertheless we append a counter:
-        name += count;
-      }
+        if (this.skip(tags)) {
+          return;
+        }
 
-      // merge item and op parameters
-      const parameters = supportDeepObjects([
-        ...resolveArray(item.parameters),
-        ...resolveArray(op.parameters),
-      ]);
+        let name = getOperationName(verb, path, operationId);
+        const count = (names[name] = (names[name] || 0) + 1);
+        if (count > 1) {
+          // The name is already taken, which means that the spec is probably
+          // invalid as operationIds must be unique. Since this is quite common
+          // nevertheless we append a counter:
+          name += count;
+        }
 
-      // split into required/optional
-      const [required, optional] = _.partition(parameters, "required");
+        // merge item and op parameters
+        const parameters = supportDeepObjects([
+          ...this.resolveArray(item.parameters),
+          ...this.resolveArray(op.parameters),
+        ]);
 
-      // convert parameter names to argument names ...
-      const argNames: any = {};
-      parameters
-        .map((p) => p.name)
-        .sort((a, b) => a.length - b.length)
-        .forEach((name) => {
-          // strip leading namespaces, eg. foo.name -> name
-          const stripped = _.camelCase(name.replace(/.+\./, ""));
-          // keep the prefix if the stripped-down name is already taken
-          argNames[name] = stripped in argNames ? _.camelCase(name) : stripped;
-        });
+        // split into required/optional
+        const [required, optional] = _.partition(parameters, "required");
 
-      // build the method signature - first all the required parameters
-      const methodParams = required.map((p) =>
-        cg.createParameter(argNames[resolve(p).name], {
-          type: getTypeFromSchema(isReference(p) ? p : p.schema),
-        })
-      );
+        // convert parameter names to argument names ...
+        const argNames: any = {};
+        parameters
+          .map((p) => p.name)
+          .sort((a, b) => a.length - b.length)
+          .forEach((name) => {
+            // strip leading namespaces, eg. foo.name -> name
+            const stripped = _.camelCase(name.replace(/.+\./, ""));
+            // keep the prefix if the stripped-down name is already taken
+            argNames[name] =
+              stripped in argNames ? _.camelCase(name) : stripped;
+          });
 
-      let body: any;
-      let bodyVar;
-
-      // add body if present
-      if (requestBody) {
-        body = resolve(requestBody);
-        const schema = getSchemaFromContent(body.content);
-        const type = getTypeFromSchema(schema);
-        bodyVar = _.camelCase(
-          (type as any).name || getReferenceName(schema) || "body"
-        );
-        methodParams.push(
-          cg.createParameter(bodyVar, {
-            type,
-            questionToken: !body.required,
+        // build the method signature - first all the required parameters
+        const methodParams = required.map((p) =>
+          cg.createParameter(argNames[this.resolve(p).name], {
+            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
           })
         );
-      }
 
-      // add an object with all optional parameters
-      if (optional.length) {
-        methodParams.push(
-          cg.createParameter(
-            cg.createObjectBinding(
-              optional
-                .map(resolve)
-                .map(({ name }) => ({ name: argNames[name] }))
-            ),
-            {
-              initializer: ts.createObjectLiteral(),
-              type: ts.createTypeLiteralNode(
-                optional.map((p) =>
-                  cg.createPropertySignature({
-                    name: argNames[resolve(p).name],
-                    questionToken: true,
-                    type: getTypeFromSchema(isReference(p) ? p : p.schema),
-                  })
-                )
+        let body: any;
+        let bodyVar;
+
+        // add body if present
+        if (requestBody) {
+          body = this.resolve(requestBody);
+          const schema = this.getSchemaFromContent(body.content);
+          const type = this.getTypeFromSchema(schema);
+          bodyVar = _.camelCase(
+            (type as any).name || getReferenceName(schema) || "body"
+          );
+          methodParams.push(
+            cg.createParameter(bodyVar, {
+              type,
+              questionToken: !body.required,
+            })
+          );
+        }
+
+        // add an object with all optional parameters
+        if (optional.length) {
+          methodParams.push(
+            cg.createParameter(
+              cg.createObjectBinding(
+                optional
+                  .map(this.resolve.bind(this))
+                  .map(({ name }) => ({ name: argNames[name] }))
               ),
-            }
-          )
-        );
-      }
-
-      methodParams.push(
-        cg.createParameter("opts", {
-          type: ts.createTypeReferenceNode("Oazapfts.RequestOpts", undefined),
-          questionToken: true,
-        })
-      );
-
-      // Next, build the method body...
-
-      const returnType = getResponseType(responses);
-      const query = parameters.filter((p) => p.in === "query");
-      const header = parameters
-        .filter((p) => p.in === "header")
-        .map((p) => p.name);
-      let qs;
-      if (query.length) {
-        const paramsByFormatter = _.groupBy(query, getFormatter);
-        qs = callQsFunction(
-          "query",
-          Object.entries(paramsByFormatter).map(([format, params]) => {
-            //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
-            return callQsFunction(format, [
-              cg.createObjectLiteral(
-                params.map((p) => [p.name, argNames[p.name]])
-              ),
-            ]);
-          })
-        );
-      }
-
-      const url = createUrlExpression(path, qs);
-      const init: ts.ObjectLiteralElementLike[] = [
-        ts.createSpreadAssignment(ts.createIdentifier("opts")),
-      ];
-
-      if (method !== "GET") {
-        init.push(
-          ts.createPropertyAssignment("method", ts.createStringLiteral(method))
-        );
-      }
-
-      if (bodyVar) {
-        init.push(
-          cg.createPropertyAssignment("body", ts.createIdentifier(bodyVar))
-        );
-      }
-
-      if (header.length) {
-        init.push(
-          ts.createPropertyAssignment(
-            "headers",
-            ts.createObjectLiteral(
-              [
-                ts.createSpreadAssignment(
-                  ts.createLogicalAnd(
-                    ts.createIdentifier("opts"),
-                    ts.createPropertyAccess(
-                      ts.createIdentifier("opts"),
-                      "headers"
-                    )
+              {
+                initializer: factory.createObjectLiteralExpression(),
+                type: factory.createTypeLiteralNode(
+                  optional.map((p) =>
+                    cg.createPropertySignature({
+                      name: argNames[this.resolve(p).name],
+                      questionToken: true,
+                      type: this.getTypeFromSchema(
+                        isReference(p) ? p : p.schema
+                      ),
+                    })
                   )
                 ),
-                ...header.map((name) =>
-                  cg.createPropertyAssignment(
-                    name,
-                    ts.createIdentifier(argNames[name])
-                  )
-                ),
-              ],
-              true
+              }
             )
-          )
+          );
+        }
+
+        methodParams.push(
+          cg.createParameter("opts", {
+            type: factory.createTypeReferenceNode(
+              "Oazapfts.RequestOpts",
+              undefined
+            ),
+            questionToken: true,
+          })
         );
-      }
 
-      const args: ts.Expression[] = [url];
+        // Next, build the method body...
 
-      if (init.length) {
-        const m = Object.entries(contentTypes).find(([type]) => {
-          return !!_.get(body, ["content", type]);
-        });
-        const initObj = ts.createObjectLiteral(init, true);
-        args.push(m ? callOazapftsFunction(m[1], [initObj]) : initObj); // json, form, multipart
-      }
+        const returnType = this.getResponseType(responses);
+        const query = parameters.filter((p) => p.in === "query");
+        const header = parameters
+          .filter((p) => p.in === "header")
+          .map((p) => p.name);
+        let qs;
+        if (query.length) {
+          const paramsByFormatter = _.groupBy(query, getFormatter);
+          qs = callQsFunction(
+            "query",
+            Object.entries(paramsByFormatter).map(([format, params]) => {
+              //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
+              return callQsFunction(format, [
+                cg.createObjectLiteral(
+                  params.map((p) => [p.name, argNames[p.name]])
+                ),
+              ]);
+            })
+          );
+        }
 
-      functions.push(
-        cg.addComment(
-          cg.createFunctionDeclaration(
-            name,
-            {
-              modifiers: [cg.modifier.export],
-            },
-            methodParams,
-            cg.block(
-              ts.createReturn(
-                wrapResult(
-                  callOazapftsFunction(
-                    { json: "fetchJson", text: "fetchText", blob: "fetchBlob" }[
-                      returnType
-                    ],
-                    args,
-                    returnType === "json" || returnType === "blob"
-                      ? [
-                          getTypeFromResponses(responses!) ||
-                            ts.SyntaxKind.AnyKeyword,
-                        ]
-                      : undefined
+        const url = createUrlExpression(path, qs);
+        const init: ts.ObjectLiteralElementLike[] = [
+          factory.createSpreadAssignment(factory.createIdentifier("opts")),
+        ];
+
+        if (method !== "GET") {
+          init.push(
+            factory.createPropertyAssignment(
+              "method",
+              factory.createStringLiteral(method)
+            )
+          );
+        }
+
+        if (bodyVar) {
+          init.push(
+            cg.createPropertyAssignment(
+              "body",
+              factory.createIdentifier(bodyVar)
+            )
+          );
+        }
+
+        if (header.length) {
+          init.push(
+            factory.createPropertyAssignment(
+              "headers",
+              factory.createObjectLiteralExpression(
+                [
+                  factory.createSpreadAssignment(
+                    factory.createLogicalAnd(
+                      factory.createIdentifier("opts"),
+                      factory.createPropertyAccessExpression(
+                        factory.createIdentifier("opts"),
+                        "headers"
+                      )
+                    )
+                  ),
+                  ...header.map((name) =>
+                    cg.createPropertyAssignment(
+                      name,
+                      factory.createIdentifier(argNames[name])
+                    )
+                  ),
+                ],
+                true
+              )
+            )
+          );
+        }
+
+        const args: ts.Expression[] = [url];
+
+        if (init.length) {
+          const m = Object.entries(contentTypes).find(([type]) => {
+            return !!_.get(body, ["content", type]);
+          });
+          const initObj = factory.createObjectLiteralExpression(init, true);
+          args.push(m ? callOazapftsFunction(m[1], [initObj]) : initObj); // json, form, multipart
+        }
+
+        functions.push(
+          cg.addComment(
+            cg.createFunctionDeclaration(
+              name,
+              {
+                modifiers: [cg.modifier.export],
+              },
+              methodParams,
+              cg.block(
+                factory.createReturnStatement(
+                  this.wrapResult(
+                    callOazapftsFunction(
+                      {
+                        json: "fetchJson",
+                        text: "fetchText",
+                        blob: "fetchBlob",
+                      }[returnType],
+                      args,
+                      returnType === "json" || returnType === "blob"
+                        ? [
+                            this.getTypeFromResponses(responses!) ||
+                              ts.SyntaxKind.AnyKeyword,
+                          ]
+                        : undefined
+                    )
                   )
                 )
               )
-            )
-          ),
-          summary || description
-        )
-      );
+            ),
+            summary || description
+          )
+        );
+      });
     });
-  });
 
-  stub.statements = cg.appendNodes(
-    stub.statements,
-    ...[...aliases, ...functions]
-  );
+    Object.assign(stub, {
+      statements: cg.appendNodes(
+        stub.statements,
+        ...[...this.aliases, ...functions]
+      ),
+    });
 
-  return stub;
+    return stub;
+  }
 }
