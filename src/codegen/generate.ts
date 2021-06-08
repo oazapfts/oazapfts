@@ -208,7 +208,7 @@ export default class ApiGenerator {
   }
 
   resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
-    return array ? array.map(this.resolve.bind(this)) : [];
+    return array ? array.map(el => this.resolve(el)) : [];
   }
 
   skip(tags?: string[]) {
@@ -323,7 +323,7 @@ export default class ApiGenerator {
       );
     } else {
       // oneOf -> untagged union
-      return factory.createUnionTypeNode(variants.map(this.getTypeFromSchema));
+      return factory.createUnionTypeNode(variants.map(schema => this.getTypeFromSchema(schema)));
     }
   }
 
@@ -360,13 +360,13 @@ export default class ApiGenerator {
     if (schema.anyOf) {
       // anyOf -> union
       return factory.createUnionTypeNode(
-        schema.anyOf.map(this.getTypeFromSchema.bind(this))
+        schema.anyOf.map(schema => this.getTypeFromSchema(schema))
       );
     }
     if (schema.allOf) {
       // allOf -> intersection
       return factory.createIntersectionTypeNode(
-        schema.allOf.map(this.getTypeFromSchema.bind(this))
+        schema.allOf.map(schema => this.getTypeFromSchema(schema))
       );
     }
     if ("items" in schema) {
@@ -486,7 +486,7 @@ export default class ApiGenerator {
     if (!responses) return "text";
 
     const resolvedResponses = Object.values(responses).map(
-      this.resolve.bind(this)
+      response => this.resolve(response)
     );
 
     // if no content is specified, assume `text` (backwards-compatibility)
@@ -668,7 +668,7 @@ export default class ApiGenerator {
             cg.createParameter(
               cg.createObjectBinding(
                 optional
-                  .map(this.resolve.bind(this))
+                  .map(param => this.resolve(param))
                   .map(({ name }) => ({ name: argNames[name] }))
               ),
               {
