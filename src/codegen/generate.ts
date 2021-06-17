@@ -21,6 +21,7 @@ export const verbs = [
 export const contentTypes = {
   "*/*": "json",
   "application/json": "json",
+  "application/hal+json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
 };
@@ -208,7 +209,7 @@ export default class ApiGenerator {
   }
 
   resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
-    return array ? array.map(el => this.resolve(el)) : [];
+    return array ? array.map((el) => this.resolve(el)) : [];
   }
 
   skip(tags?: string[]) {
@@ -323,7 +324,9 @@ export default class ApiGenerator {
       );
     } else {
       // oneOf -> untagged union
-      return factory.createUnionTypeNode(variants.map(schema => this.getTypeFromSchema(schema)));
+      return factory.createUnionTypeNode(
+        variants.map((schema) => this.getTypeFromSchema(schema))
+      );
     }
   }
 
@@ -360,13 +363,13 @@ export default class ApiGenerator {
     if (schema.anyOf) {
       // anyOf -> union
       return factory.createUnionTypeNode(
-        schema.anyOf.map(schema => this.getTypeFromSchema(schema))
+        schema.anyOf.map((schema) => this.getTypeFromSchema(schema))
       );
     }
     if (schema.allOf) {
       // allOf -> intersection
       return factory.createIntersectionTypeNode(
-        schema.allOf.map(schema => this.getTypeFromSchema(schema))
+        schema.allOf.map((schema) => this.getTypeFromSchema(schema))
       );
     }
     if ("items" in schema) {
@@ -485,8 +488,8 @@ export default class ApiGenerator {
     // backwards-compatibility
     if (!responses) return "text";
 
-    const resolvedResponses = Object.values(responses).map(
-      response => this.resolve(response)
+    const resolvedResponses = Object.values(responses).map((response) =>
+      this.resolve(response)
     );
 
     // if no content is specified, assume `text` (backwards-compatibility)
@@ -503,6 +506,7 @@ export default class ApiGenerator {
       resolvedResponses.some(
         (res) =>
           !!_.get(res, ["content", "application/json"]) ||
+          !!_.get(res, ["content", "application/hal+json"]) ||
           !!_.get(res, ["content", "*/*"])
       )
     ) {
@@ -668,7 +672,7 @@ export default class ApiGenerator {
             cg.createParameter(
               cg.createObjectBinding(
                 optional
-                  .map(param => this.resolve(param))
+                  .map((param) => this.resolve(param))
                   .map(({ name }) => ({ name: argNames[name] }))
               ),
               {
