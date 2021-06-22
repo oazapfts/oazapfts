@@ -2,8 +2,6 @@
 
 Generate TypeScript clients to tap into OpenAPI servers.
 
-[![Build Status](https://travis-ci.org/cellular/oazapfts.svg?branch=master)](https://travis-ci.org/cellular/oazapfts)
-
 ## Features
 
 - **AST-based**:
