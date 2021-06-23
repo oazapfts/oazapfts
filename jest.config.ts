@@ -1,12 +1,9 @@
 import { Config } from "@jest/types";
 
 const config: Config.InitialOptions = {
-  testEnvironment: "node",
+  preset: "ts-jest",
   rootDir: "src",
   restoreMocks: true,
-  transform: {
-    "\\.ts$": "ts-jest",
-  },
 };
 
 export default config;
