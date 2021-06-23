@@ -208,7 +208,7 @@ export default class ApiGenerator {
   }
 
   resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
-    return array ? array.map(el => this.resolve(el)) : [];
+    return array ? array.map((el) => this.resolve(el)) : [];
   }
 
   skip(tags?: string[]) {
@@ -283,47 +283,50 @@ export default class ApiGenerator {
       );
 
       return factory.createUnionTypeNode(
-        ([
-          ...Object.entries(
-            discriminator.mapping || {}
-          ).map(([discriminatorValue, variantRef]) => [
-            discriminatorValue,
-            { $ref: variantRef },
-          ]),
-          ...variants
-            .filter((variant) => {
-              if (!isReference(variant)) {
-                // From the Swagger spec: "When using the discriminator, inline schemas will not be
-                // considered."
-                throw new Error(
-                  "Discriminators require references, not inline schemas"
-                );
-              }
-              return !mappedValues.has(this.getRefBasename(variant.$ref));
-            })
-            .map((schema) => [
-              this.getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
-              schema,
-            ]),
-        ] as [string, OpenAPIV3.ReferenceObject][]).map(
-          ([discriminatorValue, variant]) =>
-            // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
-            factory.createIntersectionTypeNode([
-              factory.createTypeLiteralNode([
-                cg.createPropertySignature({
-                  name: discriminator.propertyName,
-                  type: factory.createLiteralTypeNode(
-                    factory.createStringLiteral(discriminatorValue)
-                  ),
-                }),
+        (
+          [
+            ...Object.entries(discriminator.mapping || {}).map(
+              ([discriminatorValue, variantRef]) => [
+                discriminatorValue,
+                { $ref: variantRef },
+              ]
+            ),
+            ...variants
+              .filter((variant) => {
+                if (!isReference(variant)) {
+                  // From the Swagger spec: "When using the discriminator, inline schemas will not be
+                  // considered."
+                  throw new Error(
+                    "Discriminators require references, not inline schemas"
+                  );
+                }
+                return !mappedValues.has(this.getRefBasename(variant.$ref));
+              })
+              .map((schema) => [
+                this.getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
+                schema,
               ]),
-              this.getTypeFromSchema(variant),
-            ])
+          ] as [string, OpenAPIV3.ReferenceObject][]
+        ).map(([discriminatorValue, variant]) =>
+          // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
+          factory.createIntersectionTypeNode([
+            factory.createTypeLiteralNode([
+              cg.createPropertySignature({
+                name: discriminator.propertyName,
+                type: factory.createLiteralTypeNode(
+                  factory.createStringLiteral(discriminatorValue)
+                ),
+              }),
+            ]),
+            this.getTypeFromSchema(variant),
+          ])
         )
       );
     } else {
       // oneOf -> untagged union
-      return factory.createUnionTypeNode(variants.map(schema => this.getTypeFromSchema(schema)));
+      return factory.createUnionTypeNode(
+        variants.map((schema) => this.getTypeFromSchema(schema))
+      );
     }
   }
 
@@ -360,13 +363,13 @@ export default class ApiGenerator {
     if (schema.anyOf) {
       // anyOf -> union
       return factory.createUnionTypeNode(
-        schema.anyOf.map(schema => this.getTypeFromSchema(schema))
+        schema.anyOf.map((schema) => this.getTypeFromSchema(schema))
       );
     }
     if (schema.allOf) {
       // allOf -> intersection
       return factory.createIntersectionTypeNode(
-        schema.allOf.map(schema => this.getTypeFromSchema(schema))
+        schema.allOf.map((schema) => this.getTypeFromSchema(schema))
       );
     }
     if ("items" in schema) {
@@ -485,8 +488,8 @@ export default class ApiGenerator {
     // backwards-compatibility
     if (!responses) return "text";
 
-    const resolvedResponses = Object.values(responses).map(
-      response => this.resolve(response)
+    const resolvedResponses = Object.values(responses).map((response) =>
+      this.resolve(response)
     );
 
     // if no content is specified, assume `text` (backwards-compatibility)
@@ -668,7 +671,7 @@ export default class ApiGenerator {
             cg.createParameter(
               cg.createObjectBinding(
                 optional
-                  .map(param => this.resolve(param))
+                  .map((param) => this.resolve(param))
                   .map(({ name }) => ({ name: argNames[name] }))
               ),
               {
