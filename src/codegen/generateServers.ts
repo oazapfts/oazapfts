@@ -15,11 +15,9 @@ function createLiteral(v: string | boolean | number) {
 }
 
 function createUnion(strs: (string | boolean | number)[]): TypeNode[] {
-  return strs.map(
-    (e): TypeNode => {
-      return factory.createLiteralTypeNode(createLiteral(e));
-    }
-  );
+  return strs.map((e): TypeNode => {
+    return factory.createLiteralTypeNode(createLiteral(e));
+  });
 }
 
 function createTemplate(url: string): TemplateLiteral {

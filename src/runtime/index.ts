@@ -68,7 +68,12 @@ export function runtime(defaults: RequestOpts) {
   }
 
   async function doFetch(url: string, req: FetchRequestOpts = {}) {
-    const { baseUrl, headers, fetch: customFetch, ...init } = {
+    const {
+      baseUrl,
+      headers,
+      fetch: customFetch,
+      ...init
+    } = {
       ...defaults,
       ...req,
     };
