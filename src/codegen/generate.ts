@@ -588,7 +588,12 @@ export default class ApiGenerator {
     const names: Record<string, number> = {};
 
     Object.keys(this.spec.paths).forEach((path) => {
-      const item: OpenAPIV3.PathItemObject = this.spec.paths[path];
+      const item = this.spec.paths[path];
+
+      if (!item) {
+        return;
+      }
+
       Object.keys(this.resolve(item)).forEach((verb) => {
         const method = verb.toUpperCase();
         // skip summary/description/parameters etc...
