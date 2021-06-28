@@ -179,7 +179,9 @@ export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
 export default class ApiGenerator {
   constructor(
     public readonly spec: OpenAPIV3.Document,
-    public readonly opts: Opts = {}
+    public readonly opts: Opts = {},
+    /** Indicates if the document was converted from an older version of the OpenAPI specification. */
+    public readonly isConverted = false
   ) {}
 
   aliases: ts.TypeAliasDeclaration[] = [];
@@ -618,10 +620,15 @@ export default class ApiGenerator {
         }
 
         // merge item and op parameters
-        const parameters = supportDeepObjects([
+        const resolvedParameters = [
           ...this.resolveArray(item.parameters),
           ...this.resolveArray(op.parameters),
-        ]);
+        ];
+
+        // expand older OpenAPI parameters into deepObject style where needed
+        const parameters = this.isConverted
+          ? supportDeepObjects(resolvedParameters)
+          : resolvedParameters;
 
         // split into required/optional
         const [required, optional] = _.partition(parameters, "required");

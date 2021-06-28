@@ -13,8 +13,12 @@ export type Opts = {
   optimistic?: boolean;
 };
 
-export function generateAst(spec: OpenAPIV3.Document, opts: Opts) {
-  return new ApiGenerator(spec, opts).generateApi();
+export function generateAst(
+  spec: OpenAPIV3.Document,
+  opts: Opts,
+  isConverted: boolean
+) {
+  return new ApiGenerator(spec, opts, isConverted).generateApi();
 }
 
 export function printAst(ast: ts.SourceFile) {
@@ -31,7 +35,7 @@ export async function generateSource(spec: string, opts: Opts) {
     const result = await converter.convertObj(doc, {});
     v3Doc = result.openapi as OpenAPIV3.Document;
   }
-  const ast = generateAst(v3Doc, opts);
+  const ast = generateAst(v3Doc, opts, !isOpenApiV3);
   const { title, version } = v3Doc.info;
   const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
   const src = printAst(ast);
