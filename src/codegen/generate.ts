@@ -460,6 +460,10 @@ export default class ApiGenerator {
             name: "status",
             type: statusType,
           }),
+          cg.createPropertySignature({
+            name: "headers",
+            type: factory.createTypeReferenceNode("Headers"),
+          }),
         ];
 
         const dataType = this.getTypeFromResponse(res);
