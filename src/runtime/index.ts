@@ -54,9 +54,16 @@ export function runtime(defaults: RequestOpts) {
         Accept: "application/json",
       },
     });
-    if (contentType && contentType.includes("application/json")) {
-      return { status, data: data && JSON.parse(data), headers } as T;
+
+    const jsonTypes = ["application/json", "application/hal+json"];
+    const isJson = contentType
+      ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
+      : false;
+
+    if (isJson) {
+      return { status, data: data ? JSON.parse(data) : null, headers } as T;
     }
+
     return { status, data, headers } as T;
   }
 

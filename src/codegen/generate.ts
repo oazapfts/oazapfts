@@ -18,9 +18,12 @@ export const verbs = [
   "TRACE",
 ];
 
-export const contentTypes = {
+type ContentType = "json" | "form" | "multipart";
+
+export const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
   "application/json": "json",
+  "application/hal+json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
 };
@@ -507,14 +510,15 @@ export default class ApiGenerator {
       return "text";
     }
 
+    const isJson = resolvedResponses.some((response) => {
+      const responseMimeTypes = Object.keys(response.content ?? {});
+      return responseMimeTypes.some(
+        (mimeType) => contentTypes[mimeType] === "json"
+      );
+    });
+
     // if there’s `application/json` or `*/*`, assume `json`
-    if (
-      resolvedResponses.some(
-        (res) =>
-          !!_.get(res, ["content", "application/json"]) ||
-          !!_.get(res, ["content", "*/*"])
-      )
-    ) {
+    if (isJson) {
       return "json";
     }
 
