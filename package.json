@@ -29,7 +29,7 @@
     "@types/minimist": "^1.2.0",
     "@types/node": "^16.0.0",
     "form-data": "^4.0.0",
-    "husky": "^6.0.0",
+    "husky": "^7.0.0",
     "jest": "^27.0.5",
     "lint-staged": "^11.0.0",
     "node-fetch": "^2.6.0",
