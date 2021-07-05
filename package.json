@@ -27,7 +27,7 @@
     "@types/jest": "^26.0.23",
     "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^15.12.4",
+    "@types/node": "^16.0.0",
     "form-data": "^4.0.0",
     "husky": "^6.0.0",
     "jest": "^27.0.5",
