@@ -648,11 +648,7 @@ export default class ApiGenerator {
           .map((p) => p.name)
           .sort((a, b) => a.length - b.length)
           .forEach((name) => {
-            // strip leading namespaces, eg. foo.name -> name
-            const stripped = _.camelCase(name.replace(/.+\./, ""));
-            // keep the prefix if the stripped-down name is already taken
-            argNames[name] =
-              stripped in argNames ? _.camelCase(name) : stripped;
+            argNames[name] = _.camelCase(name);
           });
 
         // build the method signature - first all the required parameters
