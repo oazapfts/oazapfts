@@ -24,7 +24,7 @@
   "repository": "cellular/oazapfts",
   "devDependencies": {
     "@jest/types": "^27.0.2",
-    "@types/jest": "^26.0.23",
+    "@types/jest": "^27.0.1",
     "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
     "@types/node": "^16.0.0",
