@@ -229,6 +229,8 @@ export default class ApiGenerator {
   }
 
   getUniqueAlias(name: string) {
+    if (name[0] >= "0" && name[0] <= "9") name = "R" + name;
+
     let used = this.typeAliases[name] || 0;
     if (used) {
       this.typeAliases[name] = ++used;
