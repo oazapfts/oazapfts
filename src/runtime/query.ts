@@ -61,6 +61,20 @@ export function explode(
     .join("&");
 }
 
+export function json(
+  params: Record<string, any>,
+  encoders = encodeReserved
+): string {
+  const q = encode(encoders);
+  return Object.entries(params)
+    .filter(([, value]) => value !== undefined)
+    .map(([name, value]) => {
+      const v = JSON.stringify(value);
+      return q`${name}=${v}`;
+    })
+    .join("&");
+}
+
 export const form = delimited();
 export const pipe = delimited("|");
 export const space = delimited("%20");

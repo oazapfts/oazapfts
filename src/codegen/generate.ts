@@ -31,7 +31,26 @@ export const contentTypes: Record<string, ContentType> = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-export function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
+export function getFormatter({
+  style,
+  explode,
+  content,
+}: OpenAPIV3.ParameterObject) {
+  if (content) {
+    const medias = Object.keys(content);
+    if (medias.length !== 1) {
+      throw new Error(
+        "Parameters with content property must specify one media type"
+      );
+    }
+    const contentType = contentTypes[medias[0]];
+    if (contentType !== "json") {
+      throw new Error(
+        "Parameters with content property must specify a JSON compatible media type"
+      );
+    }
+    return "json";
+  }
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   if (style === "deepObject") return "deep";
@@ -554,6 +573,14 @@ export default class ApiGenerator {
     return { type: "string", format: "binary" };
   }
 
+  getTypeFromParameter(p: OpenAPIV3.ParameterObject) {
+    if (p.content) {
+      const schema = this.getSchemaFromContent(p.content);
+      return this.getTypeFromSchema(schema);
+    }
+    return this.getTypeFromSchema(isReference(p) ? p : p.schema);
+  }
+
   wrapResult(ex: ts.Expression) {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
@@ -654,7 +681,7 @@ export default class ApiGenerator {
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
           cg.createParameter(argNames[this.resolve(p).name], {
-            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
+            type: this.getTypeFromParameter(p),
           })
         );
 
@@ -693,9 +720,7 @@ export default class ApiGenerator {
                     cg.createPropertySignature({
                       name: argNames[this.resolve(p).name],
                       questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema
-                      ),
+                      type: this.getTypeFromParameter(p),
                     })
                   )
                 ),
