@@ -9,6 +9,7 @@ type KeywordTypeName =
   | "string"
   | "boolean"
   | "undefined"
+  | "unknown"
   | "null";
 
 export const questionToken = factory.createToken(ts.SyntaxKind.QuestionToken);
@@ -19,20 +20,27 @@ export function createQuestionToken(token?: boolean | ts.QuestionToken) {
   return token;
 }
 
-export function createKeywordType(type: KeywordTypeName) {
+export function createKeywordType(
+  type: KeywordTypeName
+): ts.KeywordTypeNode | ts.LiteralTypeNode | ts.TypeReferenceNode {
   switch (type) {
     case "any":
       return factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
     case "number":
       return factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword);
     case "object":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword);
+      return factory.createTypeReferenceNode(
+        factory.createIdentifier("Record"),
+        [createKeywordType("string"), createKeywordType("unknown")]
+      );
     case "string":
       return factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword);
     case "boolean":
       return factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
     case "undefined":
       return factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword);
+    case "unknown":
+      return factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword);
     case "null":
       return factory.createLiteralTypeNode(
         ts.factory.createToken(ts.SyntaxKind.NullKeyword)
@@ -41,14 +49,21 @@ export function createKeywordType(type: KeywordTypeName) {
 }
 
 export const keywordType: {
-  [type: string]: ts.KeywordTypeNode | ts.LiteralTypeNode;
+  [type: string]:
+    | ts.KeywordTypeNode
+    | ts.LiteralTypeNode
+    | ts.TypeReferenceNode;
 } = {
   any: factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
   number: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
-  object: factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword),
+  object: factory.createTypeReferenceNode(factory.createIdentifier("Record"), [
+    createKeywordType("string"),
+    createKeywordType("unknown"),
+  ]),
   string: factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
   boolean: factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
   undefined: factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
+  unknown: factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
   null: factory.createLiteralTypeNode(
     ts.factory.createToken(ts.SyntaxKind.NullKeyword)
   ),
