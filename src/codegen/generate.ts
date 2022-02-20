@@ -377,7 +377,24 @@ export default class ApiGenerator {
   getTypeFromSchema(
     schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
   ): ts.TypeNode {
-    const type = this.getBaseTypeFromSchema(schema);
+    let type: ts.TypeNode | undefined
+
+    // try applying custom extensions
+    const extensions = this.extensions.schemaParserExtensions
+    if (extensions && extensions.length > 0) {
+      const extensionHelpers = {
+        defaultSchemaTypeParser: this.getBaseTypeFromSchema.bind(this),
+        ...defaultHelpers
+      }
+      for (let extension of extensions) {
+        type = extension(schema, extensionHelpers)
+        if (type) break
+      }
+    }
+
+    // if custom extensions returned no type - use default parser
+    type ??= this.getBaseTypeFromSchema(schema)
+
     return isNullable(schema)
       ? factory.createUnionTypeNode([type, cg.keywordType.null])
       : type;
