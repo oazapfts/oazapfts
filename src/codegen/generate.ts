@@ -114,6 +114,14 @@ export function createUrlExpression(path: string, qs?: ts.Expression) {
 }
 
 /**
+ * Default helpers used in extensions.
+ */
+export const defaultHelpers = {
+  isReference,
+  ...cg,
+}
+
+/**
  * Create a call expression for one of the QS runtime functions.
  */
 export function callQsFunction(name: string, args: ts.Expression[]) {
