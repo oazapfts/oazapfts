@@ -235,7 +235,7 @@ export default class ApiGenerator {
     this.typeAliases = {};
   }
 
-  resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
+  resolve<T> (obj: T | OpenAPIV3.ReferenceObject): T {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith('#/')) {
@@ -594,7 +594,7 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction('ok', [ex]) : ex;
   }
 
-  generateApi() {
+  generateApi (): ts.SourceFile {
     this.reset();
 
     // Parse ApiStub.ts so that we don't have to generate everything manually
