@@ -849,11 +849,61 @@ export default class ApiGenerator {
             'query',
             Object.entries(paramsByFormatter).map(([format, params]) => {
               //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
-              return callQsFunction(format, [
-                cg.createObjectLiteral(
-                  params.map((p) => [p.name, argNames[p.name]]),
-                ),
-              ]);
+              const basicParams: OpenAPIV3.ParameterObject[] = []
+              const extendedParams: {
+                parameter: OpenAPIV3.ParameterObject,
+                callbackName: string,
+              }[] = []
+
+              const getExtendedCallbackName = (
+                p: OpenAPIV3.ParameterObject
+              ): string | undefined => {
+                const extensions = this.extensions.queryStringParserExtensions
+                if (!extensions || extensions.length === 0) return
+
+                const helpers = {
+                  defaultSchemaResolver: this.resolve.bind(this),
+                  ...defaultHelpers
+                }
+                for (let extension of extensions) {
+                  const name = extension(p, helpers)
+                  if (name) return name
+                }
+              }
+
+              params.forEach(parameter => {
+                const callbackName = getExtendedCallbackName(parameter)
+                callbackName
+                  ? extendedParams.push({ parameter, callbackName })
+                  : basicParams.push(parameter)
+              })
+
+              const createParam = (p: OpenAPIV3.ParameterObject): [string, any] => {
+                return [p.name, argNames[p.name]]
+              }
+              const basicParamsMap: [string, any][] = basicParams.map(createParam)
+              const basicParamsObjLiteral = cg.createObjectLiteral(basicParamsMap)
+
+              const extendedParamsFnCalls = extendedParams.map(o => {
+                const name = o.parameter.name
+                const argName = argNames[name]
+                const args = [
+                  factory.createStringLiteral(name),
+                  factory.createIdentifier(argName),
+                ]
+                const fnCall = callQueryParamParser(o.callbackName, args)
+                return fnCall
+              })
+
+              const qsCallParamsObjectLiteral = factory.updateObjectLiteralExpression(
+                basicParamsObjLiteral,
+                [
+                  ...basicParamsObjLiteral.properties,
+                  ...extendedParamsFnCalls.map(c => factory.createSpreadAssignment(c))
+                ]
+              )
+
+              return callQsFunction(format, [qsCallParamsObjectLiteral])
             }),
           );
         }
