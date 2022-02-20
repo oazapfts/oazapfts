@@ -4,6 +4,7 @@ import fs from "fs";
 import minimist from "minimist";
 
 import { generateSource, Opts } from "./";
+import { processConfigFileIfExists } from "./extensions";
 
 const argv = minimist(process.argv.slice(2), {
   alias: {
@@ -14,6 +15,7 @@ const argv = minimist(process.argv.slice(2), {
 });
 
 async function generate(spec: string, dest: string, opts: Opts) {
+  processConfigFileIfExists();
   const code = await generateSource(spec, opts);
   if (dest) fs.writeFileSync(dest, code);
   else console.log(code);

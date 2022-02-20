@@ -6,6 +6,7 @@ import * as cg from './tscodegen';
 import generateServers, { defaultBaseUrl } from './generateServers';
 import { Opts } from '.';
 import { threadId } from 'worker_threads';
+import { OazapftsExtensions } from './extensions';
 
 export const verbs = [
   'GET',
@@ -114,12 +115,44 @@ export function createUrlExpression(path: string, qs?: ts.Expression) {
 }
 
 /**
+ * Default helpers used in extensions.
+ */
+export const defaultHelpers = {
+  isReference,
+  ...cg,
+}
+
+/**
  * Create a call expression for one of the QS runtime functions.
  */
-export function callQsFunction(name: string, args: ts.Expression[]) {
+export function callQsFunction (
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
+  return callExternalFunction('QS', name, args)
+}
+
+/**
+ * Create a call expression for one of the query parameter parsers
+ * provided in queryParamParsers.ts.
+ * @param name query parameter parser callback name
+ * @param args to invoke callback with
+ */
+export function callQueryParamParser (
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
+  return callExternalFunction('QueryParamsParsers', name, args)
+}
+
+function callExternalFunction (
+  namespace: 'QS' | 'QueryParamsParsers',
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
   return cg.createCall(
     factory.createPropertyAccessExpression(
-      factory.createIdentifier('QS'),
+      factory.createIdentifier(namespace),
       name,
     ),
     { args },
@@ -185,6 +218,7 @@ export default class ApiGenerator {
     public readonly opts: Opts = {},
     /** Indicates if the document was converted from an older version of the OpenAPI specification. */
     public readonly isConverted = false,
+    private readonly extensions: OazapftsExtensions = {},
   ) {}
 
   aliases: ts.TypeAliasDeclaration[] = [];
@@ -201,7 +235,7 @@ export default class ApiGenerator {
     this.typeAliases = {};
   }
 
-  resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
+  resolve<T> (obj: T | OpenAPIV3.ReferenceObject): T {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     if (!ref.startsWith('#/')) {
@@ -343,7 +377,24 @@ export default class ApiGenerator {
   getTypeFromSchema(
     schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
   ): ts.TypeNode {
-    const type = this.getBaseTypeFromSchema(schema);
+    let type: ts.TypeNode | undefined
+
+    // try applying custom extensions
+    const extensions = this.extensions.schemaParserExtensions
+    if (extensions && extensions.length > 0) {
+      const extensionHelpers = {
+        defaultSchemaTypeParser: this.getBaseTypeFromSchema.bind(this),
+        ...defaultHelpers
+      }
+      for (let extension of extensions) {
+        type = extension(schema, extensionHelpers)
+        if (type) break
+      }
+    }
+
+    // if custom extensions returned no type - use default parser
+    type ??= this.getBaseTypeFromSchema(schema)
+
     return isNullable(schema)
       ? factory.createUnionTypeNode([type, cg.keywordType.null])
       : type;
@@ -556,11 +607,77 @@ export default class ApiGenerator {
     return { type: 'string', format: 'binary' };
   }
 
+  /**
+   * Default way to create a node from provided method parameter.
+   * @param p method parameter to generate node from
+   */
+  private getNonExtendedMethodParameter (p: OpenAPIV3.ParameterObject): ts.TypeNode {
+    return this.getTypeFromSchema(isReference(p) ? p : p.schema)
+  }
+
+  /**
+   * Creates a node from provided method parameter.
+   * Checks if a parameter is externally extended by custom config.
+   * @param p method parameter to generate node from
+   */
+  private getMethodParameter (p: OpenAPIV3.ParameterObject): ts.TypeNode {
+    let type: ts.TypeNode | undefined
+
+    const extensions = this.extensions.parameterParserExtensions
+    if (extensions && extensions.length > 0) {
+      const extensionHelpers = {
+        defaultParameterTypeParser: this.getNonExtendedMethodParameter.bind(this),
+        ...defaultHelpers
+      }
+      for (let extension of extensions) {
+        type = extension(p, extensionHelpers)
+        if (type) break
+      }
+    }
+
+    return type ?? this.getNonExtendedMethodParameter(p)
+  }
+
+  /**
+   * Adds import of query string parsers extension to a source file.
+   * @param src Source file to add import statement to.
+   */
+  private addQueryStringParserExtensionsImport = (src: ts.SourceFile): void => {
+    const { statements } = src
+    let lastImportIndex = 0
+    for (let i = statements.length - 1; i >= 0; i--) {
+      const isImportDeclaration = ts.isImportDeclaration(statements[i])
+      if (isImportDeclaration) {
+        lastImportIndex = i
+        break
+      }
+    }
+
+    const extensionsImport = factory.createImportDeclaration(
+      undefined,
+      undefined,
+      factory.createImportClause(
+        false,
+        factory.createIdentifier('QueryParamsParsers'),
+        undefined
+      ),
+      factory.createStringLiteral('./queryParamParsers')
+    )
+    const existingImports = factory.createNodeArray(statements.slice(0, lastImportIndex + 1))
+    const restStatements = statements.slice(lastImportIndex + 1)
+    const updatedStatements = cg.appendNodes(
+      existingImports,
+      extensionsImport,
+      ...restStatements
+    )
+    Object.assign(src, { statements: updatedStatements })
+  }
+
   wrapResult(ex: ts.Expression) {
     return this.opts?.optimistic ? callOazapftsFunction('ok', [ex]) : ex;
   }
 
-  generateApi() {
+  generateApi (): ts.SourceFile {
     this.reset();
 
     // Parse ApiStub.ts so that we don't have to generate everything manually
@@ -588,6 +705,10 @@ export default class ApiGenerator {
       'baseUrl',
       defaultBaseUrl(this.spec.servers || []),
     );
+
+    const extensions = this.extensions.queryStringParserExtensions
+    const hasExtensions = extensions && extensions.length > 0
+    hasExtensions && this.addQueryStringParserExtensionsImport(stub)
 
     // Collect class functions to be added...
     const functions: ts.FunctionDeclaration[] = [];
@@ -656,7 +777,7 @@ export default class ApiGenerator {
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
           cg.createParameter(argNames[this.resolve(p).name], {
-            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
+            type: this.getMethodParameter(p),
           }),
         );
 
@@ -695,10 +816,8 @@ export default class ApiGenerator {
                     cg.createPropertySignature({
                       name: argNames[this.resolve(p).name],
                       questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema,
-                      ),
-                    }),
+                      type: this.getMethodParameter(p),
+                    })
                   ),
                 ),
               },
@@ -730,11 +849,61 @@ export default class ApiGenerator {
             'query',
             Object.entries(paramsByFormatter).map(([format, params]) => {
               //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
-              return callQsFunction(format, [
-                cg.createObjectLiteral(
-                  params.map((p) => [p.name, argNames[p.name]]),
-                ),
-              ]);
+              const basicParams: OpenAPIV3.ParameterObject[] = []
+              const extendedParams: {
+                parameter: OpenAPIV3.ParameterObject,
+                callbackName: string,
+              }[] = []
+
+              const getExtendedCallbackName = (
+                p: OpenAPIV3.ParameterObject
+              ): string | undefined => {
+                const extensions = this.extensions.queryStringParserExtensions
+                if (!extensions || extensions.length === 0) return
+
+                const helpers = {
+                  defaultSchemaResolver: this.resolve.bind(this),
+                  ...defaultHelpers
+                }
+                for (let extension of extensions) {
+                  const name = extension(p, helpers)
+                  if (name) return name
+                }
+              }
+
+              params.forEach(parameter => {
+                const callbackName = getExtendedCallbackName(parameter)
+                callbackName
+                  ? extendedParams.push({ parameter, callbackName })
+                  : basicParams.push(parameter)
+              })
+
+              const createParam = (p: OpenAPIV3.ParameterObject): [string, any] => {
+                return [p.name, argNames[p.name]]
+              }
+              const basicParamsMap: [string, any][] = basicParams.map(createParam)
+              const basicParamsObjLiteral = cg.createObjectLiteral(basicParamsMap)
+
+              const extendedParamsFnCalls = extendedParams.map(o => {
+                const name = o.parameter.name
+                const argName = argNames[name]
+                const args = [
+                  factory.createStringLiteral(name),
+                  factory.createIdentifier(argName),
+                ]
+                const fnCall = callQueryParamParser(o.callbackName, args)
+                return fnCall
+              })
+
+              const qsCallParamsObjectLiteral = factory.updateObjectLiteralExpression(
+                basicParamsObjLiteral,
+                [
+                  ...basicParamsObjLiteral.properties,
+                  ...extendedParamsFnCalls.map(c => factory.createSpreadAssignment(c))
+                ]
+              )
+
+              return callQsFunction(format, [qsCallParamsObjectLiteral])
             }),
           );
         }
