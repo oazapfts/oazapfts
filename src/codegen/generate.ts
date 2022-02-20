@@ -590,6 +590,41 @@ export default class ApiGenerator {
     return { type: 'string', format: 'binary' };
   }
 
+  /**
+   * Adds import of query string parsers extension to a source file.
+   * @param src Source file to add import statement to.
+   */
+  private addQueryStringParserExtensionsImport = (src: ts.SourceFile): void => {
+    const { statements } = src
+    let lastImportIndex = 0
+    for (let i = statements.length - 1; i >= 0; i--) {
+      const isImportDeclaration = ts.isImportDeclaration(statements[i])
+      if (isImportDeclaration) {
+        lastImportIndex = i
+        break
+      }
+    }
+
+    const extensionsImport = factory.createImportDeclaration(
+      undefined,
+      undefined,
+      factory.createImportClause(
+        false,
+        factory.createIdentifier('QueryParamsParsers'),
+        undefined
+      ),
+      factory.createStringLiteral('./queryParamParsers')
+    )
+    const existingImports = factory.createNodeArray(statements.slice(0, lastImportIndex + 1))
+    const restStatements = statements.slice(lastImportIndex + 1)
+    const updatedStatements = cg.appendNodes(
+      existingImports,
+      extensionsImport,
+      ...restStatements
+    )
+    Object.assign(src, { statements: updatedStatements })
+  }
+
   wrapResult(ex: ts.Expression) {
     return this.opts?.optimistic ? callOazapftsFunction('ok', [ex]) : ex;
   }
