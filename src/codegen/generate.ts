@@ -125,10 +125,34 @@ export const defaultHelpers = {
 /**
  * Create a call expression for one of the QS runtime functions.
  */
-export function callQsFunction(name: string, args: ts.Expression[]) {
+export function callQsFunction (
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
+  return callExternalFunction('QS', name, args)
+}
+
+/**
+ * Create a call expression for one of the query parameter parsers
+ * provided in queryParamParsers.ts.
+ * @param name query parameter parser callback name
+ * @param args to invoke callback with
+ */
+export function callQueryParamParser (
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
+  return callExternalFunction('QueryParamsParsers', name, args)
+}
+
+function callExternalFunction (
+  namespace: 'QS' | 'QueryParamsParsers',
+  name: string,
+  args: ts.Expression[]
+): ts.CallExpression {
   return cg.createCall(
     factory.createPropertyAccessExpression(
-      factory.createIdentifier('QS'),
+      factory.createIdentifier(namespace),
       name,
     ),
     { args },
