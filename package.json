@@ -49,5 +49,10 @@
   },
   "lint-staged": {
     "*.{ts,js,json,md,yml}": "prettier --write"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "engineStrict": true
 }
