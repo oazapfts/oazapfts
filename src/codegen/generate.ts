@@ -591,6 +591,37 @@ export default class ApiGenerator {
   }
 
   /**
+   * Default way to create a node from provided method parameter.
+   * @param p method parameter to generate node from
+   */
+  private getNonExtendedMethodParameter (p: OpenAPIV3.ParameterObject): ts.TypeNode {
+    return this.getTypeFromSchema(isReference(p) ? p : p.schema)
+  }
+
+  /**
+   * Creates a node from provided method parameter.
+   * Checks if a parameter is externally extended by custom config.
+   * @param p method parameter to generate node from
+   */
+  private getMethodParameter (p: OpenAPIV3.ParameterObject): ts.TypeNode {
+    let type: ts.TypeNode | undefined
+
+    const extensions = this.extensions.parameterParserExtensions
+    if (extensions && extensions.length > 0) {
+      const extensionHelpers = {
+        defaultParameterTypeParser: this.getNonExtendedMethodParameter.bind(this),
+        ...defaultHelpers
+      }
+      for (let extension of extensions) {
+        type = extension(p, extensionHelpers)
+        if (type) break
+      }
+    }
+
+    return type ?? this.getNonExtendedMethodParameter(p)
+  }
+
+  /**
    * Adds import of query string parsers extension to a source file.
    * @param src Source file to add import statement to.
    */
@@ -725,7 +756,7 @@ export default class ApiGenerator {
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
           cg.createParameter(argNames[this.resolve(p).name], {
-            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
+            type: this.getMethodParameter(p),
           }),
         );
 
@@ -764,10 +795,8 @@ export default class ApiGenerator {
                     cg.createPropertySignature({
                       name: argNames[this.resolve(p).name],
                       questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema,
-                      ),
-                    }),
+                      type: this.getMethodParameter(p),
+                    })
                   ),
                 ),
               },
