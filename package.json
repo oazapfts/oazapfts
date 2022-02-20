@@ -1,7 +1,10 @@
 {
-  "name": "oazapfts",
-  "version": "3.5.0",
+  "name": "@tzkt/oazapfts",
+  "version": "3.5.1",
   "description": "OpenApi TypeScript client generator",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@tzkt"
+  },
   "main": "lib/index.js",
   "bin": {
     "oazapfts": "lib/codegen/cli.js"
@@ -21,7 +24,7 @@
   ],
   "author": "Felix Gnass",
   "license": "MIT",
-  "repository": "cellular/oazapfts",
+  "repository": "git://github.com/tzkt/oazapfts.git",
   "devDependencies": {
     "@jest/types": "^27.0.2",
     "@types/jest": "^27.0.1",
@@ -49,5 +52,10 @@
   },
   "lint-staged": {
     "*.{ts,js,json,md,yml}": "prettier --write"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "engineStrict": true
 }

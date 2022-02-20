@@ -1,11 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Swagger Petstore
- * 1.0.0
- * DO NOT MODIFY - This file has been generated using oazapfts.
- * See https://www.npmjs.com/package/oazapfts
+ * DO NOT MODIFY - This file has been generated using @tzkt/oazapfts.
+ * See https://www.npmjs.com/package/@tzkt/oazapfts
  */
-import * as Oazapfts from "oazapfts/lib/runtime";
-import * as QS from "oazapfts/lib/runtime/query";
+import * as Oazapfts from "@tzkt/oazapfts/lib/runtime";
+import * as QS from "@tzkt/oazapfts/lib/runtime/query";
 export const defaults: Oazapfts.RequestOpts = {
   baseUrl: "https://petstore.swagger.io/v2",
 };

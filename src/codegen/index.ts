@@ -13,19 +13,23 @@ export type Opts = {
   optimistic?: boolean;
 };
 
-export function generateAst(
+export async function generateAst (
   spec: OpenAPIV3.Document,
   opts: Opts,
   isConverted: boolean
-) {
-  return new ApiGenerator(spec, opts, isConverted).generateApi();
+): Promise<ts.SourceFile> {
+  const extensions = (await import('./oazapfts.config')).default
+  return new ApiGenerator(spec, opts, isConverted, extensions).generateApi();
 }
 
 export function printAst(ast: ts.SourceFile) {
   return cg.printFile(ast);
 }
 
-export async function generateSource(spec: string, opts: Opts) {
+export async function generateSource(
+  spec: string,
+  opts: Opts
+): Promise<string> {
   let v3Doc;
   const doc = await SwaggerParser.bundle(spec);
   const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
@@ -35,7 +39,7 @@ export async function generateSource(spec: string, opts: Opts) {
     const result = await converter.convertObj(doc, {});
     v3Doc = result.openapi as OpenAPIV3.Document;
   }
-  const ast = generateAst(v3Doc, opts, !isOpenApiV3);
+  const ast = await generateAst(v3Doc, opts, !isOpenApiV3);
   const { title, version } = v3Doc.info;
   const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
   const src = printAst(ast);
