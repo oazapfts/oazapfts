@@ -6,6 +6,7 @@ import * as cg from './tscodegen';
 import generateServers, { defaultBaseUrl } from './generateServers';
 import { Opts } from '.';
 import { threadId } from 'worker_threads';
+import { OazapftsExtensions } from './extensions';
 
 export const verbs = [
   'GET',
@@ -193,6 +194,7 @@ export default class ApiGenerator {
     public readonly opts: Opts = {},
     /** Indicates if the document was converted from an older version of the OpenAPI specification. */
     public readonly isConverted = false,
+    private readonly extensions: OazapftsExtensions = {},
   ) {}
 
   aliases: ts.TypeAliasDeclaration[] = [];
