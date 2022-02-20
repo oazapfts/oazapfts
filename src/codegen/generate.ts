@@ -689,6 +689,10 @@ export default class ApiGenerator {
       defaultBaseUrl(this.spec.servers || []),
     );
 
+    const extensions = this.extensions.queryStringParserExtensions
+    const hasExtensions = extensions && extensions.length > 0
+    hasExtensions && this.addQueryStringParserExtensionsImport(stub)
+
     // Collect class functions to be added...
     const functions: ts.FunctionDeclaration[] = [];
 
