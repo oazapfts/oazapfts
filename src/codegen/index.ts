@@ -25,7 +25,10 @@ export function printAst(ast: ts.SourceFile) {
   return cg.printFile(ast);
 }
 
-export async function generateSource(spec: string, opts: Opts) {
+export async function generateSource(
+  spec: string,
+  opts: Opts
+): Promise<string> {
   let v3Doc;
   const doc = await SwaggerParser.bundle(spec);
   const isOpenApiV3 = "openapi" in doc && doc.openapi.startsWith("3");
