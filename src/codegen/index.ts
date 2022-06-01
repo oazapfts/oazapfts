@@ -11,6 +11,7 @@ export type Opts = {
   include?: string[];
   exclude?: string[];
   optimistic?: boolean;
+  unionUndefined?: boolean;
 };
 
 export function generateAst(

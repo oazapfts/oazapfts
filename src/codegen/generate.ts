@@ -435,10 +435,14 @@ export default class ApiGenerator {
     const members: ts.TypeElement[] = Object.keys(props).map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
+      let type = this.getTypeFromSchema(schema);
+      if (!isRequired && this.opts.unionUndefined) {
+        type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
+      }
       return cg.createPropertySignature({
         questionToken: !isRequired,
         name,
-        type: this.getTypeFromSchema(schema),
+        type,
       });
     });
     if (additionalProperties) {
