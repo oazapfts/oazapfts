@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-import fs from "fs";
-import minimist from "minimist";
+import fs from 'fs';
+import minimist from 'minimist';
 
-import { generateSource, Opts } from "./";
+import { generateSource, Opts } from './';
 
 const argv = minimist(process.argv.slice(2), {
   alias: {
-    i: "include",
-    e: "exclude",
+    i: 'include',
+    e: 'exclude',
   },
-  boolean: ["optimistic"],
+  boolean: ['optimistic'],
 });
 
 async function generate(spec: string, dest: string, opts: Opts) {

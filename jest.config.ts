@@ -1,8 +1,8 @@
-import { Config } from "@jest/types";
+import { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
-  preset: "ts-jest",
-  rootDir: "src",
+  preset: 'ts-jest',
+  rootDir: 'src',
   restoreMocks: true,
 };
 

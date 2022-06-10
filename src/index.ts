@@ -1,17 +1,17 @@
-import { ApiResponse } from "./runtime";
+import { ApiResponse } from './runtime';
 
 /**
  * Type to access a response's data property for a given status.
  */
 type DataType<T extends ApiResponse, S extends number> = T extends { status: S }
-  ? T["data"]
+  ? T['data']
   : never;
 
 /**
  * Object with methods to handle possible status codes of an ApiResponse.
  */
 type ResponseHandler<T extends ApiResponse> = {
-  [P in T["status"]]: (res: DataType<T, P>) => any;
+  [P in T['status']]: (res: DataType<T, P>) => any;
 } & {
   default?: (status: number, data: any) => any;
 };
@@ -28,7 +28,7 @@ type ResponseHandler<T extends ApiResponse> = {
  **/
 export async function handle<
   T extends ApiResponse,
-  H extends ResponseHandler<T>
+  H extends ResponseHandler<T>,
 >(promise: Promise<T>, handler: H): Promise<ReturnType<H[keyof H]>> {
   const { status, data } = await promise;
   const statusHandler = (handler as any)[status];
@@ -56,7 +56,7 @@ type SuccessResponse<T extends ApiResponse> = DataType<T, SuccessCodes>;
  * }
  */
 export async function ok<T extends ApiResponse>(
-  promise: Promise<T>
+  promise: Promise<T>,
 ): Promise<SuccessResponse<T>> {
   const res = await promise;
   if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
@@ -92,11 +92,11 @@ type OptimisticApi<T> = {
  * Utility to `okify` each function of an API.
  */
 export function optimistic<T extends Record<string, ApiFunction | unknown>>(
-  api: T
+  api: T,
 ): OptimisticApi<T> {
   const okApi: any = {};
   Object.entries(api).forEach(([key, value]) => {
-    okApi[key] = typeof value === "function" ? okify(value as any) : value;
+    okApi[key] = typeof value === 'function' ? okify(value as any) : value;
   });
   return okApi;
 }

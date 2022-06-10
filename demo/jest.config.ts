@@ -1,9 +1,9 @@
-import { Config } from "@jest/types";
+import { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
-  preset: "ts-jest",
+  preset: 'ts-jest',
   moduleNameMapper: {
-    "^oazapfts/lib/(.+)$": "<rootDir>/../src/$1",
+    '^oazapfts/lib/(.+)$': '<rootDir>/../src/$1',
   },
   restoreMocks: true,
 };

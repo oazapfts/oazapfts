@@ -3,11 +3,11 @@
  * See https://www.npmjs.com/package/oazapfts
  */
 
-import * as Oazapfts from "oazapfts/lib/runtime";
-import * as QS from "oazapfts/lib/runtime/query";
+import * as Oazapfts from 'oazapfts/lib/runtime';
+import * as QS from 'oazapfts/lib/runtime/query';
 
 export const defaults: Oazapfts.RequestOpts = {
-  baseUrl: "/",
+  baseUrl: '/',
 };
 
 const oazapfts = Oazapfts.runtime(defaults);

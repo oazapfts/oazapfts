@@ -1,13 +1,13 @@
-import * as qs from "./query";
-import { joinUrl, stripUndefined } from "./util";
-import { ok } from "../";
+import * as qs from './query';
+import { joinUrl, stripUndefined } from './util';
+import { ok } from '../';
 
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
   formDataConstructor?: new () => FormData;
   headers?: Record<string, string | undefined>;
-} & Omit<RequestInit, "body" | "headers">;
+} & Omit<RequestInit, 'body' | 'headers'>;
 
 type FetchRequestOpts = RequestOpts & {
   body?: string | FormData;
@@ -33,24 +33,24 @@ export function runtime(defaults: RequestOpts) {
 
     return {
       status: res.status,
-      contentType: res.headers.get("content-type"),
+      contentType: res.headers.get('content-type'),
       data,
     };
   }
 
   async function fetchJson<T extends ApiResponse>(
     url: string,
-    req: FetchRequestOpts = {}
+    req: FetchRequestOpts = {},
   ) {
     const { status, contentType, data } = await fetchText(url, {
       ...req,
       headers: {
         ...req.headers,
-        Accept: "application/json",
+        Accept: 'application/json',
       },
     });
 
-    const jsonTypes = ["application/json", "application/hal+json"];
+    const jsonTypes = ['application/json', 'application/hal+json'];
     const isJson = contentType
       ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
       : false;
@@ -64,7 +64,7 @@ export function runtime(defaults: RequestOpts) {
 
   async function fetchBlob<T extends ApiResponse>(
     url: string,
-    req: FetchRequestOpts = {}
+    req: FetchRequestOpts = {},
   ) {
     const res = await doFetch(url, req);
     let data;
@@ -104,7 +104,7 @@ export function runtime(defaults: RequestOpts) {
         ...(body && { body: JSON.stringify(body) }),
         headers: {
           ...headers,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       };
     },
@@ -115,7 +115,7 @@ export function runtime(defaults: RequestOpts) {
         ...(body && { body: qs.form(body) }),
         headers: {
           ...headers,
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       };
     },

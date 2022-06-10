@@ -1,9 +1,9 @@
-import generateServers from "./generateServers";
-import * as cg from "./tscodegen";
+import generateServers from './generateServers';
+import * as cg from './tscodegen';
 
-describe("generateServer", () => {
-  it("creates an object with servers", () => {
-    const servers = generateServers([{ url: "http://example.org" }]);
+describe('generateServer', () => {
+  it('creates an object with servers', () => {
+    const servers = generateServers([{ url: 'http://example.org' }]);
 
     expect(cg.printNode(servers)).toMatchInlineSnapshot(`
       "{
@@ -12,10 +12,10 @@ describe("generateServer", () => {
     `);
   });
 
-  it("uses the description as name", () => {
+  it('uses the description as name', () => {
     const servers = generateServers([
-      { url: "http://example.org", description: "Super API" },
-      { url: "http://example.org/2" },
+      { url: 'http://example.org', description: 'Super API' },
+      { url: 'http://example.org/2' },
     ]);
 
     expect(cg.printNode(servers)).toMatchInlineSnapshot(`
@@ -26,19 +26,19 @@ describe("generateServer", () => {
     `);
   });
 
-  it("supports variables", () => {
+  it('supports variables', () => {
     const servers = generateServers([
       {
         variables: {
           tld: {
-            enum: ["org", "com"],
-            default: "org",
+            enum: ['org', 'com'],
+            default: 'org',
           },
           path: {
-            default: "",
+            default: '',
           },
         },
-        url: "http://example.{tld}/{path}",
+        url: 'http://example.{tld}/{path}',
       },
     ]);
 

@@ -1,10 +1,10 @@
-import { encode, delimited, encodeReserved } from "./util";
+import { encode, delimited, encodeReserved } from './util';
 
 /**
  * Join params using an ampersand and prepends a questionmark if not empty.
  */
 export function query(...params: string[]) {
-  const s = params.join("&");
+  const s = params.join('&');
   return s && `?${s}`;
 }
 
@@ -14,24 +14,24 @@ export function query(...params: string[]) {
  */
 export function deep(
   params: Record<string, any>,
-  [k, v] = encodeReserved
+  [k, v] = encodeReserved,
 ): string {
   const qk = encode([(s) => s, k]);
   const qv = encode([(s) => s, v]);
   // don't add index to arrays
   // https://github.com/expressjs/body-parser/issues/289
-  const visit = (obj: any, prefix = ""): string =>
+  const visit = (obj: any, prefix = ''): string =>
     Object.entries(obj)
       .filter(([, v]) => v !== undefined)
       .map(([prop, v]) => {
-        const index = Array.isArray(obj) ? "" : prop;
+        const index = Array.isArray(obj) ? '' : prop;
         const key = prefix ? qk`${prefix}[${index}]` : prop;
-        if (typeof v === "object") {
+        if (typeof v === 'object') {
           return visit(v, key);
         }
         return qv`${key}=${v}`;
       })
-      .join("&");
+      .join('&');
 
   return visit(params);
 }
@@ -44,23 +44,23 @@ export function deep(
  */
 export function explode(
   params: Record<string, any>,
-  encoders = encodeReserved
+  encoders = encodeReserved,
 ): string {
   const q = encode(encoders);
   return Object.entries(params)
     .filter(([, value]) => value !== undefined)
     .map(([name, value]) => {
       if (Array.isArray(value)) {
-        return value.map((v) => q`${name}=${v}`).join("&");
+        return value.map((v) => q`${name}=${v}`).join('&');
       }
-      if (typeof value === "object") {
+      if (typeof value === 'object') {
         return explode(value, encoders);
       }
       return q`${name}=${value}`;
     })
-    .join("&");
+    .join('&');
 }
 
 export const form = delimited();
-export const pipe = delimited("|");
-export const space = delimited("%20");
+export const pipe = delimited('|');
+export const space = delimited('%20');
