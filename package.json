@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "npx prettier '**/*.{js,jsx,ts,tsx,json}' --check",
+    "lint:fix": "npx prettier '**/*.{js,jsx,ts,tsx,json}'",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "jest",
     "test:e2e": "npm run generate-demo && with-server 'cd demo && jest'",
