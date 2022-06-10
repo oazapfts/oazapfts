@@ -14,4 +14,5 @@ jobs:
           node-version: 16.x
           check-latest: true
       - run: npm ci
+      - run: npm run lint
       - run: npm test
