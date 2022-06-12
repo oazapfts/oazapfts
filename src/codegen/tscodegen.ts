@@ -1,16 +1,6 @@
 import fs from "fs";
 import ts, { factory } from "typescript";
 
-ts.parseIsolatedEntityName;
-type KeywordTypeName =
-  | "any"
-  | "number"
-  | "object"
-  | "string"
-  | "boolean"
-  | "undefined"
-  | "null";
-
 export const questionToken = factory.createToken(ts.SyntaxKind.QuestionToken);
 
 export function createQuestionToken(token?: boolean | ts.QuestionToken) {
@@ -19,45 +9,47 @@ export function createQuestionToken(token?: boolean | ts.QuestionToken) {
   return token;
 }
 
-export function createKeywordType(type: KeywordTypeName) {
-  switch (type) {
-    case "any":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-    case "number":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword);
-    case "object":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword);
-    case "string":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword);
-    case "boolean":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword);
-    case "undefined":
-      return factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword);
-    case "null":
-      return factory.createLiteralTypeNode(
-        ts.factory.createToken(ts.SyntaxKind.NullKeyword)
-      );
-  }
-}
-
-export const keywordType: {
-  [type: string]: ts.KeywordTypeNode | ts.LiteralTypeNode;
-} = {
+export const keywordType = {
   any: factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
   number: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
   object: factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword),
   string: factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
   boolean: factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
   undefined: factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
-  null: factory.createLiteralTypeNode(
-    ts.factory.createToken(ts.SyntaxKind.NullKeyword)
-  ),
+  void: factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
+  null: factory.createLiteralTypeNode(factory.createNull()),
 };
+
+type KeywordTypeName = keyof typeof keywordType;
+
+export function createKeywordType(type: KeywordTypeName) {
+  return keywordType[type];
+}
 
 export const modifier = {
   async: factory.createModifier(ts.SyntaxKind.AsyncKeyword),
   export: factory.createModifier(ts.SyntaxKind.ExportKeyword),
 };
+
+export function createLiteral(v: string | boolean | number) {
+  switch (typeof v) {
+    case "string":
+      return factory.createStringLiteral(v);
+    case "boolean":
+      return v ? factory.createTrue() : factory.createFalse();
+    case "number":
+      return factory.createNumericLiteral(String(v));
+  }
+}
+
+export function createEnumTypeNode(values: Array<string | boolean | number>) {
+  const types = values.map((v) =>
+    v === null
+      ? keywordType.null
+      : factory.createLiteralTypeNode(createLiteral(v))
+  );
+  return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
+}
 
 export function createTypeAliasDeclaration({
   decorators,
