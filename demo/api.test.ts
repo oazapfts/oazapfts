@@ -1,9 +1,7 @@
+import Blob from "cross-blob";
+import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
 import * as optimisticApi from "./optimisticApi";
-
-import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
-
-import Blob from "cross-blob";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
