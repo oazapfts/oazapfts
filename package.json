@@ -23,7 +23,7 @@
   "license": "MIT",
   "repository": "cellular/oazapfts",
   "devDependencies": {
-    "@jest/types": "^27.0.2",
+    "@jest/types": "^28.1.1",
     "@types/jest": "^27.0.1",
     "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
