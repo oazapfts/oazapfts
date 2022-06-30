@@ -231,7 +231,7 @@ describe("Blob", () => {
 
     const up = await api.uploadPng(emptyPng);
 
-    expect(up).toMatchObject({
+    expect(up.data).toMatchObject({
       code: 200,
       type: "OK",
       message: "OK",
