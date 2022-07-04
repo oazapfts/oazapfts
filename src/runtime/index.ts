@@ -10,7 +10,7 @@ export type RequestOpts = {
 } & Omit<RequestInit, "body" | "headers">;
 
 type FetchRequestOpts = RequestOpts & {
-  body?: string | FormData;
+  body?: string | FormData | Blob;
 };
 
 type JsonRequestOpts = RequestOpts & {
@@ -55,7 +55,7 @@ export function runtime(defaults: RequestOpts) {
       },
     });
 
-    const jsonTypes = ["application/json", "application/hal+json"];
+    const jsonTypes = ["application/json", "application/hal+json", "application/problem+json"];
     const isJson = contentType
       ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
       : false;
