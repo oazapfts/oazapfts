@@ -59,7 +59,8 @@ export async function ok<T extends ApiResponse>(
   promise: Promise<T>
 ): Promise<SuccessResponse<T>> {
   const res = await promise;
-  if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
+  if (SUCCESS_CODES.some((s) => s == res.status))
+    return res.data as SuccessResponse<T>;
   throw new HttpError(res.status, res.data);
 }
 

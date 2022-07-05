@@ -61,23 +61,14 @@ export type Schema2 = number;
  */
 export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 204;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: 404;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: number;
-        headers: Headers;
-        data: {
+    | Oazapfts.ApiResponse<204, string>
+    | Oazapfts.ApiResponse<404, string>
+    | Oazapfts.ApiResponse<
+        number,
+        {
           errors?: string[];
-        };
-      }
+        }
+      >
   >(
     "/pet",
     oazapfts.json({
@@ -92,18 +83,13 @@ export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
  */
 export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Pet;
-      }
-    | {
-        status: 201;
-        headers: Headers;
-        data: {
+    | Oazapfts.ApiResponse<200, Pet>
+    | Oazapfts.ApiResponse<
+        201,
+        {
           id?: string;
-        };
-      }
+        }
+      >
   >(
     "/pet",
     oazapfts.json({
@@ -121,16 +107,7 @@ export function findPetsByStatus(
   opts?: Oazapfts.RequestOpts
 ) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Pet[];
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
+    Oazapfts.ApiResponse<200, Pet[]> | Oazapfts.ApiResponse<400, string>
   >(
     `/pet/findByStatus${QS.query(
       QS.explode({
@@ -147,16 +124,7 @@ export function findPetsByStatus(
  */
 export function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Pet[];
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
+    Oazapfts.ApiResponse<200, Pet[]> | Oazapfts.ApiResponse<400, string>
   >(
     `/pet/findByTags${QS.query(
       QS.explode({
@@ -173,20 +141,9 @@ export function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
  */
 export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Pet;
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: 404;
-        headers: Headers;
-      }
+    | Oazapfts.ApiResponse<200, Pet>
+    | Oazapfts.ApiResponse<400, string>
+    | Oazapfts.ApiResponse<404, undefined>
   >(`/pet/${petId}`, {
     ...opts,
   });
@@ -243,11 +200,7 @@ export function uploadFile(
   },
   opts?: Oazapfts.RequestOpts
 ) {
-  return oazapfts.fetchJson<{
-    status: 200;
-    headers: Headers;
-    data: ApiResponse;
-  }>(
+  return oazapfts.fetchJson<Oazapfts.ApiResponse<200, ApiResponse>>(
     `/pet/${petId}/uploadImage`,
     oazapfts.multipart({
       ...opts,
@@ -260,13 +213,14 @@ export function uploadFile(
  * Returns pet inventories by status
  */
 export function getInventory(opts?: Oazapfts.RequestOpts) {
-  return oazapfts.fetchJson<{
-    status: 200;
-    headers: Headers;
-    data: {
-      [key: string]: number;
-    };
-  }>("/store/inventory", {
+  return oazapfts.fetchJson<
+    Oazapfts.ApiResponse<
+      200,
+      {
+        [key: string]: number;
+      }
+    >
+  >("/store/inventory", {
     ...opts,
   });
 }
@@ -275,16 +229,7 @@ export function getInventory(opts?: Oazapfts.RequestOpts) {
  */
 export function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Order;
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
+    Oazapfts.ApiResponse<200, Order> | Oazapfts.ApiResponse<400, string>
   >(
     "/store/order",
     oazapfts.json({
@@ -299,21 +244,9 @@ export function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
  */
 export function getOrderById(orderId: number, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: Order;
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: 404;
-        headers: Headers;
-        data: string;
-      }
+    | Oazapfts.ApiResponse<200, Order>
+    | Oazapfts.ApiResponse<400, string>
+    | Oazapfts.ApiResponse<404, string>
   >(`/store/order/${orderId}`, {
     ...opts,
   });
@@ -381,16 +314,7 @@ export function loginUser(
   opts?: Oazapfts.RequestOpts
 ) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
+    Oazapfts.ApiResponse<200, string> | Oazapfts.ApiResponse<400, string>
   >(
     `/user/login${QS.query(
       QS.form({
@@ -416,21 +340,9 @@ export function logoutUser(opts?: Oazapfts.RequestOpts) {
  */
 export function getUserByName(username: string, opts?: Oazapfts.RequestOpts) {
   return oazapfts.fetchJson<
-    | {
-        status: 200;
-        headers: Headers;
-        data: User;
-      }
-    | {
-        status: 400;
-        headers: Headers;
-        data: string;
-      }
-    | {
-        status: 404;
-        headers: Headers;
-        data: string;
-      }
+    | Oazapfts.ApiResponse<200, User>
+    | Oazapfts.ApiResponse<400, string>
+    | Oazapfts.ApiResponse<404, string>
   >(`/user/${username}`, {
     ...opts,
   });
@@ -520,12 +432,12 @@ export function getIssue31ByFoo(
  * uploads an image in png format
  */
 export function uploadPng(body?: Blob, opts?: Oazapfts.RequestOpts) {
-  return oazapfts.fetchJson<{
-    status: 200;
-    data: ApiResponse;
-  }>("/uploadPng", {
-    ...opts,
-    method: "POST",
-    body,
-  });
+  return oazapfts.fetchJson<Oazapfts.ApiResponse<200, ApiResponse>>(
+    "/uploadPng",
+    {
+      ...opts,
+      method: "POST",
+      body,
+    }
+  );
 }

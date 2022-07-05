@@ -460,33 +460,17 @@ export default class ApiGenerator {
   getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
     return factory.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
-        const statusType =
-          code === 'default'
-            ? cg.keywordType.number
-            : factory.createLiteralTypeNode(factory.createNumericLiteral(code));
-
-        const props = [
-          cg.createPropertySignature({
-            name: 'status',
-            type: statusType,
-          }),
-          cg.createPropertySignature({
-            name: "headers",
-            type: factory.createTypeReferenceNode("Headers"),
-          }),
-        ];
-
         const dataType = this.getTypeFromResponse(res);
-        if (dataType !== cg.keywordType.void) {
-          props.push(
-            cg.createPropertySignature({
-              name: 'data',
-              type: dataType,
-            }),
-          );
-        }
-        return factory.createTypeLiteralNode(props);
-      }),
+        return factory.createTypeReferenceNode(
+          'Oazapfts.ApiResponse',
+          [
+            code === 'default'
+              ? cg.keywordType.number
+              : factory.createLiteralTypeNode(factory.createNumericLiteral(code)),
+            dataType !== cg.keywordType.void ? dataType : cg.keywordType.undefined,
+          ]
+        );
+      })
     );
   }
 

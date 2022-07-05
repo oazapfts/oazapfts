@@ -17,10 +17,12 @@ type JsonRequestOpts = RequestOpts & {
   body?: object;
 };
 
-export type ApiResponse = {
-  status: number;
-  data?: any;
-  headers: Headers;
+export type ApiResponse<S extends number = number, T = unknown> = Omit<
+  Response,
+  keyof Body | "status"
+> & {
+  status: S;
+  data: T;
 };
 
 type MultipartRequestOpts = RequestOpts & {
@@ -28,26 +30,27 @@ type MultipartRequestOpts = RequestOpts & {
 };
 
 export function runtime(defaults: RequestOpts) {
-  async function fetchText(url: string, req?: FetchRequestOpts) {
+  async function fetchText(
+    url: string,
+    req?: FetchRequestOpts
+  ): Promise<ApiResponse<number, string | undefined> & { contentType: string | null }> {
     const res = await doFetch(url, req);
     let data;
     try {
       data = await res.text();
     } catch (err) {}
 
-    return {
-      status: res.status,
+    return Object.assign(res, {
       contentType: res.headers.get("content-type"),
       data,
-      headers: res.headers,
-    };
+    });
   }
 
   async function fetchJson<T extends ApiResponse>(
     url: string,
     req: FetchRequestOpts = {}
-  ) {
-    const { status, contentType, data, headers } = await fetchText(url, {
+  ): Promise<T> {
+    const res = await fetchText(url, {
       ...req,
       headers: {
         ...req.headers,
@@ -55,35 +58,41 @@ export function runtime(defaults: RequestOpts) {
       },
     });
 
-    const jsonTypes = ["application/json", "application/hal+json", "application/problem+json"];
+    const { contentType, data } = res;
+    const jsonTypes = [
+      "application/json",
+      "application/hal+json",
+      "application/problem+json",
+    ];
     const isJson = contentType
       ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
       : false;
 
     if (isJson) {
-      return { status, data: data ? JSON.parse(data) : null, headers } as T;
+      return Object.assign(res, {
+        data: data ? JSON.parse(data) : null,
+      }) as ApiResponse as T;
     }
 
-    return { status, data, headers } as T;
+    return Object.assign(res, { data }) as ApiResponse as T;
   }
 
   async function fetchBlob<T extends ApiResponse>(
     url: string,
     req: FetchRequestOpts = {}
-  ) {
+  ): Promise<T> {
     const res = await doFetch(url, req);
     let data;
     try {
       data = await res.blob();
     } catch (err) {}
-    return {
-      status: res.status,
-      data,
-      headers: res.headers,
-    } as T;
+    return Object.assign(res, { data }) as ApiResponse as T;
   }
 
-  async function doFetch(url: string, req: FetchRequestOpts = {}) {
+  async function doFetch(
+    url: string,
+    req: FetchRequestOpts = {}
+  ): Promise<Response> {
     const {
       baseUrl,
       headers,
@@ -94,11 +103,10 @@ export function runtime(defaults: RequestOpts) {
       ...req,
     };
     const href = joinUrl(baseUrl, url);
-    const res = await (customFetch || fetch)(href, {
+    return (customFetch || fetch)(href, {
       ...init,
       headers: stripUndefined({ ...defaults.headers, ...headers }),
     });
-    return res;
   }
 
   return {
