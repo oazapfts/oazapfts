@@ -1,0 +1,80 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Swagger allOf example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://testUrl.test"
+    }
+  ],
+  "paths": {
+    "/circle/{circle_id}": {
+      "get": {
+        "tags": ["circle"],
+        "summary": "Find circle by ID",
+        "description": "Returns a single circle",
+        "operationId": "getCircleById",
+        "parameters": [
+          {
+            "name": "circle_id",
+            "in": "path",
+            "description": "ID of circle to return",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Circle"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Circle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Shape"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "radius": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "properties": {
+          "circumference": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Shape": {
+        "type": "object",
+        "properties": {
+          "numberOfCorners": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

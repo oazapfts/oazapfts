@@ -22,21 +22,38 @@ describe("getOperationName", () => {
 
 describe("generate", () => {
   let artefact: string;
-  let spec: OpenAPIV3.Document;
+  let spec: { petstore: OpenAPIV3.Document; allOf: OpenAPIV3.Document };
 
   beforeAll(async () => {
-    spec = (await SwaggerParser.bundle(
-      __dirname + "/../../demo/petstore.json"
-    )) as any;
+    spec = {
+      petstore: (await SwaggerParser.bundle(
+        __dirname + "/../../demo/petstore.json"
+      )) as any,
+      allOf: (await SwaggerParser.bundle(
+        __dirname + "/../../demo/allOf.json"
+      )) as any,
+    };
   });
 
   it("should generate an api", async () => {
-    artefact = printAst(new ApiGenerator(spec).generateApi());
+    artefact = printAst(new ApiGenerator(spec.petstore).generateApi());
   });
 
   /* https://github.com/cotype/build-client/issues/5 */
   it("should generate same api a second time", async () => {
-    expect(printAst(new ApiGenerator(spec).generateApi())).toBe(artefact);
+    expect(printAst(new ApiGenerator(spec.petstore).generateApi())).toBe(
+      artefact
+    );
+  });
+
+  it("should handle properties both inside and outside of allOf", async () => {
+    const api = printAst(new ApiGenerator(spec.allOf).generateApi());
+    const oneLine = api.replace(/\s+/g, " ");
+
+    const circleTypeDefinition =
+      "export type Circle = Shape & { radius?: number; } & { circumference?: number; };";
+
+    expect(oneLine).toContain(circleTypeDefinition);
   });
 });
 
