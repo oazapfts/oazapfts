@@ -53,7 +53,7 @@ describe("generate with application/geo+json", () => {
     const artefact = printAst(new ApiGenerator(spec).generateApi());
     const oneLine = artefact.replace(/\s+/g, " ");
     expect(oneLine).toContain(
-      "return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>(`/geojson`, { ...opts });"
+      'return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>("/geojson", { ...opts });'
     );
   });
 });
