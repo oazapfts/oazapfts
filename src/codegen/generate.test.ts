@@ -40,6 +40,24 @@ describe("generate", () => {
   });
 });
 
+describe("generate with application/geo+json", () => {
+  let spec: OpenAPIV3.Document;
+
+  beforeAll(async () => {
+    spec = (await SwaggerParser.bundle(
+      __dirname + "/../../demo/geojson.json"
+    )) as any;
+  });
+
+  it("should generate an api", async () => {
+    const artefact = printAst(new ApiGenerator(spec).generateApi());
+    const oneLine = artefact.replace(/\s+/g, " ");
+    expect(oneLine).toContain(
+      "return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>(`/geojson`, { ...opts });"
+    );
+  });
+});
+
 describe("generate with blob download", () => {
   let spec: OpenAPIV3.Document;
 
