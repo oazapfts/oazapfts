@@ -1,0 +1,83 @@
+{
+  "info": {
+    "title": "example with GeoJSON download",
+    "version": "0.0.1",
+    "description": "The example is taken from RFC 7946, 1.5: Example"
+  },
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/geojson": {
+      "get": {
+        "operationId": "GetGeoJSON",
+        "description": "Get GeoJSON JSON data",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/geo+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureCollection"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FeatureCollection": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["FeatureCollection"]
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feature"
+            }
+          }
+        }
+      },
+      "Feature": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["Feature"]
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["Point"]
+              },
+              "coordinates": {
+                "type": "array",
+                "example": "[102.0, 0.5]"
+              }
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "prop0": {
+                "type": "string",
+                "example": "value0"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
