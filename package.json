@@ -45,6 +45,8 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.0.1",
+    "@tzkt/oazapfts": "^3.5.2",
+    "@tzkt/sdk-api": "^0.2.0",
     "lodash": "^4.17.20",
     "minimist": "^1.2.5",
     "swagger2openapi": "^7.0.7",
