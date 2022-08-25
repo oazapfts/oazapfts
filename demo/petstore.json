@@ -919,6 +919,124 @@
         }
       }
     },
+    "/object-parameters": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "defaultArray",
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explodedFormArray",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "commaArray",
+            "explode": false,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "defaultSpaceDelimited",
+            "style": "spaceDelimited",
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explodedSpaceDelimited",
+            "style": "spaceDelimited",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "spaceDelimited",
+            "style": "spaceDelimited",
+            "explode": false,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "defaultPipeDelimited",
+            "style": "pipeDelimited",
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explodedPipeDelimited",
+            "style": "pipeDelimited",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pipeDelimited",
+            "style": "pipeDelimited",
+            "explode": false,
+            "schema": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          {
+            "in": "query",
+            "name": "defaultObject",
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explodedFormObject",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "commaObject",
+            "explode": false,
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "deepObject",
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
     "/uploadPng": {
       "post": {
         "summary": "uploads an image in png format",
@@ -1117,6 +1235,14 @@
           "message": {
             "type": "string"
           }
+        }
+      },
+      "Option": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "default": ["one"],
+          "enum": ["one", "two", "three"]
         }
       }
     },
