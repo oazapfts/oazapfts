@@ -7,6 +7,7 @@ api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
 (global as any).fetch = require("node-fetch");
+(global as any).Response = require("node-fetch").Response;
 (global as any).FormData = require("form-data");
 
 describe("ok", () => {
@@ -41,6 +42,104 @@ describe("ok", () => {
     //@ts-expect-error
     expect(pet.name).toBe("doggie");
   });
+});
+
+describe("object query parameters", () => {
+  /**
+   * @see https://swagger.io/docs/specification/serialization/#query
+   */
+  it.each<
+    [
+      name: string,
+      parameters: Parameters<typeof api.getObjectParameters>[0],
+      expectedQuery: string
+    ]
+  >([
+    [
+      "default array",
+      { defaultArray: ["one", "two"] },
+      "?defaultArray=one&defaultArray=two",
+    ],
+    [
+      "exploded form array",
+      { explodedFormArray: ["two", "three"] },
+      "?explodedFormArray=two&explodedFormArray=three",
+    ],
+    [
+      "comma separated array",
+      { commaArray: ["one", "two"] },
+      "?commaArray=one,two",
+    ],
+
+    [
+      "default space delimited array",
+      { defaultSpaceDelimited: ["one", "two"] },
+      "?defaultSpaceDelimited=one&defaultSpaceDelimited=two",
+    ],
+    [
+      "exploded space delimited array",
+      { explodedSpaceDelimited: ["two", "three"] },
+      "?explodedSpaceDelimited=two&explodedSpaceDelimited=three",
+    ],
+    [
+      "space delimited array",
+      { spaceDelimited: ["one", "two"] },
+      "?spaceDelimited=one%20two",
+    ],
+
+    [
+      "default pipe delimited array",
+      { defaultPipeDelimited: ["one", "two"] },
+      "?defaultPipeDelimited=one&defaultPipeDelimited=two",
+    ],
+    [
+      "exploded pipe delimited array",
+      { explodedPipeDelimited: ["two", "three"] },
+      "?explodedPipeDelimited=two&explodedPipeDelimited=three",
+    ],
+    [
+      "pipe delimited array",
+      { pipeDelimited: ["one", "two"] },
+      "?pipeDelimited=one|two",
+    ],
+    [
+      "default object",
+      { defaultObject: { id: 1, name: "one" } },
+      "?id=1&name=one",
+    ],
+    [
+      "exploded object",
+      { explodedFormObject: { id: 2, name: "two" } },
+      "?id=2&name=two",
+    ],
+    [
+      "comma separated object",
+      { commaObject: { id: 1, name: "one" } },
+      "?commaObject=id,1,name,one",
+    ],
+    [
+      "deep object",
+      { deepObject: { id: 1, name: "one" } },
+      "?deepObject[id]=1&deepObject[name]=one",
+    ],
+  ])(
+    "serializes %s in query parameters according to spec",
+    async (_, params, expectedSearch) => {
+      await ok(
+        api.getObjectParameters(params, {
+          /*
+           * Intercepting the requests here before they hit the mock server,
+           * since it does not handle most of these cases correctly
+           * ref: https://github.com/jormaechea/open-api-mocker/issues/43
+           */
+          fetch(init) {
+            expect(new URL(init as string).search).toEqual(expectedSearch);
+            return Promise.resolve(new Response("", { status: 200 }));
+          },
+        })
+      );
+    }
+  );
 });
 
 describe("handle", () => {
