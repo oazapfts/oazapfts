@@ -50,7 +50,12 @@ export function runtime(defaults: RequestOpts) {
       },
     });
 
-    const jsonTypes = ["application/json", "application/hal+json", "application/problem+json", "application/geo+json"];
+    const jsonTypes = [
+      "application/json",
+      "application/hal+json",
+      "application/problem+json",
+      "application/geo+json",
+    ];
     const isJson = contentType
       ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
       : false;
