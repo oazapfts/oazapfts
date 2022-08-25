@@ -4,7 +4,7 @@ import { encode, delimited, encodeReserved } from "./util";
  * Join params using an ampersand and prepends a questionmark if not empty.
  */
 export function query(...params: string[]) {
-  const s = params.join("&");
+  const s = params.filter(Boolean).join("&");
   return s && `?${s}`;
 }
 
