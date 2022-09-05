@@ -56,6 +56,7 @@ export type User = {
 };
 export type Schema = string;
 export type Schema2 = number;
+export type Option = ("one" | "two" | "three")[];
 /**
  * Update an existing pet
  */
@@ -372,7 +373,7 @@ export function loginUser(
       }
   >(
     `/user/login${QS.query(
-      QS.form({
+      QS.explode({
         username,
         password,
       })
@@ -451,7 +452,7 @@ export function customizePet(
 ) {
   return oazapfts.fetchText(
     `/pet/customize${QS.query(
-      QS.form({
+      QS.explode({
         "fur.color": furColor,
         color,
       })
@@ -481,10 +482,73 @@ export function getIssue31ByFoo(
 ) {
   return oazapfts.fetchText(
     `/issue31/${encodeURIComponent(foo)}${QS.query(
-      QS.form({
+      QS.explode({
         bar,
         baz,
         boo,
+      })
+    )}`,
+    {
+      ...opts,
+    }
+  );
+}
+export function getObjectParameters(
+  {
+    defaultArray,
+    explodedFormArray,
+    commaArray,
+    defaultSpaceDelimited,
+    explodedSpaceDelimited,
+    spaceDelimited,
+    defaultPipeDelimited,
+    explodedPipeDelimited,
+    pipeDelimited,
+    defaultObject,
+    explodedFormObject,
+    commaObject,
+    deepObject,
+  }: {
+    defaultArray?: Option;
+    explodedFormArray?: Option;
+    commaArray?: Option;
+    defaultSpaceDelimited?: Option;
+    explodedSpaceDelimited?: Option;
+    spaceDelimited?: Option;
+    defaultPipeDelimited?: Option;
+    explodedPipeDelimited?: Option;
+    pipeDelimited?: Option;
+    defaultObject?: Tag;
+    explodedFormObject?: Tag;
+    commaObject?: Tag;
+    deepObject?: Tag;
+  } = {},
+  opts?: Oazapfts.RequestOpts
+) {
+  return oazapfts.fetchText(
+    `/object-parameters${QS.query(
+      QS.explode({
+        defaultArray,
+        explodedFormArray,
+        defaultSpaceDelimited,
+        explodedSpaceDelimited,
+        defaultPipeDelimited,
+        explodedPipeDelimited,
+        defaultObject,
+        explodedFormObject,
+      }),
+      QS.form({
+        commaArray,
+        commaObject,
+      }),
+      QS.space({
+        spaceDelimited,
+      }),
+      QS.pipe({
+        pipeDelimited,
+      }),
+      QS.deep({
+        deepObject,
       })
     )}`,
     {

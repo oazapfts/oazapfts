@@ -33,11 +33,15 @@ export const contentTypes: Record<string, ContentType> = {
 /**
  * Get the name of a formatter function for a given parameter.
  */
-export function getFormatter({ style, explode }: OpenAPIV3.ParameterObject) {
+export function getFormatter({
+  style = "form",
+  explode = true,
+}: OpenAPIV3.ParameterObject) {
+  if (explode && style === "deepObject") return "deep";
+  if (explode) return "explode";
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
-  if (style === "deepObject") return "deep";
-  return explode ? "explode" : "form";
+  return "form";
 }
 
 export function getOperationIdentifier(id?: string) {
