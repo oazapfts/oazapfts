@@ -5,6 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
+import { threadId } from "worker_threads";
 
 export const verbs = [
   "GET",
