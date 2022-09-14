@@ -55,6 +55,15 @@ describe("generate", () => {
 
     expect(oneLine).toContain(circleTypeDefinition);
   });
+
+  it("should handle enums", async () => {
+    const api = printAst(new ApiGenerator(spec.petstore).generateApi());
+    const oneLine = api.replace(/\s+/g, " ");
+
+    const enumTypeDefinition = `export type Option = ("one" | "two" | "three")[];`;
+
+    expect(oneLine).toContain(enumTypeDefinition);
+  });
 });
 
 describe("generate with application/geo+json", () => {
@@ -90,5 +99,22 @@ describe("generate with blob download", () => {
     expect(oneLine).toContain(
       "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${encodeURIComponent(fileId)}/download`, { ...opts });"
     );
+  });
+});
+
+describe("generate with const", () => {
+  let spec: OpenAPIV3.Document;
+
+  beforeAll(async () => {
+    spec = (await SwaggerParser.bundle(
+      __dirname + "/../../demo/const.json"
+    )) as any;
+  });
+
+  it("should generate an api with literal type set to const value", async () => {
+    const artefact = printAst(new ApiGenerator(spec).generateApi());
+    const oneLine = artefact.replace(/\s+/g, " ");
+    const constTypeDefinition = `export type Shape = "circle";`;
+    expect(oneLine).toContain(constTypeDefinition);
   });
 });
