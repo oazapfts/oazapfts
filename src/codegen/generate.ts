@@ -32,7 +32,7 @@ export const contentTypes: Record<string, ContentType> = {
 
 // augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 type SchemaObject = OpenAPIV3.SchemaObject & {
-  const?: any;
+  const?: unknown;
 };
 
 /**
