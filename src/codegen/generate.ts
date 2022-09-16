@@ -30,6 +30,11 @@ export const contentTypes: Record<string, ContentType> = {
   "multipart/form-data": "multipart",
 };
 
+// augment SchemaObject type to allow slowly adopting new OAS3.1+ features
+type SchemaObject = OpenAPIV3.SchemaObject & {
+  const?: unknown;
+};
+
 /**
  * Get the name of a formatter function for a given parameter.
  */
@@ -262,7 +267,7 @@ export default class ApiGenerator {
     const { $ref } = obj;
     let ref = this.refs[$ref];
     if (!ref) {
-      const schema = this.resolve<OpenAPIV3.SchemaObject>(obj);
+      const schema = this.resolve<SchemaObject>(obj);
       const name = this.getUniqueAlias(
         _.upperFirst(_.camelCase(schema.title || this.getRefBasename($ref)))
       );
@@ -282,7 +287,7 @@ export default class ApiGenerator {
   }
 
   getUnionType(
-    variants: (OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject)[],
+    variants: (OpenAPIV3.ReferenceObject | SchemaObject)[],
     discriminator?: OpenAPIV3.DiscriminatorObject
   ): ts.TypeNode {
     if (discriminator) {
@@ -354,7 +359,7 @@ export default class ApiGenerator {
    * optionally adds a union with null.
    */
   getTypeFromSchema(
-    schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
+    schema?: SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
     const type = this.getBaseTypeFromSchema(schema);
     return isNullable(schema)
@@ -367,7 +372,7 @@ export default class ApiGenerator {
    * schema and returns the appropriate type.
    */
   getBaseTypeFromSchema(
-    schema?: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
+    schema?: SchemaObject | OpenAPIV3.ReferenceObject
   ): ts.TypeNode {
     if (!schema) return cg.keywordType.any;
     if (isReference(schema)) {
@@ -415,25 +420,13 @@ export default class ApiGenerator {
       );
     }
     if (schema.enum) {
-      // enum -> union of literal types
-      const types = schema.enum.map((s) => {
-        if (s === null) return cg.keywordType.null;
-        if (typeof s === "boolean")
-          return s
-            ? factory.createLiteralTypeNode(
-                ts.factory.createToken(ts.SyntaxKind.TrueKeyword)
-              )
-            : factory.createLiteralTypeNode(
-                ts.factory.createToken(ts.SyntaxKind.FalseKeyword)
-              );
-        if (typeof s === "number")
-          return factory.createLiteralTypeNode(factory.createNumericLiteral(s));
-        return factory.createLiteralTypeNode(factory.createStringLiteral(s));
-      });
-      return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
+      return this.getTypeFromEnum(schema.enum);
     }
     if (schema.format == "binary") {
       return factory.createTypeReferenceNode("Blob", []);
+    }
+    if (schema.const) {
+      return this.getTypeFromEnum([schema.const]);
     }
     if (schema.type) {
       // string, boolean, null, number
@@ -445,17 +438,35 @@ export default class ApiGenerator {
   }
 
   /**
+   * Creates literal type (or union) from an array of values
+   */
+  getTypeFromEnum(values: any[]) {
+    const types = values.map((s) => {
+      if (s === null) return cg.keywordType.null;
+      if (typeof s === "boolean")
+        return s
+          ? factory.createLiteralTypeNode(
+              ts.factory.createToken(ts.SyntaxKind.TrueKeyword)
+            )
+          : factory.createLiteralTypeNode(
+              ts.factory.createToken(ts.SyntaxKind.FalseKeyword)
+            );
+      if (typeof s === "number")
+        return factory.createLiteralTypeNode(factory.createNumericLiteral(s));
+      return factory.createLiteralTypeNode(factory.createStringLiteral(s));
+    });
+    return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
+  }
+
+  /**
    * Recursively creates a type literal with the given props.
    */
   getTypeFromProperties(
     props: {
-      [prop: string]: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+      [prop: string]: SchemaObject | OpenAPIV3.ReferenceObject;
     },
     required?: string[],
-    additionalProperties?:
-      | boolean
-      | OpenAPIV3.SchemaObject
-      | OpenAPIV3.ReferenceObject
+    additionalProperties?: boolean | SchemaObject | OpenAPIV3.ReferenceObject
   ) {
     const members: ts.TypeElement[] = Object.keys(props).map((name) => {
       const schema = props[name];
