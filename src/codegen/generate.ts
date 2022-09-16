@@ -440,7 +440,7 @@ export default class ApiGenerator {
   /**
    * Creates literal type (or union) from an array of values
    */
-  getTypeFromEnum(values: any[]) {
+  getTypeFromEnum(values: unknown[]) {
     const types = values.map((s) => {
       if (s === null) return cg.keywordType.null;
       if (typeof s === "boolean")
@@ -453,7 +453,9 @@ export default class ApiGenerator {
             );
       if (typeof s === "number")
         return factory.createLiteralTypeNode(factory.createNumericLiteral(s));
-      return factory.createLiteralTypeNode(factory.createStringLiteral(s));
+      if (typeof s === "string")
+        return factory.createLiteralTypeNode(factory.createStringLiteral(s));
+      throw new Error(`Unexpected ${String(s)} of type ${typeof s} in enum`);
     });
     return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
   }
