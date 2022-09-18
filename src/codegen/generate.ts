@@ -194,6 +194,43 @@ export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
   return res;
 }
 
+interface JSDocCommentParam {
+  name: string;
+  description?: string;
+}
+
+interface JSDocComment {
+  summary?: string;
+  description?: string;
+  parameters?: JSDocCommentParam[];
+}
+
+function createJSDocComment({
+  summary,
+  description,
+  parameters,
+}: JSDocComment) {
+  let comment = "";
+  if (summary != null && summary !== "") {
+    comment += summary + "\n\n";
+  }
+
+  if (description != null && description !== "") {
+    comment += description;
+  }
+
+  if (parameters != null) {
+    for (const { name, description } of parameters) {
+      comment += `\n@param ${name}`;
+      if (description != null && description !== "") {
+        comment += ` ${description}`;
+      }
+    }
+  }
+
+  return comment === "" ? undefined : comment;
+}
+
 /**
  * Main entry point that generates TypeScript code from a given API spec.
  */
@@ -276,11 +313,14 @@ export default class ApiGenerator {
 
       const type = this.getTypeFromSchema(schema);
       this.aliases.push(
-        cg.createTypeAliasDeclaration({
-          modifiers: [cg.modifier.export],
-          name,
-          type,
-        })
+        cg.addComment(
+          cg.createTypeAliasDeclaration({
+            modifiers: [cg.modifier.export],
+            name,
+            type,
+          }),
+          createJSDocComment(schema)
+        )
       );
     }
     return ref;
@@ -477,11 +517,14 @@ export default class ApiGenerator {
       if (!isRequired && this.opts.unionUndefined) {
         type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
       }
-      return cg.createPropertySignature({
-        questionToken: !isRequired,
-        name,
-        type,
-      });
+      return cg.addComment(
+        cg.createPropertySignature({
+          questionToken: !isRequired,
+          name,
+          type,
+        }),
+        createJSDocComment(schema as SchemaObject)
+      );
     });
     if (additionalProperties) {
       const type =
@@ -734,13 +777,16 @@ export default class ApiGenerator {
                 initializer: factory.createObjectLiteralExpression(),
                 type: factory.createTypeLiteralNode(
                   optional.map((p) =>
-                    cg.createPropertySignature({
-                      name: argNames[this.resolve(p).name],
-                      questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema
-                      ),
-                    })
+                    cg.addComment(
+                      cg.createPropertySignature({
+                        name: argNames[this.resolve(p).name],
+                        questionToken: true,
+                        type: this.getTypeFromSchema(
+                          isReference(p) ? p : p.schema
+                        ),
+                      }),
+                      createJSDocComment(p)
+                    )
                   )
                 ),
               }
@@ -871,7 +917,11 @@ export default class ApiGenerator {
                 )
               )
             ),
-            summary || description
+            createJSDocComment({
+              summary,
+              description,
+              parameters: required.map((p) => ({ ...p, name: argNames[name] })),
+            })
           )
         );
       });
