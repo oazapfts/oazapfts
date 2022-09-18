@@ -194,14 +194,16 @@ export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
   return res;
 }
 
-interface JSDocCommentParam {
-  name: string;
+interface JSDocCommentBase {
+  summary?: string;
   description?: string;
 }
 
-interface JSDocComment {
-  summary?: string;
-  description?: string;
+interface JSDocCommentParam extends JSDocCommentBase {
+  name: string;
+}
+
+interface JSDocComment extends JSDocCommentBase {
   parameters?: JSDocCommentParam[];
 }
 
