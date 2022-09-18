@@ -197,6 +197,7 @@ export function supportDeepObjects(params: OpenAPIV3.ParameterObject[]) {
 interface JSDocCommentBase {
   summary?: string;
   description?: string;
+  deprecated?: boolean;
 }
 
 interface JSDocCommentParam extends JSDocCommentBase {
@@ -210,6 +211,7 @@ interface JSDocComment extends JSDocCommentBase {
 function createJSDocComment({
   summary,
   description,
+  deprecated,
   parameters,
 }: JSDocComment) {
   let comment = "";
@@ -219,6 +221,10 @@ function createJSDocComment({
 
   if (description != null && description !== "") {
     comment += description;
+  }
+
+  if (deprecated) {
+    comment += `\n@deprecated`;
   }
 
   if (parameters != null) {
@@ -702,6 +708,7 @@ export default class ApiGenerator {
           summary,
           description,
           tags,
+          deprecated,
         } = op;
 
         if (this.skip(tags)) {
@@ -922,6 +929,7 @@ export default class ApiGenerator {
             createJSDocComment({
               summary,
               description,
+              deprecated,
               parameters: required
                 .map((p) => this.resolve(p))
                 .map((p) => ({
