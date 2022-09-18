@@ -920,7 +920,12 @@ export default class ApiGenerator {
             createJSDocComment({
               summary,
               description,
-              parameters: required.map((p) => ({ ...p, name: argNames[name] })),
+              parameters: required
+                .map((p) => this.resolve(p))
+                .map((p) => ({
+                  ...p,
+                  name: argNames[p.name],
+                })),
             })
           )
         );
