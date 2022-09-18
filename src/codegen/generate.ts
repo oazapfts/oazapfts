@@ -673,10 +673,10 @@ export default class ApiGenerator {
         }
 
         // merge item and op parameters
-        const resolvedParameters = [
+        const resolvedParameters = _.uniq([
           ...this.resolveArray(item.parameters),
           ...this.resolveArray(op.parameters),
-        ];
+        ]);
 
         // expand older OpenAPI parameters into deepObject style where needed
         const parameters = this.isConverted
