@@ -1,4 +1,3 @@
-import Blob from "cross-blob";
 import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
 import * as optimisticApi from "./optimisticApi";
@@ -6,8 +5,6 @@ import * as optimisticApi from "./optimisticApi";
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
-(global as any).fetch = require("node-fetch");
-(global as any).Response = require("node-fetch").Response;
 (global as any).FormData = require("form-data");
 
 describe("ok", () => {
@@ -27,13 +24,11 @@ describe("ok", () => {
     const order = await ok(
       api.placeOrder({
         petId: 1,
-        status: "placed",
         quantity: 1,
       })
     );
     expect(order).toMatchObject({
       quantity: 1,
-      status: "placed",
     });
   });
 
@@ -202,13 +197,11 @@ describe("--optimistic", () => {
   it("should post json", async () => {
     const order = await optimisticApi.placeOrder({
       petId: 1,
-      status: "placed",
       quantity: 1,
     });
 
     expect(order).toMatchObject({
       quantity: 1,
-      status: "placed",
     });
   });
 
