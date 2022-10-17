@@ -7,7 +7,7 @@ describe("generateServer", () => {
 
     expect(cg.printNode(servers)).toMatchInlineSnapshot(`
       "{
-          server1: \\"http://example.org\\"
+          server1: "http://example.org"
       }"
     `);
   });
@@ -20,8 +20,8 @@ describe("generateServer", () => {
 
     expect(cg.printNode(servers)).toMatchInlineSnapshot(`
       "{
-          superApi: \\"http://example.org\\",
-          server2: \\"http://example.org/2\\"
+          superApi: "http://example.org",
+          server2: "http://example.org/2"
       }"
     `);
   });
@@ -44,8 +44,8 @@ describe("generateServer", () => {
 
     expect(cg.printNode(servers)).toMatchInlineSnapshot(`
       "{
-          server1: ({ tld = \\"org\\", path = \\"\\" }: {
-              tld: \\"org\\" | \\"com\\";
+          server1: ({ tld = "org", path = "" }: {
+              tld: "org" | "com";
               path: string | number | boolean;
           }) => \`http://example.\${tld}/\${path}\`
       }"
