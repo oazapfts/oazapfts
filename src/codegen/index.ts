@@ -1,9 +1,10 @@
 import * as cg from "./tscodegen";
+
 import ApiGenerator from "./generate";
-import ts from "typescript";
+import { OpenAPIV3 } from "openapi-types";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import converter from "swagger2openapi";
-import { OpenAPIV3 } from "openapi-types";
+import ts from "typescript";
 
 export { cg };
 
@@ -12,6 +13,7 @@ export type Opts = {
   exclude?: string[];
   optimistic?: boolean;
   unionUndefined?: boolean;
+  useEnumType?: boolean;
 };
 
 export function generateAst(

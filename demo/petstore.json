@@ -1216,6 +1216,11 @@
             "description": "Always true for a pet",
             "enum": [true],
             "type": "boolean"
+          },
+          "size": {
+            "description": "Size scale for pets",
+            "enum": ["P", "M", "G"],
+            "type": "number"
           }
         },
         "xml": {

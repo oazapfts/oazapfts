@@ -28,9 +28,9 @@ export type Pet = {
   name: string;
   photoUrls: string[];
   tags?: Tag[];
-  status?: "available" | "pending" | "sold";
-  animal?: true;
-  size?: "P" | "M" | "G";
+  status?: Status;
+  animal?: Animal;
+  size?: Size;
 };
 export type ApiResponse = {
   code?: number;
@@ -42,7 +42,7 @@ export type Order = {
   petId?: number;
   quantity?: number;
   shipDate?: string;
-  status?: "placed" | "approved" | "delivered";
+  status?: Status2;
   complete?: boolean;
 };
 export type User = {
@@ -569,4 +569,22 @@ export function uploadPng(body?: Blob, opts?: Oazapfts.RequestOpts) {
     method: "POST",
     body,
   });
+}
+export enum Status {
+  Available = "Available",
+  Pending = "Pending",
+  Sold = "Sold",
+}
+export enum Animal {
+  true = "true",
+}
+export enum Size {
+  P = 0,
+  M = 1,
+  G = 2,
+}
+export enum Status2 {
+  Placed = "Placed",
+  Approved = "Approved",
+  Delivered = "Delivered",
 }

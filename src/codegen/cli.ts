@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
+import { Opts, generateSource } from "./";
+
 import fs from "fs";
 import minimist from "minimist";
-
-import { generateSource, Opts } from "./";
 
 const argv = minimist(process.argv.slice(2), {
   alias: {
     i: "include",
     e: "exclude",
   },
-  boolean: ["optimistic"],
+  boolean: ["optimistic", "useEnumType"],
 });
 
 async function generate(spec: string, dest: string, opts: Opts) {
@@ -19,7 +19,7 @@ async function generate(spec: string, dest: string, opts: Opts) {
   else console.log(code);
 }
 
-const { include, exclude, optimistic } = argv;
+const { include, exclude, optimistic, useEnumType } = argv;
 const [spec, dest] = argv._;
 if (!spec) {
   console.error(`
@@ -30,6 +30,7 @@ if (!spec) {
     --exclude, -e <tag to exclude>
     --include, -i <tag to include>
     --optimistic
+    --useEnumType
 `);
   process.exit(1);
 }
@@ -38,4 +39,5 @@ generate(spec, dest, {
   include,
   exclude,
   optimistic,
+  useEnumType,
 });
