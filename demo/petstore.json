@@ -60,11 +60,6 @@
               "schema": {
                 "$ref": "#/components/schemas/Pet"
               }
-            },
-            "application/xml": {
-              "schema": {
-                "$ref": "#/components/schemas/Pet"
-              }
             }
           },
           "required": true
@@ -111,11 +106,6 @@
           "description": "Pet object that needs to be added to the store",
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Pet"
-              }
-            },
-            "application/xml": {
               "schema": {
                 "$ref": "#/components/schemas/Pet"
               }
@@ -223,14 +213,6 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Pet"
-                  }
-                }
-              },
               "application/json": {
                 "schema": {
                   "type": "array",
@@ -275,11 +257,6 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "$ref": "#/components/schemas/Pet"
-                }
-              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Pet"
@@ -488,11 +465,6 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
@@ -530,11 +502,6 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "$ref": "#/components/schemas/Order"
-                }
-              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Order"
@@ -705,11 +672,6 @@
               }
             },
             "content": {
-              "application/xml": {
-                "schema": {
-                  "type": "string"
-                }
-              },
               "application/json": {
                 "schema": {
                   "type": "string"
@@ -757,11 +719,6 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/User"
@@ -1269,14 +1226,6 @@
       "PetResponse": {
         "description": "successful operation",
         "content": {
-          "application/xml": {
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/Pet"
-              }
-            }
-          },
           "application/json": {
             "schema": {
               "type": "array",
