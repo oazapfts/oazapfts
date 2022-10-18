@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { Opts, generateSource } from "./";
-
 import fs from "fs";
 import minimist from "minimist";
+
+import { generateSource, Opts } from "./";
 
 const argv = minimist(process.argv.slice(2), {
   alias: {
