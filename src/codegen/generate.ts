@@ -1,12 +1,10 @@
-import * as cg from "./tscodegen";
-
-import _, { values } from "lodash";
-import generateServers, { defaultBaseUrl } from "./generateServers";
-import ts, { Statement, factory } from "typescript";
-
-import { OpenAPIV3 } from "openapi-types";
-import { Opts } from ".";
+import _ from "lodash";
+import ts, { factory } from "typescript";
 import path from "path";
+import { OpenAPIV3 } from "openapi-types";
+import * as cg from "./tscodegen";
+import generateServers, { defaultBaseUrl } from "./generateServers";
+import { Opts } from ".";
 import { threadId } from "worker_threads";
 
 export const verbs = [
@@ -447,7 +445,7 @@ export default class ApiGenerator {
       );
     }
     if (schema.enum) {
-      return this.opts.useEnumType && name
+      return this.opts.useEnumType && name && schema.type != "boolean"
         ? this.getTrueEnum(schema, name)
         : this.getTypeFromEnum(schema.enum);
     }

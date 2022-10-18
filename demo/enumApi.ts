@@ -29,7 +29,7 @@ export type Pet = {
   photoUrls: string[];
   tags?: Tag[];
   status?: Status;
-  animal?: Animal;
+  animal?: true;
   size?: Size;
 };
 export type ApiResponse = {
@@ -574,9 +574,6 @@ export enum Status {
   Available = "Available",
   Pending = "Pending",
   Sold = "Sold",
-}
-export enum Animal {
-  true = "true",
 }
 export enum Size {
   P = 0,

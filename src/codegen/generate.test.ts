@@ -1,9 +1,7 @@
-import generate, { getOperationName } from "./generate";
-
-import ApiGenerator from "./generate";
-import { OpenAPIV3 } from "openapi-types";
-import SwaggerParser from "@apidevtools/swagger-parser";
+import ApiGenerator, { getOperationName } from "./generate";
 import { printAst } from "./index";
+import SwaggerParser from "@apidevtools/swagger-parser";
+import { OpenAPIV3 } from "openapi-types";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -76,11 +74,6 @@ describe("generate", () => {
     const enumDefinition = `export enum Status { Available = "Available", Pending = "Pending", Sold = "Sold" }`;
 
     expect(oneLine).toContain(enumDefinition);
-
-    // Enum type string
-    const enumBoolDefinition = `export enum Animal { true = "true" }`;
-
-    expect(oneLine).toContain(enumBoolDefinition);
 
     // Enum type number
     const enumNumberDefinition = `export enum Size { P = 0, M = 1, G = 2 }`;
