@@ -1,8 +1,7 @@
-import generate, { getOperationName } from "./generate";
+import ApiGenerator, { getOperationName } from "./generate";
 import { printAst } from "./index";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import { OpenAPIV3 } from "openapi-types";
-import ApiGenerator from "./generate";
 
 describe("getOperationName", () => {
   it("should use the id", () => {
@@ -56,13 +55,35 @@ describe("generate", () => {
     expect(oneLine).toContain(circleTypeDefinition);
   });
 
-  it("should handle enums", async () => {
+  it("should handle enums as union types", async () => {
     const api = printAst(new ApiGenerator(spec.petstore).generateApi());
     const oneLine = api.replace(/\s+/g, " ");
 
     const enumTypeDefinition = `export type Option = ("one" | "two" | "three")[];`;
 
     expect(oneLine).toContain(enumTypeDefinition);
+  });
+
+  it("should create real enums", async () => {
+    const api = printAst(
+      new ApiGenerator(spec.petstore, { useEnumType: true }).generateApi()
+    );
+    const oneLine = api.replace(/\s+/g, " ");
+
+    // Enum type string
+    const enumDefinition = `export enum Status { Available = "Available", Pending = "Pending", Sold = "Sold" }`;
+
+    expect(oneLine).toContain(enumDefinition);
+
+    // Enum type number
+    const enumNumberDefinition = `export enum Size { P = 0, M = 1, G = 2 }`;
+
+    expect(oneLine).toContain(enumNumberDefinition);
+
+    // Enums with different values but same name should result in a different instance name
+    const sameNameDefinition = `export enum Status2 { Placed = "Placed", Approved = "Approved", Delivered = "Delivered" }`;
+
+    expect(oneLine).toContain(sameNameDefinition);
   });
 });
 

@@ -30,6 +30,7 @@ export type Pet = {
   tags?: Tag[];
   status?: "available" | "pending" | "sold";
   animal?: true;
+  size?: "P" | "M" | "G";
 };
 export type ApiResponse = {
   code?: number;
