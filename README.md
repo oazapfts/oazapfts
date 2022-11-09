@@ -1,5 +1,7 @@
 # 🍻 oazapfts!
 
+[![CI](https://github.com/cellular/oazapfts/actions/workflows/ci.yml/badge.svg)](https://github.com/cellular/oazapfts/actions/workflows/ci.yml)
+
 Generate TypeScript clients to tap into OpenAPI servers.
 
 ## Features
