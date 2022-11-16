@@ -24,6 +24,7 @@ export const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
   "application/json": "json",
   "application/hal+json": "json",
+  "application/merge-patch+json": "json",
   "application/problem+json": "json",
   "application/geo+json": "json",
   "application/x-www-form-urlencoded": "form",
