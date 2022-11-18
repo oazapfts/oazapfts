@@ -1,4 +1,4 @@
-import ApiGenerator, { getOperationName } from "./generate";
+import ApiGenerator, { getOperationName, getFormatter } from "./generate";
 import { printAst } from "./index";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import { OpenAPIV3 } from "openapi-types";
@@ -139,3 +139,10 @@ describe("generate with const", () => {
     expect(oneLine).toContain(constTypeDefinition);
   });
 });
+
+// // https://spec.openapis.org/oas/v3.0.3#style-examples
+// describe('getFormatter', () => {
+//   it('formats correctly', () => {
+//     const formatter = getFormatter()
+//   })
+// })
