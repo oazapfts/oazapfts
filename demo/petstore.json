@@ -1033,6 +1033,29 @@
           }
         ]
       }
+    },
+    "/issue319/{userIds}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "userIds",
+            "in": "path",
+            "explode": false,
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
     }
   },
   "components": {

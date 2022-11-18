@@ -4,6 +4,21 @@ type Encoders = Array<(s: string) => string>;
 export const encodeReserved = [encodeURIComponent, encodeURIComponent];
 export const allowReserved = [encodeURIComponent, encodeURI];
 
+function join(
+  value: object,
+  encoder: Encoders[0] = encodeURIComponent,
+  delimiter = ","
+) {
+  if (Array.isArray(value)) {
+    return value.map(encoder).join(delimiter);
+  }
+  const flat = Object.entries(value).reduce(
+    (flat, entry) => [...flat, ...entry],
+    [] as any
+  );
+  return flat.map(encoder).join(delimiter);
+}
+
 /**
  * Creates a tag-function to encode template strings with the given encoders.
  */
@@ -14,14 +29,7 @@ export function encode(encoders: Encoders, delimiter = ",") {
       return "";
     }
     if (typeof v === "object") {
-      if (Array.isArray(v)) {
-        return v.map(encoder).join(delimiter);
-      }
-      const flat = Object.entries(v).reduce(
-        (flat, entry) => [...flat, ...entry],
-        [] as any
-      );
-      return flat.map(encoder).join(delimiter);
+      return join(v, encoder, delimiter);
     }
 
     return encoder(String(v));
@@ -34,10 +42,19 @@ export function encode(encoders: Encoders, delimiter = ",") {
   };
 }
 
+export function simple(delimiter = ",") {
+  return (
+    param: unknown[] | Record<string, unknown>,
+    encoders = encodeReserved
+  ) => {
+    return join(param, encoders[1], delimiter);
+  };
+}
+
 /**
  * Separate array values by the given delimiter.
  */
-export function delimited(delimiter = ",") {
+export function form(delimiter = ",") {
   return (params: Record<string, any>, encoders = encodeReserved) =>
     Object.entries(params)
       .filter(([, value]) => value !== undefined)

@@ -587,10 +587,10 @@ export function getObjectParameters(
           commaArray,
           commaObject,
         }),
-        QS.space({
+        QS.formSpace({
           spaceDelimited,
         }),
-        QS.pipe({
+        QS.formPipe({
           pipeDelimited,
         }),
         QS.deep({
@@ -615,6 +615,16 @@ export function uploadPng(body?: Blob, opts?: Oazapfts.RequestOpts) {
       ...opts,
       method: "POST",
       body,
+    })
+  );
+}
+export function getIssue319ByUserIds(
+  userIds: string[],
+  opts?: Oazapfts.RequestOpts
+) {
+  return oazapfts.ok(
+    oazapfts.fetchText(`/issue319/${QS.simple(userIds)}`, {
+      ...opts,
     })
   );
 }

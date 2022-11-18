@@ -4,11 +4,17 @@ describe("delimited", () => {
   it("should use commas", () => {
     expect(qs.form({ id: [3, 4, 5] })).toEqual("id=3,4,5");
   });
+  it("should use pipes for form", () => {
+    expect(qs.formPipe({ id: [3, 4, 5] })).toEqual("id=3|4|5");
+  });
+  it("should use spaces for form", () => {
+    expect(qs.formSpace({ id: [3, 4, 5] })).toEqual("id=3%204%205");
+  });
   it("should use pipes", () => {
-    expect(qs.pipe({ id: [3, 4, 5] })).toEqual("id=3|4|5");
+    expect(qs.pipe([3, 4, 5])).toEqual("3|4|5");
   });
   it("should use spaces", () => {
-    expect(qs.space({ id: [3, 4, 5] })).toEqual("id=3%204%205");
+    expect(qs.space([3, 4, 5])).toEqual("3%204%205");
   });
   it("should enumerate entries", () => {
     expect(qs.form({ author: { firstName: "Felix", role: "admin" } })).toEqual(

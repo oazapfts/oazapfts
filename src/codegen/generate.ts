@@ -44,6 +44,7 @@ export function getFormatter({
 }: OpenAPIV3.ParameterObject) {
   if (explode && style === "deepObject") return "deep";
   if (explode) return "explode";
+  if (style === "simple") return "simple";
   if (style === "spaceDelimited") return "space";
   if (style === "pipeDelimited") return "pipe";
   return "form";
@@ -101,23 +102,32 @@ export function getReferenceName(obj: any) {
   }
 }
 
+const formatPrimitivePathParameter = (name: string) => {
+  const expression = _.camelCase(name);
+  return cg.createCall(factory.createIdentifier("encodeURIComponent"), {
+    args: [factory.createIdentifier(expression)],
+  });
+};
+
 /**
  * Create a template string literal from the given OpenAPI urlTemplate.
  * Curly braces in the path are turned into identifier expressions,
  * which are read from the local scope during runtime.
  */
-export function createUrlExpression(path: string, qs?: ts.Expression) {
+export function createUrlExpression(
+  path: string,
+  qs?: ts.Expression,
+  formatPathParameter: (
+    name: string
+  ) => ts.Expression = formatPrimitivePathParameter
+) {
   const spans: Array<{ expression: ts.Expression; literal: string }> = [];
   // Use a replacer function to collect spans as a side effect:
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
     (_substr, head, name, literal) => {
-      const expression = _.camelCase(name);
       spans.push({
-        expression: cg.createCall(
-          factory.createIdentifier("encodeURIComponent"),
-          { args: [factory.createIdentifier(expression)] }
-        ),
+        expression: formatPathParameter(name),
         literal,
       });
       return head;
@@ -683,6 +693,34 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
+  formatPathParameter(name: string, parameter?: OpenAPIV3.ParameterObject) {
+    const schema = parameter?.schema
+      ? this.resolve<SchemaObject>(parameter.schema)
+      : null;
+
+    if (parameter && (schema?.type === "array" || schema?.type === "object")) {
+      const expression = _.camelCase(name);
+      const formatter = getFormatter({
+        style: "simple",
+        explode: parameter.style === "form",
+        ...parameter,
+      });
+
+      return callQsFunction(
+        formatter,
+        formatter === "simple" || formatter === "pipe" || formatter === "space"
+          ? [factory.createIdentifier(expression)]
+          : [
+              cg.createObjectLiteral([
+                [expression, factory.createIdentifier(expression)],
+              ]),
+            ]
+      );
+    }
+
+    return formatPrimitivePathParameter(name);
+  }
+
   generateApi() {
     this.reset();
 
@@ -853,16 +891,32 @@ export default class ApiGenerator {
             "query",
             Object.entries(paramsByFormatter).map(([format, params]) => {
               //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
-              return callQsFunction(format, [
-                cg.createObjectLiteral(
-                  params.map((p) => [p.name, argNames[p.name]])
-                ),
-              ]);
+              return callQsFunction(
+                format === "simple"
+                  ? "form"
+                  : format === "pipe"
+                  ? "formPipe"
+                  : format === "space"
+                  ? "formSpace"
+                  : format,
+                [
+                  cg.createObjectLiteral(
+                    params.map((p) => [p.name, argNames[p.name]])
+                  ),
+                ]
+              );
             })
           );
         }
 
-        const url = createUrlExpression(path, qs);
+        const url = createUrlExpression(path, qs, (name) =>
+          this.formatPathParameter(
+            name,
+            parameters.find(
+              ({ name: n, in: loc }) => loc === "path" && n === name
+            )
+          )
+        );
         const init: ts.ObjectLiteralElementLike[] = [
           factory.createSpreadAssignment(factory.createIdentifier("opts")),
         ];
