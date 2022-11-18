@@ -14,7 +14,7 @@ type FetchRequestOpts = RequestOpts & {
 };
 
 type JsonRequestOpts = RequestOpts & {
-  body?: object;
+  body?: any;
 };
 
 export type ApiResponse = { status: number; data?: any };
