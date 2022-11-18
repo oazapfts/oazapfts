@@ -106,7 +106,7 @@ export function runtime(defaults: RequestOpts) {
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {
         ...req,
-        ...(body && { body: JSON.stringify(body) }),
+        ...(body != null && { body: JSON.stringify(body) }),
         headers: {
           ...headers,
           "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export function runtime(defaults: RequestOpts) {
     form({ body, headers, ...req }: JsonRequestOpts) {
       return {
         ...req,
-        ...(body && { body: qs.form(body) }),
+        ...(body != null && { body: qs.form(body) }),
         headers: {
           ...headers,
           "Content-Type": "application/x-www-form-urlencoded",
@@ -126,7 +126,7 @@ export function runtime(defaults: RequestOpts) {
     },
 
     multipart({ body, ...req }: MultipartRequestOpts) {
-      if (!body) return req;
+      if (body == null) return req;
       const data = new (defaults.formDataConstructor ||
         req.formDataConstructor ||
         FormData)();
