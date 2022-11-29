@@ -54,6 +54,7 @@ export type User = {
   password?: string;
   phone?: string;
   userStatus?: number;
+  category?: Category2;
 };
 export type Schema = string;
 export type Schema2 = number;
@@ -584,4 +585,9 @@ export enum Status2 {
   Placed = "Placed",
   Approved = "Approved",
   Delivered = "Delivered",
+}
+export enum Category2 {
+  Rich = "Rich",
+  Wealthy = "Wealthy",
+  Poor = "Poor",
 }

@@ -1096,6 +1096,11 @@
             "type": "integer",
             "description": "User Status",
             "format": "int32"
+          },
+          "category": {
+            "type": "string",
+            "description": "user category in the store",
+            "enum": ["rich", "wealthy", "poor"]
           }
         },
         "xml": {

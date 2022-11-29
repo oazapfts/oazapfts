@@ -54,6 +54,7 @@ export type User = {
   password?: string;
   phone?: string;
   userStatus?: number;
+  category?: "rich" | "wealthy" | "poor";
 };
 export type Schema = string;
 export type Schema2 = number;
