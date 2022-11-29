@@ -1,4 +1,9 @@
-import { encode, delimited, encodeReserved } from "./util";
+import {
+  encode,
+  form as encodeForm,
+  simple as encodeSimple,
+  encodeReserved,
+} from "./util";
 
 /**
  * Join params using an ampersand and prepends a questionmark if not empty.
@@ -61,6 +66,9 @@ export function explode(
     .join("&");
 }
 
-export const form = delimited();
-export const pipe = delimited("|");
-export const space = delimited("%20");
+export const form = encodeForm();
+export const formPipe = encodeForm("|");
+export const formSpace = encodeForm("%20");
+export const simple = encodeSimple();
+export const pipe = encodeSimple("|");
+export const space = encodeSimple("%20");
