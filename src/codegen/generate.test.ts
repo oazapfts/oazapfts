@@ -96,6 +96,10 @@ describe("generate", () => {
     const typeDefinition = `export type Category = { id?: number; name?: string; };`;
     expect(oneLine).toContain(typeDefinition);
 
+    // Enum Category is also defined as `Category` which would be a conflict to type `Category`
+    const conflictingEnumDefinition = `export enum Category { Rich = "Rich", Wealthy = "Wealthy", Poor = "Poor" }`;
+    expect(oneLine).not.toContain(conflictingEnumDefinition);
+
     // Enum Category is defined as `Category2` to avoid name conflict with type Category
     const enumDefinition = `export enum Category2 { Rich = "Rich", Wealthy = "Wealthy", Poor = "Poor" }`;
     expect(oneLine).toContain(enumDefinition);
