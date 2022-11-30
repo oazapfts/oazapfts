@@ -209,7 +209,6 @@ export default class ApiGenerator {
   aliases: ts.TypeAliasDeclaration[] = [];
 
   enumAliases: ts.Statement[] = [];
-  typeEnumAliases: Record<string, number> = {};
   enumRefs: Record<string, { values: string; type: ts.TypeReferenceNode }> = {};
 
   // Collect the types of all referenced schemas so we can export them later
@@ -263,21 +262,12 @@ export default class ApiGenerator {
   }
 
   getEnumUniqueAlias(name: string, values: string) {
-    // If the enum does not exist
-    if (!this.enumRefs[name]) {
-      this.typeEnumAliases[name] = 1;
-      return name;
-
-      // If enum name already exists and have the same values
-    } else if (this.enumRefs[name] && this.enumRefs[name].values == values) {
-      return name;
-
-      // If the already exists but has a different value: eg Status2
-    } else {
-      this.typeEnumAliases[name] += 1;
-      name += this.typeEnumAliases[name];
+    // If enum name already exists and have the same values
+    if (this.enumRefs[name] && this.enumRefs[name].values == values) {
       return name;
     }
+
+    return this.getUniqueAlias(name);
   }
 
   getRefBasename(ref: string): string {
