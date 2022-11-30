@@ -60,20 +60,17 @@ export const modifier = {
 };
 
 export function createTypeAliasDeclaration({
-  decorators,
   modifiers,
   name,
   typeParameters,
   type,
 }: {
-  decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
   name: string | ts.Identifier;
   typeParameters?: Array<ts.TypeParameterDeclaration>;
   type: ts.TypeNode;
 }) {
   return factory.createTypeAliasDeclaration(
-    decorators,
     modifiers,
     name,
     typeParameters,
@@ -165,13 +162,11 @@ export function createArrowFunction(
 export function createFunctionDeclaration(
   name: string | ts.Identifier | undefined,
   {
-    decorators,
     modifiers,
     asteriskToken,
     typeParameters,
     type,
   }: {
-    decorators?: ts.Decorator[];
     modifiers?: ts.Modifier[];
     asteriskToken?: ts.AsteriskToken;
     typeParameters?: ts.TypeParameterDeclaration[];
@@ -181,7 +176,6 @@ export function createFunctionDeclaration(
   body?: ts.Block
 ): ts.FunctionDeclaration {
   return factory.createFunctionDeclaration(
-    decorators,
     modifiers,
     asteriskToken,
     name,
@@ -244,14 +238,12 @@ export function createMethod(
     | ts.NumericLiteral
     | ts.ComputedPropertyName,
   {
-    decorators,
     modifiers,
     asteriskToken,
     questionToken,
     typeParameters,
     type,
   }: {
-    decorators?: ts.Decorator[];
     modifiers?: ts.Modifier[];
     asteriskToken?: ts.AsteriskToken;
     questionToken?: ts.QuestionToken | boolean;
@@ -262,7 +254,6 @@ export function createMethod(
   body?: ts.Block
 ): ts.MethodDeclaration {
   return factory.createMethodDeclaration(
-    decorators,
     modifiers,
     asteriskToken,
     name,
@@ -277,14 +268,12 @@ export function createMethod(
 export function createParameter(
   name: string | ts.BindingName,
   {
-    decorators,
     modifiers,
     dotDotDotToken,
     questionToken,
     type,
     initializer,
   }: {
-    decorators?: Array<ts.Decorator>;
     modifiers?: Array<ts.Modifier>;
     dotDotDotToken?: ts.DotDotDotToken;
     questionToken?: ts.QuestionToken | boolean;
@@ -293,7 +282,6 @@ export function createParameter(
   }
 ): ts.ParameterDeclaration {
   return factory.createParameterDeclaration(
-    decorators,
     modifiers,
     dotDotDotToken,
     name,
@@ -334,19 +322,16 @@ export function createPropertySignature({
 export function createIndexSignature(
   type: ts.TypeNode,
   {
-    decorators,
     modifiers,
     indexName = "key",
     indexType = keywordType.string,
   }: {
     indexName?: string;
     indexType?: ts.TypeNode;
-    decorators?: Array<ts.Decorator>;
     modifiers?: Array<ts.Modifier>;
   } = {}
 ) {
   return factory.createIndexSignature(
-    decorators,
     modifiers,
     [createParameter(indexName, { type: indexType })],
     type

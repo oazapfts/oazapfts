@@ -524,12 +524,7 @@ export default class ApiGenerator {
       );
     });
     this.enumAliases.push(
-      factory.createEnumDeclaration(
-        undefined,
-        [cg.modifier.export],
-        name,
-        members
-      )
+      factory.createEnumDeclaration([cg.modifier.export], name, members)
     );
 
     const type = factory.createTypeReferenceNode(name, undefined);
