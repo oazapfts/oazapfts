@@ -85,6 +85,21 @@ describe("generate", () => {
 
     expect(oneLine).toContain(sameNameDefinition);
   });
+
+  it("should avoid name conflicts between types and enums", async () => {
+    const api = printAst(
+      new ApiGenerator(spec.petstore, { useEnumType: true }).generateApi()
+    );
+    const oneLine = api.replace(/\s+/g, " ");
+
+    // Type Category is defined as `Category`
+    const typeDefinition = `export type Category = { id?: number; name?: string; };`;
+    expect(oneLine).toContain(typeDefinition);
+
+    // Enum Category is defined as `Category2` to avoid name conflict with type Category
+    const enumDefinition = `export enum Category2 { Rich = "Rich", Wealthy = "Wealthy", Poor = "Poor" }`;
+    expect(oneLine).toContain(enumDefinition);
+  });
 });
 
 describe("generate with application/geo+json", () => {
