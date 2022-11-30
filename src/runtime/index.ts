@@ -17,6 +17,10 @@ type JsonRequestOpts = RequestOpts & {
   body?: any;
 };
 
+type FormRequestOpts = RequestOpts & {
+  body?: Record<string, any>;
+};
+
 export type ApiResponse = { status: number; data?: any };
 
 type MultipartRequestOpts = RequestOpts & {
@@ -114,7 +118,7 @@ export function runtime(defaults: RequestOpts) {
       };
     },
 
-    form({ body, headers, ...req }: JsonRequestOpts) {
+    form({ body, headers, ...req }: FormRequestOpts) {
       return {
         ...req,
         ...(body != null && { body: qs.form(body) }),
