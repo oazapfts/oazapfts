@@ -570,3 +570,13 @@ export function uploadPng(body?: Blob, opts?: Oazapfts.RequestOpts) {
     body,
   });
 }
+export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchText(
+    "issue330",
+    oazapfts.json({
+      ...opts,
+      method: "PUT",
+      body,
+    })
+  );
+}
