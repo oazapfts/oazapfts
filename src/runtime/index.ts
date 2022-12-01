@@ -54,15 +54,7 @@ export function runtime(defaults: RequestOpts) {
       },
     });
 
-    const jsonTypes = [
-      "application/json",
-      "application/hal+json",
-      "application/problem+json",
-      "application/geo+json",
-    ];
-    const isJson = contentType
-      ? jsonTypes.some((mimeType) => contentType.includes(mimeType))
-      : false;
+    const isJson = contentType ? contentType.includes("json") : false;
 
     if (isJson) {
       return { status, data: data ? JSON.parse(data) : null } as T;
