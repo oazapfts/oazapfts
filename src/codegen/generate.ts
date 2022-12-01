@@ -75,12 +75,12 @@ export function getOperationName(
   return _.camelCase(`${verb} ${path}`);
 }
 
-export function isNullable(schema: any) {
-  return !!(schema && schema.nullable);
+export function isNullable(schema?: SchemaObject | OpenAPIV3.ReferenceObject) {
+  return schema && !isReference(schema) && schema.nullable;
 }
 
-export function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
-  return obj && "$ref" in obj;
+export function isReference(obj: unknown): obj is OpenAPIV3.ReferenceObject {
+  return typeof obj === "object" && obj !== null && "$ref" in obj;
 }
 
 //See https://swagger.io/docs/specification/using-ref/
@@ -756,7 +756,7 @@ export default class ApiGenerator {
         const [required, optional] = _.partition(parameters, "required");
 
         // convert parameter names to argument names ...
-        const argNames: any = {};
+        const argNames: Record<string, string> = {};
         parameters
           .map((p) => p.name)
           .sort((a, b) => a.length - b.length)
