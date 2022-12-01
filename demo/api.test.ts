@@ -327,4 +327,13 @@ describe("Blob", () => {
       message: "OK",
     });
   });
+
+  describe("headers", () => {
+    it("should return headers", async () => {
+      const res = await api.getPetById(1);
+      expect(res.headers.get("x-powered-by")).toBe(
+        "jormaechea/open-api-mocker"
+      );
+    });
+  });
 });
