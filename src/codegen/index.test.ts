@@ -55,6 +55,11 @@ describe("generateSource", () => {
     expect(src).toContain("getPets($0Limit: number, { $delete }");
   });
 
+  it("should not generate duplicate identifiers", async () => {
+    const src = await generate("/__fixtures__/duplicateIdentifiers.yaml");
+    expect(src).toContain("getPetById(id: number, { idQuery }");
+  });
+
   it("should generate valid identifiers for oneOf with refs", async () => {
     const src = await generate("/__fixtures__/oneOfRef.yaml");
     expect(src).toContain("Paths1FilterGetParameters0SchemaOneOf0");

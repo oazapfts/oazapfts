@@ -773,17 +773,25 @@ export default class ApiGenerator {
         const [required, optional] = _.partition(parameters, "required");
 
         // convert parameter names to argument names ...
-        const argNames: Record<string, string> = {};
-        parameters
-          .map((p) => p.name)
-          .sort((a, b) => a.length - b.length)
-          .forEach((name) => {
-            argNames[name] = toIdentifier(name);
-          });
+        const argNames = new Map<OpenAPIV3.ParameterObject, string>();
+        _.sortBy(parameters, "name.length").forEach((p) => {
+          const identifier = toIdentifier(p.name);
+          const existing = [...argNames.values()];
+          const suffix = existing.includes(identifier)
+            ? _.upperFirst(p.in)
+            : "";
+          argNames.set(p, identifier + suffix);
+        });
+
+        const getArgName = (param: OpenAPIV3.ParameterObject) => {
+          const name = argNames.get(param);
+          if (!name) throw new Error(`Can't find parameter: ${param.name}`);
+          return name;
+        };
 
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
-          cg.createParameter(argNames[this.resolve(p).name], {
+          cg.createParameter(getArgName(this.resolve(p)), {
             type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
           })
         );
@@ -814,14 +822,14 @@ export default class ApiGenerator {
               cg.createObjectBinding(
                 optional
                   .map((param) => this.resolve(param))
-                  .map(({ name }) => ({ name: argNames[name] }))
+                  .map((param) => ({ name: getArgName(param) }))
               ),
               {
                 initializer: factory.createObjectLiteralExpression(),
                 type: factory.createTypeLiteralNode(
                   optional.map((p) =>
                     cg.createPropertySignature({
-                      name: argNames[this.resolve(p).name],
+                      name: getArgName(this.resolve(p)),
                       questionToken: true,
                       type: this.getTypeFromSchema(
                         isReference(p) ? p : p.schema
@@ -848,9 +856,8 @@ export default class ApiGenerator {
 
         const returnType = this.getResponseType(responses);
         const query = parameters.filter((p) => p.in === "query");
-        const header = parameters
-          .filter((p) => p.in === "header")
-          .map((p) => p.name);
+        const header = parameters.filter((p) => p.in === "header");
+
         let qs;
         if (query.length) {
           const paramsByFormatter = _.groupBy(query, getFormatter);
@@ -860,7 +867,7 @@ export default class ApiGenerator {
               //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
               return callQsFunction(format, [
                 cg.createObjectLiteral(
-                  params.map((p) => [p.name, argNames[p.name]])
+                  params.map((p) => [p.name, getArgName(p)])
                 ),
               ]);
             })
@@ -905,10 +912,10 @@ export default class ApiGenerator {
                       )
                     )
                   ),
-                  ...header.map((name) =>
+                  ...header.map((param) =>
                     cg.createPropertyAssignment(
-                      name,
-                      factory.createIdentifier(argNames[name])
+                      param.name,
+                      factory.createIdentifier(getArgName(param))
                     )
                   ),
                 ],
