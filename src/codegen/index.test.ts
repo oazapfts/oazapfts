@@ -1,4 +1,5 @@
-import * as path from "path";
+import * as path from "node:path";
+import ts from "typescript";
 import { generateSource } from "./index";
 
 /**
@@ -47,6 +48,12 @@ describe("generateSource", () => {
   it("should generate an api with literal type set to const value", async () => {
     const src = await generate("/__fixtures__/const.json");
     expect(src).toContain(`export type Shape = "circle";`);
+  });
+
+  it("should generate valid identifiers for oneOf with refs", async () => {
+    const spec = path.join(__dirname, "/__fixtures__/oneOfRef.yaml");
+    const src = await generateSource(spec);
+    expect(src).toContain("Paths1FilterGetParameters0SchemaOneOf0");
   });
 });
 

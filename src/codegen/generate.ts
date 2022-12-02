@@ -273,8 +273,25 @@ export default class ApiGenerator {
     return this.getUniqueAlias(name);
   }
 
-  getRefBasename(ref: string): string {
+  /**
+   * Get the last path component of the given ref.
+   */
+  getRefBasename(ref: string) {
     return ref.replace(/.+\//, "");
+  }
+
+  /**
+   * Returns a name for the given ref that can be used as basis for a type
+   * alias. This usually is the baseName, unless the ref ends with a number,
+   * in which case the whole ref is returned, with leading non-word characters
+   * being stripped.
+   */
+  getRefName(ref: string) {
+    const base = this.getRefBasename(ref);
+    if (/^\d+/.test(base)) {
+      return ref.replace(/^\W+/, "");
+    }
+    return base;
   }
 
   /**
@@ -285,17 +302,17 @@ export default class ApiGenerator {
     let ref = this.refs[$ref];
     if (!ref) {
       const schema = this.resolve<SchemaObject>(obj);
-      const name = this.getUniqueAlias(
-        _.upperFirst(_.camelCase(schema.title || this.getRefBasename($ref)))
-      );
+      const name = schema.title || this.getRefName($ref);
+      const identifier = _.upperFirst(_.camelCase(name));
+      const alias = this.getUniqueAlias(identifier);
 
-      ref = this.refs[$ref] = factory.createTypeReferenceNode(name, undefined);
+      ref = this.refs[$ref] = factory.createTypeReferenceNode(alias, undefined);
 
       const type = this.getTypeFromSchema(schema);
       this.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
-          name,
+          name: alias,
           type,
         })
       );
