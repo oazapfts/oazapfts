@@ -265,7 +265,7 @@ export default class ApiGenerator {
     return array ? array.map((el) => this.resolve(el)) : [];
   }
 
-  skip(tags?: string[]) {
+  skip(tags?: string[]): boolean {
     const excluded = tags && tags.some((t) => this.opts?.exclude?.includes(t));
     if (excluded) {
       return true;
@@ -277,7 +277,7 @@ export default class ApiGenerator {
     return false;
   }
 
-  getUniqueAlias(name: string) {
+  getUniqueAlias(name: string): string {
     let used = this.typeAliases[name] || 0;
     if (used) {
       this.typeAliases[name] = ++used;
@@ -299,7 +299,7 @@ export default class ApiGenerator {
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  getRefAlias(obj: OpenAPIV3.ReferenceObject) {
+  getRefAlias(obj: OpenAPIV3.ReferenceObject): ts.TypeReferenceNode {
     const { $ref } = obj;
     let ref = this.refs[$ref];
     if (!ref) {
@@ -456,9 +456,8 @@ export default class ApiGenerator {
       );
     }
     if (schema.enum) {
-      return this.opts.useEnumType && name && schema.type != "boolean"
-        ? this.getTrueEnum(schema, name)
-        : this.getTypeFromEnum(schema.enum);
+      // enum -> union of literal types
+      return cg.createEnumTypeNode(schema.enum);
     }
     if (schema.format == "binary") {
       return factory.createTypeReferenceNode("Blob", []);
@@ -468,8 +467,8 @@ export default class ApiGenerator {
     }
     if (schema.type) {
       // string, boolean, null, number
-      if (schema.type in cg.keywordType) return cg.keywordType[schema.type];
       if (schema.type === "integer") return cg.keywordType.number;
+      if (schema.type in cg.keywordType) return cg.keywordType[schema.type];
     }
 
     return cg.keywordType.any;
@@ -555,8 +554,11 @@ export default class ApiGenerator {
       [prop: string]: SchemaObject | OpenAPIV3.ReferenceObject;
     },
     required?: string[],
-    additionalProperties?: boolean | SchemaObject | OpenAPIV3.ReferenceObject
-  ) {
+    additionalProperties?:
+      | boolean
+      | OpenAPIV3.SchemaObject
+      | OpenAPIV3.ReferenceObject
+  ): ts.TypeLiteralNode {
     const members: ts.TypeElement[] = Object.keys(props).map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
@@ -581,7 +583,7 @@ export default class ApiGenerator {
     return factory.createTypeLiteralNode(members);
   }
 
-  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
+  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject): ts.UnionTypeNode {
     return factory.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
         const statusType =
@@ -612,7 +614,7 @@ export default class ApiGenerator {
 
   getTypeFromResponse(
     resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
-  ) {
+  ): ts.TypeNode {
     const res = this.resolve(resOrRef);
     if (!res || !res.content) return cg.keywordType.void;
     return this.getTypeFromSchema(this.getSchemaFromContent(res.content));
@@ -688,7 +690,7 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
-  generateApi() {
+  generateApi(): ts.SourceFile {
     this.reset();
 
     // Parse ApiStub.ts so that we don't have to generate everything manually
@@ -801,7 +803,7 @@ export default class ApiGenerator {
           })
         );
 
-        let body: any;
+        let body: OpenAPIV3.RequestBodyObject | undefined;
         let bodyVar;
 
         // add body if present
