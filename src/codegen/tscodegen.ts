@@ -440,7 +440,10 @@ export function appendNodes<T extends ts.Node>(
   return factory.createNodeArray([...array, ...nodes]);
 }
 
-export function addComment<T extends ts.Node>(node: T, comment?: string) {
+export function addComment<T extends ts.Node>(
+  node: T,
+  comment: string | undefined
+) {
   if (!comment) return node;
   return ts.addSyntheticLeadingComment(
     node,
