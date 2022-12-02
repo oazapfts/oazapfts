@@ -19,16 +19,20 @@ export const verbs = [
 
 type ContentType = "json" | "form" | "multipart";
 
-export const contentTypes: Record<string, ContentType> = {
+const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
   "application/json": "json",
-  "application/hal+json": "json",
-  "application/merge-patch+json": "json",
-  "application/problem+json": "json",
-  "application/geo+json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
 };
+
+export function isMimeType(s: unknown) {
+  return typeof s === "string" && /^[^/]+\/[^/]+$/.test(s);
+}
+
+export function isJsonMimeType(mime: string) {
+  return contentTypes[mime] === "json" || /\bjson\b/i.test(mime);
+}
 
 // augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 type SchemaObject = OpenAPIV3.SchemaObject & {
@@ -71,12 +75,12 @@ export function getOperationName(
   return _.camelCase(`${verb} ${path}`);
 }
 
-export function isNullable(schema: any) {
-  return !!(schema && schema.nullable);
+export function isNullable(schema?: SchemaObject | OpenAPIV3.ReferenceObject) {
+  return schema && !isReference(schema) && schema.nullable;
 }
 
-export function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
-  return obj && "$ref" in obj;
+export function isReference(obj: unknown): obj is OpenAPIV3.ReferenceObject {
+  return typeof obj === "object" && obj !== null && "$ref" in obj;
 }
 
 //See https://swagger.io/docs/specification/using-ref/
@@ -610,7 +614,7 @@ export default class ApiGenerator {
     // if no content is specified, assume `text` (backwards-compatibility)
     if (
       !resolvedResponses.some(
-        (res) => Object.keys(res.content ?? []).length > 0
+        (res) => Object.keys(res.content ?? {}).length > 0
       )
     ) {
       return "text";
@@ -618,9 +622,7 @@ export default class ApiGenerator {
 
     const isJson = resolvedResponses.some((response) => {
       const responseMimeTypes = Object.keys(response.content ?? {});
-      return responseMimeTypes.some(
-        (mimeType) => contentTypes[mimeType] === "json"
-      );
+      return responseMimeTypes.some(isJsonMimeType);
     });
 
     // if there’s `application/json` or `*/*`, assume `json`
@@ -641,14 +643,15 @@ export default class ApiGenerator {
     return "blob";
   }
 
-  getSchemaFromContent(content: any) {
-    const contentType = Object.keys(contentTypes).find((t) => t in content);
-    let schema;
+  getSchemaFromContent(
+    content: Record<string, OpenAPIV3.MediaTypeObject>
+  ): OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject {
+    const contentType = Object.keys(content).find(isMimeType);
     if (contentType) {
-      schema = _.get(content, [contentType, "schema"]);
-    }
-    if (schema) {
-      return schema;
+      const { schema } = content[contentType];
+      if (schema) {
+        return schema;
+      }
     }
 
     // if no content is specified -> string
@@ -753,7 +756,7 @@ export default class ApiGenerator {
         const [required, optional] = _.partition(parameters, "required");
 
         // convert parameter names to argument names ...
-        const argNames: any = {};
+        const argNames: Record<string, string> = {};
         parameters
           .map((p) => p.name)
           .sort((a, b) => a.length - b.length)
