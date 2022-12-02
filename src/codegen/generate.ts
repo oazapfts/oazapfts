@@ -45,7 +45,22 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
 export function getFormatter({
   style = "form",
   explode = true,
+  content,
 }: OpenAPIV3.ParameterObject) {
+  if (content) {
+    const medias = Object.keys(content);
+    if (medias.length !== 1) {
+      throw new Error(
+        "Parameters with content property must specify one media type"
+      );
+    }
+    if (!isJsonMimeType(medias[0])) {
+      throw new Error(
+        "Parameters with content property must specify a JSON compatible media type"
+      );
+    }
+    return "json";
+  }
   if (explode && style === "deepObject") return "deep";
   if (explode) return "explode";
   if (style === "spaceDelimited") return "space";
@@ -688,6 +703,14 @@ export default class ApiGenerator {
     return { type: "string", format: "binary" };
   }
 
+  getTypeFromParameter(p: OpenAPIV3.ParameterObject) {
+    if (p.content) {
+      const schema = this.getSchemaFromContent(p.content);
+      return this.getTypeFromSchema(schema);
+    }
+    return this.getTypeFromSchema(isReference(p) ? p : p.schema);
+  }
+
   wrapResult(ex: ts.Expression) {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
@@ -801,7 +824,7 @@ export default class ApiGenerator {
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
           cg.createParameter(getArgName(this.resolve(p)), {
-            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
+            type: this.getTypeFromParameter(p),
           })
         );
 
@@ -840,9 +863,7 @@ export default class ApiGenerator {
                     cg.createPropertySignature({
                       name: getArgName(this.resolve(p)),
                       questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema
-                      ),
+                      type: this.getTypeFromParameter(p),
                     })
                   )
                 ),

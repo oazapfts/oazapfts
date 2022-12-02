@@ -34,3 +34,24 @@ describe("content types", () => {
     expect(isJsonMimeType("text/plain")).toBe(false);
   });
 });
+
+describe("generate with parameters specified with content", () => {
+  let spec: OpenAPIV3.Document;
+
+  beforeAll(async () => {
+    spec = (await SwaggerParser.bundle(
+      __dirname + "/../../demo/contentParams.json"
+    )) as any;
+  });
+
+  it("should generate an api", async () => {
+    const artefact = printAst(new ApiGenerator(spec).generateApi());
+    const oneLine = artefact.replace(/\s+/g, " ");
+    expect(oneLine).toContain(
+      "export function queryFiles({ filter }: { filter?: { where?: { fileId?: number; }; }; } = {}, opts?: Oazapfts.RequestOpts)"
+    );
+    expect(oneLine).toContain(
+      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file${QS.query(QS.json({ filter }))}`, { ...opts });"
+    );
+  });
+});
