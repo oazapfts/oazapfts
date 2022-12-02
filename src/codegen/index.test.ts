@@ -64,6 +64,16 @@ describe("generateSource", () => {
     const src = await generate("/__fixtures__/oneOfRef.yaml");
     expect(src).toContain("Paths1FilterGetParameters0SchemaOneOf0");
   });
+
+  it("should support parameters specified with content", async () => {
+    const src = await generate("/__fixtures__/contentParams.json");
+    expect(src).toContain(
+      "export function queryFiles({ filter }: { filter?: { where?: { fileId?: number; }; }; } = {}, opts?: Oazapfts.RequestOpts)"
+    );
+    expect(src).toContain(
+      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file${QS.query(QS.json({ filter }))}`, { ...opts });"
+    );
+  });
 });
 
 describe("useEnumType", () => {
