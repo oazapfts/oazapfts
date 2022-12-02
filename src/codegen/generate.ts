@@ -72,7 +72,7 @@ export function getOperationName(
   const id = getOperationIdentifier(operationId);
   if (id) return id;
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
-  return _.camelCase(`${verb} ${path}`);
+  return toIdentifier(`${verb} ${path}`);
 }
 
 export function isNullable(schema?: SchemaObject | OpenAPIV3.ReferenceObject) {
@@ -83,26 +83,40 @@ export function isReference(obj: unknown): obj is OpenAPIV3.ReferenceObject {
   return typeof obj === "object" && obj !== null && "$ref" in obj;
 }
 
-//See https://swagger.io/docs/specification/using-ref/
-export function getReference(spec: any, ref: string) {
-  const path = ref
-    .slice(2)
-    .split("/")
-    .map((s) => unescape(s.replace(/~1/g, "/").replace(/~0/g, "~")));
-
-  const ret = _.get(spec, path);
-  if (typeof ret === "undefined") {
-    throw new Error(`Can't find ${path}`);
-  }
-  return ret;
+/**
+ * Get the last path component of the given ref.
+ */
+function getRefBasename(ref: string) {
+  return ref.replace(/.+\//, "");
 }
+
+/**
+ * Returns a name for the given ref that can be used as basis for a type
+ * alias. This usually is the baseName, unless the ref ends with a number,
+ * in which case the whole ref is returned, with leading non-word characters
+ * being stripped.
+ */
+function getRefName(ref: string) {
+  const base = getRefBasename(ref);
+  if (/^\d+/.test(base)) {
+    return ref.replace(/^\W+/, "");
+  }
+  return base;
+}
+
 /**
  * If the given object is a ReferenceObject, return the last part of its path.
  */
-export function getReferenceName(obj: any) {
+export function getReferenceName(obj: unknown) {
   if (isReference(obj)) {
-    return _.camelCase(obj.$ref.split("/").slice(-1)[0]);
+    return getRefBasename(obj.$ref);
   }
+}
+
+export function toIdentifier(s: string) {
+  const cc = _.camelCase(s);
+  if (cg.isValidIdentifier(cc)) return cc;
+  return "$" + cc;
 }
 
 /**
@@ -116,7 +130,7 @@ export function createUrlExpression(path: string, qs?: ts.Expression) {
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
     (_substr, head, name, literal) => {
-      const expression = _.camelCase(name);
+      const expression = toIdentifier(name);
       spans.push({
         expression: cg.createCall(
           factory.createIdentifier("encodeURIComponent"),
@@ -235,7 +249,16 @@ export default class ApiGenerator {
         `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
       );
     }
-    return getReference(this.spec, ref) as T;
+    const path = ref
+      .slice(2)
+      .split("/")
+      .map((s) => decodeURI(s.replace(/~1/g, "/").replace(/~0/g, "~")));
+
+    const resolved = _.get(this.spec, path);
+    if (typeof resolved === "undefined") {
+      throw new Error(`Can't find ${path}`);
+    }
+    return resolved as T;
   }
 
   resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
@@ -274,27 +297,6 @@ export default class ApiGenerator {
   }
 
   /**
-   * Get the last path component of the given ref.
-   */
-  getRefBasename(ref: string) {
-    return ref.replace(/.+\//, "");
-  }
-
-  /**
-   * Returns a name for the given ref that can be used as basis for a type
-   * alias. This usually is the baseName, unless the ref ends with a number,
-   * in which case the whole ref is returned, with leading non-word characters
-   * being stripped.
-   */
-  getRefName(ref: string) {
-    const base = this.getRefBasename(ref);
-    if (/^\d+/.test(base)) {
-      return ref.replace(/^\W+/, "");
-    }
-    return base;
-  }
-
-  /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
   getRefAlias(obj: OpenAPIV3.ReferenceObject) {
@@ -302,8 +304,8 @@ export default class ApiGenerator {
     let ref = this.refs[$ref];
     if (!ref) {
       const schema = this.resolve<SchemaObject>(obj);
-      const name = schema.title || this.getRefName($ref);
-      const identifier = _.upperFirst(_.camelCase(name));
+      const name = schema.title || getRefName($ref);
+      const identifier = _.upperFirst(toIdentifier(name));
       const alias = this.getUniqueAlias(identifier);
 
       ref = this.refs[$ref] = factory.createTypeReferenceNode(alias, undefined);
@@ -334,9 +336,7 @@ export default class ApiGenerator {
       // used as the discriminator value for each variant. This can be overridden using the
       // discriminator.mapping property.
       const mappedValues = new Set(
-        Object.values(discriminator.mapping || {}).map((ref) =>
-          this.getRefBasename(ref)
-        )
+        Object.values(discriminator.mapping || {}).map(getRefBasename)
       );
 
       return factory.createUnionTypeNode(
@@ -357,10 +357,10 @@ export default class ApiGenerator {
                     "Discriminators require references, not inline schemas"
                   );
                 }
-                return !mappedValues.has(this.getRefBasename(variant.$ref));
+                return !mappedValues.has(getRefBasename(variant.$ref));
               })
               .map((schema) => [
-                this.getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
+                getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
                 schema,
               ]),
           ] as [string, OpenAPIV3.ReferenceObject][]
@@ -778,7 +778,7 @@ export default class ApiGenerator {
           .map((p) => p.name)
           .sort((a, b) => a.length - b.length)
           .forEach((name) => {
-            argNames[name] = _.camelCase(name);
+            argNames[name] = toIdentifier(name);
           });
 
         // build the method signature - first all the required parameters
@@ -796,7 +796,7 @@ export default class ApiGenerator {
           body = this.resolve(requestBody);
           const schema = this.getSchemaFromContent(body.content);
           const type = this.getTypeFromSchema(schema);
-          bodyVar = _.camelCase(
+          bodyVar = toIdentifier(
             (type as any).name || getReferenceName(schema) || "body"
           );
           methodParams.push(

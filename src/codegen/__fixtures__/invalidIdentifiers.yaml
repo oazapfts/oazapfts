@@ -1,0 +1,24 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Invalid identifiers
+paths:
+  /-/pets:
+    get:
+      summary: List all pets
+      operationId: foo/bar.listPets
+      tags:
+        - pets
+      parameters:
+        - name: 0limit
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: delete
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok

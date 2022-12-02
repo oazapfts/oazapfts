@@ -50,9 +50,13 @@ describe("generateSource", () => {
     expect(src).toContain(`export type Shape = "circle";`);
   });
 
+  it("should generate valid identifiers", async () => {
+    const src = await generate("/__fixtures__/invalidIdentifiers.yaml");
+    expect(src).toContain("getPets($0Limit: number, { $delete }");
+  });
+
   it("should generate valid identifiers for oneOf with refs", async () => {
-    const spec = path.join(__dirname, "/__fixtures__/oneOfRef.yaml");
-    const src = await generateSource(spec);
+    const src = await generate("/__fixtures__/oneOfRef.yaml");
     expect(src).toContain("Paths1FilterGetParameters0SchemaOneOf0");
   });
 });
