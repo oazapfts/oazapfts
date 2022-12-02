@@ -759,10 +759,15 @@ export default class ApiGenerator {
         }
 
         // merge item and op parameters
-        const resolvedParameters = [
-          ...this.resolveArray(item.parameters),
-          ...this.resolveArray(op.parameters),
-        ];
+        const resolvedParameters = this.resolveArray(item.parameters);
+        for (const p of this.resolveArray(op.parameters)) {
+          const existing = resolvedParameters.find(
+            (r) => r.name === p.name && r.in === p.in
+          );
+          if (!existing) {
+            resolvedParameters.push(p);
+          }
+        }
 
         // expand older OpenAPI parameters into deepObject style where needed
         const parameters = this.isConverted

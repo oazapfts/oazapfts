@@ -4,6 +4,12 @@ info:
   title: Dupliate identifiers
 paths:
   /pet/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
     get:
       summary: Get a pet by id
       parameters:
