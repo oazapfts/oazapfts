@@ -265,7 +265,7 @@ export default class ApiGenerator {
     return array ? array.map((el) => this.resolve(el)) : [];
   }
 
-  skip(tags?: string[]): boolean {
+  skip(tags?: string[]) {
     const excluded = tags && tags.some((t) => this.opts?.exclude?.includes(t));
     if (excluded) {
       return true;
@@ -277,7 +277,7 @@ export default class ApiGenerator {
     return false;
   }
 
-  getUniqueAlias(name: string): string {
+  getUniqueAlias(name: string) {
     let used = this.typeAliases[name] || 0;
     if (used) {
       this.typeAliases[name] = ++used;
@@ -299,7 +299,7 @@ export default class ApiGenerator {
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  getRefAlias(obj: OpenAPIV3.ReferenceObject): ts.TypeReferenceNode {
+  getRefAlias(obj: OpenAPIV3.ReferenceObject) {
     const { $ref } = obj;
     let ref = this.refs[$ref];
     if (!ref) {
@@ -325,7 +325,7 @@ export default class ApiGenerator {
   getUnionType(
     variants: (OpenAPIV3.ReferenceObject | SchemaObject)[],
     discriminator?: OpenAPIV3.DiscriminatorObject
-  ): ts.TypeNode {
+  ) {
     if (discriminator) {
       // oneOf + discriminator -> tagged union (polymorphism)
       if (discriminator.propertyName === undefined) {
@@ -395,7 +395,7 @@ export default class ApiGenerator {
   getTypeFromSchema(
     schema?: SchemaObject | OpenAPIV3.ReferenceObject,
     name?: string
-  ): ts.TypeNode {
+  ) {
     const type = this.getBaseTypeFromSchema(schema, name);
     return isNullable(schema)
       ? factory.createUnionTypeNode([type, cg.keywordType.null])
@@ -456,8 +456,10 @@ export default class ApiGenerator {
       );
     }
     if (schema.enum) {
-      // enum -> union of literal types
-      return cg.createEnumTypeNode(schema.enum);
+      // enum -> enum or union
+      return this.opts.useEnumType && name && schema.type !== "boolean"
+        ? this.getTrueEnum(schema, name)
+        : cg.createEnumTypeNode(schema.enum);
     }
     if (schema.format == "binary") {
       return factory.createTypeReferenceNode("Blob", []);
@@ -497,7 +499,7 @@ export default class ApiGenerator {
     return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
   }
 
-  getEnumValuesString(values: string[]): string {
+  getEnumValuesString(values: string[]) {
     return values.join("_");
   }
 
@@ -583,7 +585,7 @@ export default class ApiGenerator {
     return factory.createTypeLiteralNode(members);
   }
 
-  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject): ts.UnionTypeNode {
+  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
     return factory.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
         const statusType =
@@ -614,7 +616,7 @@ export default class ApiGenerator {
 
   getTypeFromResponse(
     resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
-  ): ts.TypeNode {
+  ) {
     const res = this.resolve(resOrRef);
     if (!res || !res.content) return cg.keywordType.void;
     return this.getTypeFromSchema(this.getSchemaFromContent(res.content));
@@ -690,7 +692,7 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
-  generateApi(): ts.SourceFile {
+  generateApi() {
     this.reset();
 
     // Parse ApiStub.ts so that we don't have to generate everything manually
