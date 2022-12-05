@@ -6,7 +6,7 @@ export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
   formDataConstructor?: new () => FormData;
-  headers?: Record<string, string | undefined>;
+  headers?: Record<string, string | number | boolean | undefined>;
 } & Omit<RequestInit, "body" | "headers">;
 
 type FetchRequestOpts = RequestOpts & {

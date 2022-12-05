@@ -32,6 +32,15 @@ describe("ok", () => {
     });
   });
 
+  it("should send headers", async () => {
+    const res = await api.customizePet(1, {
+      furColor: "brown",
+      color: "gold",
+      xColorOptions: true,
+    });
+    expect(res.status).toBe(204);
+  });
+
   it("should type response as Pet|string", async () => {
     const pet = await ok(api.addPet({ name: "doggie", photoUrls: [] }));
     //@ts-expect-error
