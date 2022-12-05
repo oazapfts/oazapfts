@@ -1,6 +1,8 @@
 import * as path from "node:path";
-import ts from "typescript";
 import { generateSource } from "./index";
+
+import { createProject, ts } from "@ts-morph/bootstrap";
+import { ScriptTarget } from "typescript";
 
 /**
  * Generate an API from a releative path and convert it into a single line.
@@ -8,7 +10,31 @@ import { generateSource } from "./index";
 async function generate(file: string, opts = {}) {
   const spec = path.join(__dirname, file);
   const src = await generateSource(spec, opts);
+  const error = await checkForTypeErrors(src);
+  expect(error).toBeUndefined();
   return src.replace(/\s+/g, " ");
+}
+
+/**
+ * Type-check the given TypeScript source code.
+ */
+async function checkForTypeErrors(source: string) {
+  const project = await createProject({
+    tsConfigFilePath: __dirname + "/../../tsconfig.json",
+    skipAddingFilesFromTsConfig: true,
+    compilerOptions: {
+      noEmit: true,
+      target: ScriptTarget.ESNext,
+      paths: {
+        "oazapfts/lib/*": [__dirname + "/../../lib/*"],
+      },
+    },
+  });
+
+  project.createSourceFile(__dirname + "/api.ts", source);
+  const program = project.createProgram();
+  const [error] = ts.getPreEmitDiagnostics(program);
+  return error?.messageText;
 }
 
 describe("generateSource", () => {
