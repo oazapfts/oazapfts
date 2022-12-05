@@ -11,10 +11,14 @@ type DataType<T extends ApiResponse, S extends number> = T extends { status: S }
  * Object with methods to handle possible status codes of an ApiResponse.
  */
 type ResponseHandler<T extends ApiResponse> = {
-  [P in T["status"]]: (res: DataType<T, P>) => any;
+  [P in T["status"]]?: (res: DataType<T, P>) => any;
 } & {
   default?: (status: number, data: any) => any;
 };
+
+type FunctionReturnType<T> = T extends (args: any[]) => any
+  ? ReturnType<T>
+  : never;
 
 /**
  * Utility function to handle different status codes.
@@ -29,7 +33,7 @@ type ResponseHandler<T extends ApiResponse> = {
 export async function handle<
   T extends ApiResponse,
   H extends ResponseHandler<T>
->(promise: Promise<T>, handler: H): Promise<ReturnType<H[keyof H]>> {
+>(promise: Promise<T>, handler: H): Promise<FunctionReturnType<H[keyof H]>> {
   const { status, data } = await promise;
   const statusHandler = (handler as any)[status];
   if (statusHandler) return statusHandler(data);

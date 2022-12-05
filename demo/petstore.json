@@ -416,6 +416,49 @@
         ]
       }
     },
+    "/pet/{petId}/customize": {
+      "post": {
+        "operationId": "customizePet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "description": "ID of pet to customize",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "fur.color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-color-options",
+            "in": "header",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "successful operation",
+            "content": {}
+          }
+        }
+      }
+    },
     "/store/inventory": {
       "get": {
         "tags": ["store"],
@@ -797,40 +840,6 @@
           },
           "404": {
             "description": "User not found",
-            "content": {}
-          }
-        }
-      }
-    },
-    "/pet/customize": {
-      "post": {
-        "operationId": "customizePet",
-        "parameters": [
-          {
-            "name": "fur.color",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "color",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "x-color-options",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "successful operation",
             "content": {}
           }
         }

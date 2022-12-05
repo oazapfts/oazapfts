@@ -32,6 +32,15 @@ describe("ok", () => {
     });
   });
 
+  it("should send headers", async () => {
+    const res = await api.customizePet(1, {
+      furColor: "brown",
+      color: "gold",
+      xColorOptions: true,
+    });
+    expect(res.status).toBe(204);
+  });
+
   it("should type response as Pet|string", async () => {
     const pet = await ok(api.addPet({ name: "doggie", photoUrls: [] }));
     //@ts-expect-error
@@ -139,12 +148,34 @@ describe("object query parameters", () => {
 
 describe("handle", () => {
   it("should call the matching handler", async () => {
-    const res = await handle(api.updatePet({ name: "Gizmo", photoUrls: [] }), {
-      204() {
-        return "204 called";
+    const res = await handle(api.getPetById(1), {
+      200() {
+        return "200 called";
+      },
+      400() {
+        return "400 called";
       },
     });
-    expect(res).toBe("204 called");
+    expect(res).toBe("200 called");
+  });
+
+  it("should call the default handler handler", async () => {
+    const res = await handle(
+      api.getPetById(1, {
+        headers: {
+          Prefer: "statusCode=400",
+        },
+      }),
+      {
+        200() {
+          return "200 called";
+        },
+        default(status) {
+          return `default: ${status}`;
+        },
+      }
+    );
+    expect(res).toBe("default: 400");
   });
 
   it("should call the default handler", async () => {
@@ -325,6 +356,15 @@ describe("Blob", () => {
       code: 200,
       type: "OK",
       message: "OK",
+    });
+  });
+
+  describe("headers", () => {
+    it("should return headers", async () => {
+      const res = await api.getPetById(1);
+      expect(res.headers.get("x-powered-by")).toBe(
+        "jormaechea/open-api-mocker"
+      );
     });
   });
 });

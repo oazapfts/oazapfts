@@ -1,0 +1,27 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Dupliate identifiers
+paths:
+  /pet/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get a pet by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok

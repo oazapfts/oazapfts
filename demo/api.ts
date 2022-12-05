@@ -246,6 +246,36 @@ export function uploadFile(
     })
   );
 }
+export function customizePet(
+  petId: number,
+  {
+    furColor,
+    color,
+    xColorOptions,
+  }: {
+    furColor?: string;
+    color?: string;
+    xColorOptions?: boolean;
+  } = {},
+  opts?: Oazapfts.RequestOpts
+) {
+  return oazapfts.fetchText(
+    `/pet/${encodeURIComponent(petId)}/customize${QS.query(
+      QS.explode({
+        "fur.color": furColor,
+        color,
+      })
+    )}`,
+    {
+      ...opts,
+      method: "POST",
+      headers: {
+        ...(opts && opts.headers),
+        "x-color-options": xColorOptions,
+      },
+    }
+  );
+}
 /**
  * Returns pet inventories by status
  */
@@ -439,35 +469,6 @@ export function deleteUser(username: string, opts?: Oazapfts.RequestOpts) {
     ...opts,
     method: "DELETE",
   });
-}
-export function customizePet(
-  {
-    furColor,
-    color,
-    xColorOptions,
-  }: {
-    furColor?: string;
-    color?: string;
-    xColorOptions?: string;
-  } = {},
-  opts?: Oazapfts.RequestOpts
-) {
-  return oazapfts.fetchText(
-    `/pet/customize${QS.query(
-      QS.explode({
-        "fur.color": furColor,
-        color,
-      })
-    )}`,
-    {
-      ...opts,
-      method: "POST",
-      headers: {
-        ...(opts && opts.headers),
-        "x-color-options": xColorOptions,
-      },
-    }
-  );
 }
 export function getIssue31ByFoo(
   foo: string,

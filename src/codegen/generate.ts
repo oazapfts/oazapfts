@@ -19,16 +19,20 @@ export const verbs = [
 
 type ContentType = "json" | "form" | "multipart";
 
-export const contentTypes: Record<string, ContentType> = {
+const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
   "application/json": "json",
-  "application/hal+json": "json",
-  "application/merge-patch+json": "json",
-  "application/problem+json": "json",
-  "application/geo+json": "json",
   "application/x-www-form-urlencoded": "form",
   "multipart/form-data": "multipart",
 };
+
+export function isMimeType(s: unknown) {
+  return typeof s === "string" && /^[^/]+\/[^/]+$/.test(s);
+}
+
+export function isJsonMimeType(mime: string) {
+  return contentTypes[mime] === "json" || /\bjson\b/i.test(mime);
+}
 
 // augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 type SchemaObject = OpenAPIV3.SchemaObject & {
@@ -41,7 +45,22 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
 export function getFormatter({
   style = "form",
   explode = true,
+  content,
 }: OpenAPIV3.ParameterObject) {
+  if (content) {
+    const medias = Object.keys(content);
+    if (medias.length !== 1) {
+      throw new Error(
+        "Parameters with content property must specify one media type"
+      );
+    }
+    if (!isJsonMimeType(medias[0])) {
+      throw new Error(
+        "Parameters with content property must specify a JSON compatible media type"
+      );
+    }
+    return "json";
+  }
   if (explode && style === "deepObject") return "deep";
   if (explode) return "explode";
   if (style === "spaceDelimited") return "space";
@@ -68,37 +87,51 @@ export function getOperationName(
   const id = getOperationIdentifier(operationId);
   if (id) return id;
   path = path.replace(/\{(.+?)\}/, "by $1").replace(/\{(.+?)\}/, "and $1");
-  return _.camelCase(`${verb} ${path}`);
+  return toIdentifier(`${verb} ${path}`);
 }
 
-export function isNullable(schema: any) {
-  return !!(schema && schema.nullable);
+export function isNullable(schema?: SchemaObject | OpenAPIV3.ReferenceObject) {
+  return schema && !isReference(schema) && schema.nullable;
 }
 
-export function isReference(obj: any): obj is OpenAPIV3.ReferenceObject {
-  return obj && "$ref" in obj;
+export function isReference(obj: unknown): obj is OpenAPIV3.ReferenceObject {
+  return typeof obj === "object" && obj !== null && "$ref" in obj;
 }
 
-//See https://swagger.io/docs/specification/using-ref/
-export function getReference(spec: any, ref: string) {
-  const path = ref
-    .slice(2)
-    .split("/")
-    .map((s) => unescape(s.replace(/~1/g, "/").replace(/~0/g, "~")));
+/**
+ * Get the last path component of the given ref.
+ */
+function getRefBasename(ref: string) {
+  return ref.replace(/.+\//, "");
+}
 
-  const ret = _.get(spec, path);
-  if (typeof ret === "undefined") {
-    throw new Error(`Can't find ${path}`);
+/**
+ * Returns a name for the given ref that can be used as basis for a type
+ * alias. This usually is the baseName, unless the ref ends with a number,
+ * in which case the whole ref is returned, with leading non-word characters
+ * being stripped.
+ */
+function getRefName(ref: string) {
+  const base = getRefBasename(ref);
+  if (/^\d+/.test(base)) {
+    return ref.replace(/^\W+/, "");
   }
-  return ret;
+  return base;
 }
+
 /**
  * If the given object is a ReferenceObject, return the last part of its path.
  */
-export function getReferenceName(obj: any) {
+export function getReferenceName(obj: unknown) {
   if (isReference(obj)) {
-    return _.camelCase(obj.$ref.split("/").slice(-1)[0]);
+    return getRefBasename(obj.$ref);
   }
+}
+
+export function toIdentifier(s: string) {
+  const cc = _.camelCase(s);
+  if (cg.isValidIdentifier(cc)) return cc;
+  return "$" + cc;
 }
 
 /**
@@ -112,7 +145,7 @@ export function createUrlExpression(path: string, qs?: ts.Expression) {
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
     (_substr, head, name, literal) => {
-      const expression = _.camelCase(name);
+      const expression = toIdentifier(name);
       spans.push({
         expression: cg.createCall(
           factory.createIdentifier("encodeURIComponent"),
@@ -231,7 +264,16 @@ export default class ApiGenerator {
         `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
       );
     }
-    return getReference(this.spec, ref) as T;
+    const path = ref
+      .slice(2)
+      .split("/")
+      .map((s) => decodeURI(s.replace(/~1/g, "/").replace(/~0/g, "~")));
+
+    const resolved = _.get(this.spec, path);
+    if (typeof resolved === "undefined") {
+      throw new Error(`Can't find ${path}`);
+    }
+    return resolved as T;
   }
 
   resolveArray<T>(array?: Array<T | OpenAPIV3.ReferenceObject>) {
@@ -269,10 +311,6 @@ export default class ApiGenerator {
     return this.getUniqueAlias(name);
   }
 
-  getRefBasename(ref: string): string {
-    return ref.replace(/.+\//, "");
-  }
-
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
@@ -281,17 +319,17 @@ export default class ApiGenerator {
     let ref = this.refs[$ref];
     if (!ref) {
       const schema = this.resolve<SchemaObject>(obj);
-      const name = this.getUniqueAlias(
-        _.upperFirst(_.camelCase(schema.title || this.getRefBasename($ref)))
-      );
+      const name = schema.title || getRefName($ref);
+      const identifier = _.upperFirst(toIdentifier(name));
+      const alias = this.getUniqueAlias(identifier);
 
-      ref = this.refs[$ref] = factory.createTypeReferenceNode(name, undefined);
+      ref = this.refs[$ref] = factory.createTypeReferenceNode(alias, undefined);
 
       const type = this.getTypeFromSchema(schema);
       this.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
-          name,
+          name: alias,
           type,
         })
       );
@@ -302,7 +340,7 @@ export default class ApiGenerator {
   getUnionType(
     variants: (OpenAPIV3.ReferenceObject | SchemaObject)[],
     discriminator?: OpenAPIV3.DiscriminatorObject
-  ): ts.TypeNode {
+  ) {
     if (discriminator) {
       // oneOf + discriminator -> tagged union (polymorphism)
       if (discriminator.propertyName === undefined) {
@@ -313,9 +351,7 @@ export default class ApiGenerator {
       // used as the discriminator value for each variant. This can be overridden using the
       // discriminator.mapping property.
       const mappedValues = new Set(
-        Object.values(discriminator.mapping || {}).map((ref) =>
-          this.getRefBasename(ref)
-        )
+        Object.values(discriminator.mapping || {}).map(getRefBasename)
       );
 
       return factory.createUnionTypeNode(
@@ -336,10 +372,10 @@ export default class ApiGenerator {
                     "Discriminators require references, not inline schemas"
                   );
                 }
-                return !mappedValues.has(this.getRefBasename(variant.$ref));
+                return !mappedValues.has(getRefBasename(variant.$ref));
               })
               .map((schema) => [
-                this.getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
+                getRefBasename((schema as OpenAPIV3.ReferenceObject).$ref),
                 schema,
               ]),
           ] as [string, OpenAPIV3.ReferenceObject][]
@@ -374,7 +410,7 @@ export default class ApiGenerator {
   getTypeFromSchema(
     schema?: SchemaObject | OpenAPIV3.ReferenceObject,
     name?: string
-  ): ts.TypeNode {
+  ) {
     const type = this.getBaseTypeFromSchema(schema, name);
     return isNullable(schema)
       ? factory.createUnionTypeNode([type, cg.keywordType.null])
@@ -435,9 +471,10 @@ export default class ApiGenerator {
       );
     }
     if (schema.enum) {
-      return this.opts.useEnumType && name && schema.type != "boolean"
+      // enum -> enum or union
+      return this.opts.useEnumType && name && schema.type !== "boolean"
         ? this.getTrueEnum(schema, name)
-        : this.getTypeFromEnum(schema.enum);
+        : cg.createEnumTypeNode(schema.enum);
     }
     if (schema.format == "binary") {
       return factory.createTypeReferenceNode("Blob", []);
@@ -447,8 +484,8 @@ export default class ApiGenerator {
     }
     if (schema.type) {
       // string, boolean, null, number
-      if (schema.type in cg.keywordType) return cg.keywordType[schema.type];
       if (schema.type === "integer") return cg.keywordType.number;
+      if (schema.type in cg.keywordType) return cg.keywordType[schema.type];
     }
 
     return cg.keywordType.any;
@@ -477,7 +514,7 @@ export default class ApiGenerator {
     return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
   }
 
-  getEnumValuesString(values: string[]): string {
+  getEnumValuesString(values: string[]) {
     return values.join("_");
   }
 
@@ -534,8 +571,11 @@ export default class ApiGenerator {
       [prop: string]: SchemaObject | OpenAPIV3.ReferenceObject;
     },
     required?: string[],
-    additionalProperties?: boolean | SchemaObject | OpenAPIV3.ReferenceObject
-  ) {
+    additionalProperties?:
+      | boolean
+      | OpenAPIV3.SchemaObject
+      | OpenAPIV3.ReferenceObject
+  ): ts.TypeLiteralNode {
     const members: ts.TypeElement[] = Object.keys(props).map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
@@ -610,7 +650,7 @@ export default class ApiGenerator {
     // if no content is specified, assume `text` (backwards-compatibility)
     if (
       !resolvedResponses.some(
-        (res) => Object.keys(res.content ?? []).length > 0
+        (res) => Object.keys(res.content ?? {}).length > 0
       )
     ) {
       return "text";
@@ -618,9 +658,7 @@ export default class ApiGenerator {
 
     const isJson = resolvedResponses.some((response) => {
       const responseMimeTypes = Object.keys(response.content ?? {});
-      return responseMimeTypes.some(
-        (mimeType) => contentTypes[mimeType] === "json"
-      );
+      return responseMimeTypes.some(isJsonMimeType);
     });
 
     // if there’s `application/json` or `*/*`, assume `json`
@@ -641,14 +679,15 @@ export default class ApiGenerator {
     return "blob";
   }
 
-  getSchemaFromContent(content: any) {
-    const contentType = Object.keys(contentTypes).find((t) => t in content);
-    let schema;
+  getSchemaFromContent(
+    content: Record<string, OpenAPIV3.MediaTypeObject>
+  ): OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject {
+    const contentType = Object.keys(content).find(isMimeType);
     if (contentType) {
-      schema = _.get(content, [contentType, "schema"]);
-    }
-    if (schema) {
-      return schema;
+      const { schema } = content[contentType];
+      if (schema) {
+        return schema;
+      }
     }
 
     // if no content is specified -> string
@@ -662,6 +701,14 @@ export default class ApiGenerator {
 
     // rest (e.g. `application/octet-stream`, `application/gzip`, …) -> binary
     return { type: "string", format: "binary" };
+  }
+
+  getTypeFromParameter(p: OpenAPIV3.ParameterObject) {
+    if (p.content) {
+      const schema = this.getSchemaFromContent(p.content);
+      return this.getTypeFromSchema(schema);
+    }
+    return this.getTypeFromSchema(isReference(p) ? p : p.schema);
   }
 
   wrapResult(ex: ts.Expression) {
@@ -739,10 +786,15 @@ export default class ApiGenerator {
         }
 
         // merge item and op parameters
-        const resolvedParameters = [
-          ...this.resolveArray(item.parameters),
-          ...this.resolveArray(op.parameters),
-        ];
+        const resolvedParameters = this.resolveArray(item.parameters);
+        for (const p of this.resolveArray(op.parameters)) {
+          const existing = resolvedParameters.find(
+            (r) => r.name === p.name && r.in === p.in
+          );
+          if (!existing) {
+            resolvedParameters.push(p);
+          }
+        }
 
         // expand older OpenAPI parameters into deepObject style where needed
         const parameters = this.isConverted
@@ -753,22 +805,30 @@ export default class ApiGenerator {
         const [required, optional] = _.partition(parameters, "required");
 
         // convert parameter names to argument names ...
-        const argNames: any = {};
-        parameters
-          .map((p) => p.name)
-          .sort((a, b) => a.length - b.length)
-          .forEach((name) => {
-            argNames[name] = _.camelCase(name);
-          });
+        const argNames = new Map<OpenAPIV3.ParameterObject, string>();
+        _.sortBy(parameters, "name.length").forEach((p) => {
+          const identifier = toIdentifier(p.name);
+          const existing = [...argNames.values()];
+          const suffix = existing.includes(identifier)
+            ? _.upperFirst(p.in)
+            : "";
+          argNames.set(p, identifier + suffix);
+        });
+
+        const getArgName = (param: OpenAPIV3.ParameterObject) => {
+          const name = argNames.get(param);
+          if (!name) throw new Error(`Can't find parameter: ${param.name}`);
+          return name;
+        };
 
         // build the method signature - first all the required parameters
         const methodParams = required.map((p) =>
-          cg.createParameter(argNames[this.resolve(p).name], {
-            type: this.getTypeFromSchema(isReference(p) ? p : p.schema),
+          cg.createParameter(getArgName(this.resolve(p)), {
+            type: this.getTypeFromParameter(p),
           })
         );
 
-        let body: any;
+        let body: OpenAPIV3.RequestBodyObject | undefined;
         let bodyVar;
 
         // add body if present
@@ -776,7 +836,7 @@ export default class ApiGenerator {
           body = this.resolve(requestBody);
           const schema = this.getSchemaFromContent(body.content);
           const type = this.getTypeFromSchema(schema);
-          bodyVar = _.camelCase(
+          bodyVar = toIdentifier(
             (type as any).name || getReferenceName(schema) || "body"
           );
           methodParams.push(
@@ -794,18 +854,16 @@ export default class ApiGenerator {
               cg.createObjectBinding(
                 optional
                   .map((param) => this.resolve(param))
-                  .map(({ name }) => ({ name: argNames[name] }))
+                  .map((param) => ({ name: getArgName(param) }))
               ),
               {
                 initializer: factory.createObjectLiteralExpression(),
                 type: factory.createTypeLiteralNode(
                   optional.map((p) =>
                     cg.createPropertySignature({
-                      name: argNames[this.resolve(p).name],
+                      name: getArgName(this.resolve(p)),
                       questionToken: true,
-                      type: this.getTypeFromSchema(
-                        isReference(p) ? p : p.schema
-                      ),
+                      type: this.getTypeFromParameter(p),
                     })
                   )
                 ),
@@ -828,9 +886,8 @@ export default class ApiGenerator {
 
         const returnType = this.getResponseType(responses);
         const query = parameters.filter((p) => p.in === "query");
-        const header = parameters
-          .filter((p) => p.in === "header")
-          .map((p) => p.name);
+        const header = parameters.filter((p) => p.in === "header");
+
         let qs;
         if (query.length) {
           const paramsByFormatter = _.groupBy(query, getFormatter);
@@ -840,7 +897,7 @@ export default class ApiGenerator {
               //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
               return callQsFunction(format, [
                 cg.createObjectLiteral(
-                  params.map((p) => [p.name, argNames[p.name]])
+                  params.map((p) => [p.name, getArgName(p)])
                 ),
               ]);
             })
@@ -885,10 +942,10 @@ export default class ApiGenerator {
                       )
                     )
                   ),
-                  ...header.map((name) =>
+                  ...header.map((param) =>
                     cg.createPropertyAssignment(
-                      name,
-                      factory.createIdentifier(argNames[name])
+                      param.name,
+                      factory.createIdentifier(getArgName(param))
                     )
                   ),
                 ],

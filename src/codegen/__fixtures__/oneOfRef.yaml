@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: PI
+  version: 0.1.0
+paths:
+  /filter:
+    get:
+      description: stats
+      parameters:
+        - name: param1
+          in: query
+          schema:
+            oneOf:
+              - $ref: "./string.yaml"
+              - $ref: "./integer.yaml"
+        - name: param2
+          in: query
+          schema:
+            oneOf:
+              - $ref: "./string.yaml"
+              - $ref: "./integer.yaml"
+      responses:
+        "200":
+          description: ok

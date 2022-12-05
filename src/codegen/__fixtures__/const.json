@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://testUrl.test"
+      "url": "https://api.example.com"
     }
   ],
   "paths": {
