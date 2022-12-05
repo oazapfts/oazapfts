@@ -34,6 +34,16 @@ export function isJsonMimeType(mime: string) {
   return contentTypes[mime] === "json" || /\bjson\b/i.test(mime);
 }
 
+export function getBodyFormatter(body?: OpenAPIV3.RequestBodyObject) {
+  if (body?.content) {
+    for (const contentType of Object.keys(body.content)) {
+      const formatter = contentTypes[contentType];
+      if (formatter) return formatter;
+      if (isJsonMimeType(contentType)) return "json";
+    }
+  }
+}
+
 // augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
@@ -958,11 +968,11 @@ export default class ApiGenerator {
         const args: ts.Expression[] = [url];
 
         if (init.length) {
-          const m = Object.entries(contentTypes).find(([type]) => {
-            return !!_.get(body, ["content", type]);
-          });
+          const formatter = getBodyFormatter(body); // json, form, multipart
           const initObj = factory.createObjectLiteralExpression(init, true);
-          args.push(m ? callOazapftsFunction(m[1], [initObj]) : initObj); // json, form, multipart
+          args.push(
+            formatter ? callOazapftsFunction(formatter, [initObj]) : initObj
+          );
         }
 
         functions.push(
