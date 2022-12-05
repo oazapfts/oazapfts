@@ -21,8 +21,8 @@ Generate TypeScript clients to tap into OpenAPI servers.
 npm install oazapfts
 ```
 
-**Note**
-With version 3.0.0 oazapfts has become a runtime dependency and the generated code does no longer include all the fetch logic.
+> **Note**
+> With version 3.0.0 oazapfts has become a runtime dependency and the generated code does no longer include all the fetch logic.
 
 ## Usage
 
@@ -49,8 +49,8 @@ import * as api from "./my-generated-api.ts";
 const res = api.getPetById(1);
 ```
 
-**Note**
-If your API is large, and you want to take advantage of tree-shaking to exclude unused code, use individual named imports instead:
+> **Note**
+> If your API is large, and you want to take advantage of tree-shaking to exclude unused code, use individual named imports instead:
 
 ```ts
 import { getPetById } from "./my-generated-api.ts";
@@ -71,8 +71,8 @@ const res = getPetById(1, {
 
 You can also use this to override the default `baseUrl` or to provide a custom `fetch` implementation.
 
-**Note**
-Instead of passing custom options to each function call, consider [overwriting the global defaults](#overriding-the-defaults).
+> **Note**
+> Instead of passing custom options to each function call, consider [overwriting the global defaults](#overriding-the-defaults).
 
 ## Optimistic vs. explicit responses
 
@@ -83,8 +83,8 @@ an [explicit](#explicit-mode) mode (the default) and an [optimistic](#optimistic
 
 By default, each function returns an `ApiResponse` object that exposes the `status` code, response `headers` and the `data`.
 
-**Note**
-This mode is best suited for APIs that return different types for different response codes or APIs where you need to access not only the response body, but also the response headers. If your API is simple, and you don't need this flexibility, consider using the [optimistic mode](#optimistic-mode) instead.
+> **Note**
+> This mode is best suited for APIs that return different types for different response codes or APIs where you need to access not only the response body, but also the response headers. If your API is simple, and you don't need this flexibility, consider using the [optimistic mode](#optimistic-mode) instead.
 
 In explicit mode, each function returns a Promise for an `ApiResponse` which is an object with a `status` and a `data` property, holding the HTTP status code and the properly typed data from the response body.
 
