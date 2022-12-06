@@ -88,7 +88,7 @@ describe("generateSource", () => {
 
   it("should generate valid identifiers for oneOf with refs", async () => {
     const src = await generate("/__fixtures__/oneOfRef.yaml");
-    expect(src).toContain("Paths1FilterGetParameters0SchemaOneOf0");
+    expect(src).toContain("PathsFilterGetParameters0SchemaOneOf0");
   });
 
   it("should support parameters specified with content", async () => {

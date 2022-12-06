@@ -109,6 +109,21 @@ export function isReference(obj: unknown): obj is OpenAPIV3.ReferenceObject {
 }
 
 /**
+ * Converts a local reference path into an array of property names.
+ */
+export function refPathToPropertyPath(ref: string) {
+  if (!ref.startsWith("#/")) {
+    throw new Error(
+      `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
+    );
+  }
+  return ref
+    .slice(2)
+    .split("/")
+    .map((s) => decodeURI(s.replace(/~1/g, "/").replace(/~0/g, "~")));
+}
+
+/**
  * Get the last path component of the given ref.
  */
 function getRefBasename(ref: string) {
@@ -118,13 +133,13 @@ function getRefBasename(ref: string) {
 /**
  * Returns a name for the given ref that can be used as basis for a type
  * alias. This usually is the baseName, unless the ref ends with a number,
- * in which case the whole ref is returned, with leading non-word characters
- * being stripped.
+ * in which case the whole ref is returned, with slashes turned into
+ * underscores.
  */
 function getRefName(ref: string) {
   const base = getRefBasename(ref);
   if (/^\d+/.test(base)) {
-    return ref.replace(/^\W+/, "");
+    return refPathToPropertyPath(ref).join("_");
   }
   return base;
 }
@@ -138,8 +153,9 @@ export function getReferenceName(obj: unknown) {
   }
 }
 
-export function toIdentifier(s: string) {
-  const cc = _.camelCase(s);
+export function toIdentifier(s: string, upperFirst = false) {
+  let cc = _.camelCase(s);
+  if (upperFirst) cc = _.upperFirst(cc);
   if (cg.isValidIdentifier(cc)) return cc;
   return "$" + cc;
 }
@@ -269,16 +285,7 @@ export default class ApiGenerator {
   resolve<T>(obj: T | OpenAPIV3.ReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
-    if (!ref.startsWith("#/")) {
-      throw new Error(
-        `External refs are not supported (${ref}). Make sure to call SwaggerParser.bundle() first.`
-      );
-    }
-    const path = ref
-      .slice(2)
-      .split("/")
-      .map((s) => decodeURI(s.replace(/~1/g, "/").replace(/~0/g, "~")));
-
+    const path = refPathToPropertyPath(ref);
     const resolved = _.get(this.spec, path);
     if (typeof resolved === "undefined") {
       throw new Error(`Can't find ${path}`);
@@ -330,7 +337,7 @@ export default class ApiGenerator {
     if (!ref) {
       const schema = this.resolve<SchemaObject>(obj);
       const name = schema.title || getRefName($ref);
-      const identifier = _.upperFirst(toIdentifier(name));
+      const identifier = toIdentifier(name, true);
       const alias = this.getUniqueAlias(identifier);
 
       ref = this.refs[$ref] = factory.createTypeReferenceNode(alias, undefined);
