@@ -561,7 +561,7 @@ export default class ApiGenerator {
       }
       return factory.createEnumMember(
         factory.createIdentifier(s),
-        schema.type === "number"
+        schema.type === "number" || schema.type === "integer"
           ? factory.createNumericLiteral(index)
           : factory.createStringLiteral(s)
       );
