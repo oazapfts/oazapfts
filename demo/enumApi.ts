@@ -31,6 +31,7 @@ export type Pet = {
   status?: Status;
   animal?: true;
   size?: Size;
+  typeId?: TypeId;
 };
 export type ApiResponse = {
   code?: number;
@@ -591,6 +592,14 @@ export enum Size {
   P = 0,
   M = 1,
   G = 2,
+}
+export enum TypeId {
+  dog = 0,
+  cat = 1,
+  tiger = 2,
+  mouse = 3,
+  house = 4,
+  cattle = 5,
 }
 export enum Status2 {
   Placed = "Placed",

@@ -1217,6 +1217,12 @@
             "description": "Size scale for pets",
             "enum": ["P", "M", "G"],
             "type": "number"
+          },
+          "typeId": {
+            "description": "integer test case for #349",
+            "enum": [1, 2, 3, 4, 6, 8],
+            "type": "integer",
+            "x-enumNames": ["dog", "cat", "tiger", "mouse", "house", "cattle"]
           }
         },
         "xml": {

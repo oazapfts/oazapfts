@@ -31,6 +31,7 @@ export type Pet = {
   status?: "available" | "pending" | "sold";
   animal?: true;
   size?: "P" | "M" | "G";
+  typeId?: 1 | 2 | 3 | 4 | 6 | 8;
 };
 export type ApiResponse = {
   code?: number;

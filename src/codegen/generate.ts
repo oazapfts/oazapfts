@@ -553,17 +553,41 @@ export default class ApiGenerator {
 
     const values = schema.enum ? schema.enum : [];
 
+    const names = Object.entries(schema).find(
+      ([key, value]) => key === "x-enumNames"
+    )?.[1];
+
     const members = values.map((s, index) => {
+      if (schema.type === "number") {
+        console.log(s);
+        return factory.createEnumMember(
+          factory.createIdentifier(s),
+          factory.createNumericLiteral(index)
+        );
+      }
+
+      if (schema.type === "integer") {
+        if (!names) {
+          throw new Error(
+            "integer enum should have property `x-enumNames` as ts enum names"
+          );
+        }
+
+        return factory.createEnumMember(
+          factory.createIdentifier(names[index]),
+          factory.createNumericLiteral(index)
+        );
+      }
+
       if (schema.type === "boolean") {
         s = Boolean(s) ? "true" : "false";
       } else if (schema.type === "string") {
         s = _.upperFirst(s);
       }
+
       return factory.createEnumMember(
         factory.createIdentifier(s),
-        schema.type === "number" || schema.type === "integer"
-          ? factory.createNumericLiteral(index)
-          : factory.createStringLiteral(s)
+        factory.createStringLiteral(s)
       );
     });
     this.enumAliases.push(
