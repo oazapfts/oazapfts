@@ -553,9 +553,12 @@ export default class ApiGenerator {
 
     const values = schema.enum ? schema.enum : [];
 
-    const names = Object.entries(schema).find(
-      ([key, value]) => key === "x-enumNames"
-    )?.[1];
+    const names = (schema as Record<string, unknown>)["x-enumNames"] as
+      | Array<string>
+      | undefined;
+    if (names && !Array.isArray(names)) {
+      throw new Error("x-enumNames must be an array");
+    }
 
     const members = values.map((s, index) => {
       if (schema.type === "number") {
