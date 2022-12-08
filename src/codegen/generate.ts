@@ -559,7 +559,6 @@ export default class ApiGenerator {
 
     const members = values.map((s, index) => {
       if (schema.type === "number") {
-        console.log(s);
         return factory.createEnumMember(
           factory.createIdentifier(s),
           factory.createNumericLiteral(index)
