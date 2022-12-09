@@ -40,7 +40,7 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 
 Use the `useEnumType` option to generate typescript enums instead of union of values.
 
-if you are using `type: 'integer'` enum, you will set `x-enumNames` to set names for each enum value to generate valid TypeScript Enum.
+if you are using `type: 'integer'` enum, you will need to add `x-enumNames` property to set names for each enum value to generate valid TypeScript Enum.
 
 ## Consuming the generated API
 
