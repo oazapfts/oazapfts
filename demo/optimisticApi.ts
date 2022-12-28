@@ -28,9 +28,10 @@ export type Pet = {
   name: string;
   photoUrls: string[];
   tags?: Tag[];
-  status?: "available" | "pending" | "sold";
+  status?: "available" | "pending" | "sold" | "private" | "10percent";
   animal?: true;
-  size?: "P" | "M" | "G";
+  size?: "P" | "M" | "G" | "0";
+  typeId?: 1 | 2 | 3 | 4 | 6 | 8;
 };
 export type ApiResponse = {
   code?: number;

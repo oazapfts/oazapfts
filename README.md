@@ -38,7 +38,11 @@ Options:
 
 Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either json or yml) and `<filename>` is the location of the `.ts` file to be generated. If the filename is omitted, the code is written to stdout.
 
-Use the `useEnumType` option to generate typescript enums instead of union of values.
+### Options
+
+- `--optimistic` generare a client in [optimistic mode](#optimistic-mode)
+
+- `--useEnumType` generate enums instead of union types
 
 ## Consuming the generated API
 

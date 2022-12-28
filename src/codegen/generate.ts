@@ -44,9 +44,12 @@ export function getBodyFormatter(body?: OpenAPIV3.RequestBodyObject) {
   }
 }
 
-// augment SchemaObject type to allow slowly adopting new OAS3.1+ features
+// Augment SchemaObject type to allow slowly adopting new OAS3.1+ features
+// and support custom vendor extensions.
 type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
+  "x-enumNames"?: string[];
+  "x-enum-varnames"?: string[];
 };
 
 /**
@@ -539,7 +542,7 @@ export default class ApiGenerator {
     Creates a enum "ref" if not used, reuse existing if values and name matches or creates a new one
     with a new name adding a number
   */
-  getTrueEnum(schema: OpenAPIV3.NonArraySchemaObject, propName: string) {
+  getTrueEnum(schema: SchemaObject, propName: string) {
     const proposedName = schema.title || _.upperFirst(propName);
     const stringEnumValue = this.getEnumValuesString(
       schema.enum ? schema.enum : []
@@ -553,17 +556,27 @@ export default class ApiGenerator {
 
     const values = schema.enum ? schema.enum : [];
 
+    const names = schema["x-enumNames"] ?? schema["x-enum-varnames"];
+    if (names) {
+      if (!Array.isArray(names)) {
+        throw new Error("enum names must be an array");
+      }
+      if (names.length !== values.length) {
+        throw new Error("enum names must have the same length as enum values");
+      }
+    }
+
     const members = values.map((s, index) => {
-      if (schema.type === "boolean") {
-        s = Boolean(s) ? "true" : "false";
-      } else if (schema.type === "string") {
-        s = _.upperFirst(s);
+      if (schema.type === "number" || schema.type === "integer") {
+        const name = names ? names[index] : String(s);
+        return factory.createEnumMember(
+          factory.createIdentifier(toIdentifier(name, true)),
+          factory.createNumericLiteral(index)
+        );
       }
       return factory.createEnumMember(
-        factory.createIdentifier(s),
-        schema.type === "number"
-          ? factory.createNumericLiteral(index)
-          : factory.createStringLiteral(s)
+        factory.createIdentifier(toIdentifier(s, true)),
+        factory.createStringLiteral(s)
       );
     });
     this.enumAliases.push(

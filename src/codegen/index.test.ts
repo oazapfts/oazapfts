@@ -111,17 +111,17 @@ describe("useEnumType", () => {
 
   it("should create string enums", () => {
     expect(src).toContain(
-      `export enum Status { Available = "Available", Pending = "Pending", Sold = "Sold" }`
+      `export enum Status { Available = "available", Pending = "pending", Sold = "sold", Private = "private", $10Percent = "10percent" }`
     );
   });
 
   it("should create number enums", () => {
-    expect(src).toContain(`export enum Size { P = 0, M = 1, G = 2 }`);
+    expect(src).toContain(`export enum Size { P = 0, M = 1, G = 2, $0 = 3 }`);
   });
 
   it("should handle values with the same name", () => {
     expect(src).toContain(
-      `export enum Status2 { Placed = "Placed", Approved = "Approved", Delivered = "Delivered" }`
+      `export enum Status2 { Placed = "placed", Approved = "approved", Delivered = "delivered" }`
     );
   });
 
@@ -132,13 +132,11 @@ describe("useEnumType", () => {
     );
 
     // Enum Category is also defined as `Category` which would be a conflict to type `Category`
-    expect(src).not.toContain(
-      `export enum Category { Rich = "Rich", Wealthy = "Wealthy", Poor = "Poor" }`
-    );
+    expect(src).not.toContain(`export enum Category {`);
 
     // Enum Category is defined as `Category2` to avoid name conflict with type Category
     expect(src).toContain(
-      `export enum Category2 { Rich = "Rich", Wealthy = "Wealthy", Poor = "Poor" }`
+      `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`
     );
   });
 });

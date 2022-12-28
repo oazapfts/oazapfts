@@ -31,6 +31,7 @@ export type Pet = {
   status?: Status;
   animal?: true;
   size?: Size;
+  typeId?: TypeId;
 };
 export type ApiResponse = {
   code?: number;
@@ -583,22 +584,33 @@ export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
   );
 }
 export enum Status {
-  Available = "Available",
-  Pending = "Pending",
-  Sold = "Sold",
+  Available = "available",
+  Pending = "pending",
+  Sold = "sold",
+  Private = "private",
+  $10Percent = "10percent",
 }
 export enum Size {
   P = 0,
   M = 1,
   G = 2,
+  $0 = 3,
+}
+export enum TypeId {
+  Dog = 0,
+  Cat = 1,
+  Tiger = 2,
+  Mouse = 3,
+  House = 4,
+  $3HeadedMonkey = 5,
 }
 export enum Status2 {
-  Placed = "Placed",
-  Approved = "Approved",
-  Delivered = "Delivered",
+  Placed = "placed",
+  Approved = "approved",
+  Delivered = "delivered",
 }
 export enum Category2 {
-  Rich = "Rich",
-  Wealthy = "Wealthy",
-  Poor = "Poor",
+  Rich = "rich",
+  Wealthy = "wealthy",
+  Poor = "poor",
 }
