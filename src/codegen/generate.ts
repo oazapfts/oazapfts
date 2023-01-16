@@ -571,7 +571,7 @@ export default class ApiGenerator {
         const name = names ? names[index] : String(s);
         return factory.createEnumMember(
           factory.createIdentifier(toIdentifier(name, true)),
-          factory.createNumericLiteral(index)
+          factory.createNumericLiteral(s)
         );
       }
       return factory.createEnumMember(
