@@ -1216,7 +1216,7 @@
           "size": {
             "description": "Size scale for pets",
             "enum": ["P", "M", "G", "0"],
-            "type": "number"
+            "type": "string"
           },
           "typeId": {
             "description": "integer test case for #349",

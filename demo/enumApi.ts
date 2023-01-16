@@ -591,10 +591,10 @@ export enum Status {
   $10Percent = "10percent",
 }
 export enum Size {
-  P = P,
-  M = M,
-  G = G,
-  $0 = 0,
+  P = "P",
+  M = "M",
+  G = "G",
+  $0 = "0",
 }
 export enum TypeId {
   Dog = 1,
