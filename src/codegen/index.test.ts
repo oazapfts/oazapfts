@@ -116,7 +116,9 @@ describe("useEnumType", () => {
   });
 
   it("should create number enums", () => {
-    expect(src).toContain(`export enum Size { P = 0, M = 1, G = 2, $0 = 3 }`);
+    expect(src).toContain(
+      `export enum Size { P = "P", M = "M", G = "G", $0 = "0" }`
+    );
   });
 
   it("should handle values with the same name", () => {
