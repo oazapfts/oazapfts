@@ -18,6 +18,7 @@ export const verbs = [
 ];
 
 type ContentType = "json" | "form" | "multipart";
+type OnlyMode = "readOnly" | "writeOnly";
 
 const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
@@ -156,11 +157,26 @@ export function getReferenceName(obj: unknown) {
   }
 }
 
-export function toIdentifier(s: string, upperFirst = false) {
+const onlyModeSuffixes: Record<OnlyMode, string> = {
+  readOnly: "Read",
+  writeOnly: "Write",
+};
+
+function getOnlyModeSuffix(onlyMode?: OnlyMode) {
+  if (!onlyMode) return "";
+  return onlyModeSuffixes[onlyMode];
+}
+
+export function toIdentifier(
+  s: string,
+  upperFirst = false,
+  onlyMode?: OnlyMode
+) {
   let cc = _.camelCase(s);
   if (upperFirst) cc = _.upperFirst(cc);
-  if (cg.isValidIdentifier(cc)) return cc;
-  return "$" + cc;
+  const onlyModeSuffix = getOnlyModeSuffix(onlyMode);
+  if (cg.isValidIdentifier(cc)) return cc + onlyModeSuffix;
+  return "$" + cc + onlyModeSuffix;
 }
 
 /**
@@ -267,13 +283,25 @@ export default class ApiGenerator {
     public readonly isConverted = false
   ) {}
 
-  aliases: ts.TypeAliasDeclaration[] = [];
+  aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
 
   enumAliases: ts.Statement[] = [];
   enumRefs: Record<string, { values: string; type: ts.TypeReferenceNode }> = {};
 
   // Collect the types of all referenced schemas so we can export them later
-  refs: Record<string, ts.TypeReferenceNode> = {};
+  // Referenced schemas can be pointing at the following versions:
+  // - "none": The regular type/interface e.g. ExampleSchema
+  // - "readOnly": The readOnly version e.g. ExampleSchemaRead
+  // - "writeOnly": The writeOnly version e.g. ExampleSchemaWrite
+  refs: Record<
+    string,
+    {
+      [k in OnlyMode | "none"]:
+        | ts.TypeReferenceNode
+        | ts.InterfaceDeclaration
+        | undefined;
+    }
+  > = {};
 
   // Keep track of already used type aliases
   typeAliases: Record<string, number> = {};
@@ -334,27 +362,97 @@ export default class ApiGenerator {
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  getRefAlias(obj: OpenAPIV3.ReferenceObject) {
+  getRefAlias(obj: OpenAPIV3.ReferenceObject, onlyMode?: OnlyMode) {
     const { $ref } = obj;
-    let ref = this.refs[$ref];
-    if (!ref) {
+    if (!this.refs[$ref]) {
+      this.refs[$ref] = {
+        none: undefined,
+        readOnly: undefined,
+        writeOnly: undefined,
+      };
+    }
+    let ref = this.refs[$ref][onlyMode ?? "none"];
+
+    if (!this.refs[$ref]["none"]) {
       const schema = this.resolve<SchemaObject>(obj);
       const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
       const alias = this.getUniqueAlias(identifier);
 
-      ref = this.refs[$ref] = factory.createTypeReferenceNode(alias, undefined);
+      ref = this.refs[$ref]["none"] = factory.createTypeReferenceNode(
+        alias,
+        undefined
+      );
 
       const type = this.getTypeFromSchema(schema);
-      this.aliases.push(
-        cg.createTypeAliasDeclaration({
-          modifiers: [cg.modifier.export],
-          name: alias,
-          type,
-        })
-      );
+      // Create a type if no readOnly or writeOnly properties found
+      if (!this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema))
+        this.aliases.push(
+          cg.createTypeAliasDeclaration({
+            modifiers: [cg.modifier.export],
+            name: alias,
+            type,
+          })
+        );
+      else {
+        // Create an interface to be extended
+        this.aliases.push(
+          cg.createIntefaceAliasDeclaration({
+            modifiers: [cg.modifier.export],
+            name: alias,
+            type,
+          })
+        );
+      }
     }
-    return ref;
+    if (onlyMode === "readOnly" && !this.refs[$ref]["readOnly"]) {
+      const schema = this.resolve<SchemaObject>(obj);
+      const name = schema.title || getRefName($ref);
+      if (this.isSchemaReadOnly(schema)) {
+        const readOnlyAlias = this.getUniqueAlias(
+          toIdentifier(name, true, "readOnly")
+        );
+        ref = this.refs[$ref]["readOnly"] = factory.createTypeReferenceNode(
+          readOnlyAlias,
+          undefined
+        );
+
+        const readOnlyType = this.getTypeFromSchema(schema, name, "readOnly");
+        this.aliases.push(
+          cg.createIntefaceAliasDeclaration({
+            modifiers: [cg.modifier.export],
+            name: readOnlyAlias,
+            type: readOnlyType,
+            inheritedNodeNames: [name],
+          })
+        );
+      }
+    }
+    if (onlyMode === "writeOnly" && !this.refs[$ref]["writeOnly"]) {
+      const schema = this.resolve<SchemaObject>(obj);
+      const name = schema.title || getRefName($ref);
+      if (this.isSchemaWriteOnly(schema)) {
+        const writeOnlyAlias = this.getUniqueAlias(
+          toIdentifier(name, true, "writeOnly")
+        );
+        ref = this.refs[$ref]["writeOnly"] = factory.createTypeReferenceNode(
+          writeOnlyAlias,
+          undefined
+        );
+        const writeOnlyType = this.getTypeFromSchema(schema, name, "writeOnly");
+        this.aliases.push(
+          cg.createIntefaceAliasDeclaration({
+            modifiers: [cg.modifier.export],
+            name: writeOnlyAlias,
+            type: writeOnlyType,
+            inheritedNodeNames: [name],
+          })
+        );
+      }
+    }
+
+    // If not ref fallback to the regular reference
+    return ref ?? this.refs[$ref]["none"];
   }
 
   getUnionType(
@@ -429,9 +527,10 @@ export default class ApiGenerator {
    */
   getTypeFromSchema(
     schema?: SchemaObject | OpenAPIV3.ReferenceObject,
-    name?: string
+    name?: string,
+    onlyMode?: OnlyMode
   ) {
-    const type = this.getBaseTypeFromSchema(schema, name);
+    const type = this.getBaseTypeFromSchema(schema, name, onlyMode);
     return isNullable(schema)
       ? factory.createUnionTypeNode([type, cg.keywordType.null])
       : type;
@@ -443,11 +542,12 @@ export default class ApiGenerator {
    */
   getBaseTypeFromSchema(
     schema?: SchemaObject | OpenAPIV3.ReferenceObject,
-    name?: string
+    name?: string,
+    onlyMode?: OnlyMode
   ): ts.TypeNode {
     if (!schema) return cg.keywordType.any;
     if (isReference(schema)) {
-      return this.getRefAlias(schema);
+      return this.getRefAlias(schema, onlyMode) as ts.TypeReferenceNode;
     }
 
     if (schema.oneOf) {
@@ -487,7 +587,8 @@ export default class ApiGenerator {
       return this.getTypeFromProperties(
         schema.properties || {},
         schema.required,
-        schema.additionalProperties
+        schema.additionalProperties,
+        onlyMode
       );
     }
     if (schema.enum) {
@@ -594,6 +695,30 @@ export default class ApiGenerator {
   }
 
   /**
+   * Check if schema is readOnly or has readOnly properties
+   */
+  isSchemaReadOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
+    if ("$ref" in schema) return false;
+    if (schema.readOnly) return true;
+    if (!schema.properties) return false;
+    return Object.values(schema.properties).some((property) =>
+      "$ref" in property ? false : property.readOnly
+    );
+  }
+
+  /**
+   * Check if schema is writeOnly or has writeOnly properties
+   */
+  isSchemaWriteOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
+    if ("$ref" in schema) return false;
+    if (schema.writeOnly) return true;
+    if (!schema.properties) return false;
+    return Object.values(schema.properties).some((property) =>
+      "$ref" in property ? false : property.writeOnly
+    );
+  }
+
+  /**
    * Recursively creates a type literal with the given props.
    */
   getTypeFromProperties(
@@ -604,21 +729,33 @@ export default class ApiGenerator {
     additionalProperties?:
       | boolean
       | OpenAPIV3.SchemaObject
-      | OpenAPIV3.ReferenceObject
+      | OpenAPIV3.ReferenceObject,
+    onlyMode?: OnlyMode
   ): ts.TypeLiteralNode {
-    const members: ts.TypeElement[] = Object.keys(props).map((name) => {
-      const schema = props[name];
-      const isRequired = required && required.includes(name);
-      let type = this.getTypeFromSchema(schema, name);
-      if (!isRequired && this.opts.unionUndefined) {
-        type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
-      }
-      return cg.createPropertySignature({
-        questionToken: !isRequired,
-        name,
-        type,
+    const members: ts.TypeElement[] = Object.keys(props)
+      .filter((name) => {
+        const schema = props[name];
+        if (!onlyMode)
+          return (
+            !this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)
+          );
+        if (onlyMode === "readOnly") return this.isSchemaReadOnly(schema);
+        else if (onlyMode === "writeOnly")
+          return this.isSchemaWriteOnly(schema);
+      })
+      .map((name) => {
+        const schema = props[name];
+        const isRequired = required && required.includes(name);
+        let type = this.getTypeFromSchema(schema, name);
+        if (!isRequired && this.opts.unionUndefined) {
+          type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
+        }
+        return cg.createPropertySignature({
+          questionToken: !isRequired,
+          name,
+          type,
+        });
       });
-    });
     if (additionalProperties) {
       const type =
         additionalProperties === true
@@ -630,7 +767,10 @@ export default class ApiGenerator {
     return factory.createTypeLiteralNode(members);
   }
 
-  getTypeFromResponses(responses: OpenAPIV3.ResponsesObject) {
+  getTypeFromResponses(
+    responses: OpenAPIV3.ResponsesObject,
+    onlyMode?: OnlyMode
+  ) {
     return factory.createUnionTypeNode(
       Object.entries(responses).map(([code, res]) => {
         const statusType =
@@ -645,7 +785,7 @@ export default class ApiGenerator {
           }),
         ];
 
-        const dataType = this.getTypeFromResponse(res);
+        const dataType = this.getTypeFromResponse(res, onlyMode);
         if (dataType !== cg.keywordType.void) {
           props.push(
             cg.createPropertySignature({
@@ -660,11 +800,16 @@ export default class ApiGenerator {
   }
 
   getTypeFromResponse(
-    resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject
+    resOrRef: OpenAPIV3.ResponseObject | OpenAPIV3.ReferenceObject,
+    onlyMode?: OnlyMode
   ) {
     const res = this.resolve(resOrRef);
     if (!res || !res.content) return cg.keywordType.void;
-    return this.getTypeFromSchema(this.getSchemaFromContent(res.content));
+    return this.getTypeFromSchema(
+      this.getSchemaFromContent(res.content),
+      undefined,
+      onlyMode
+    );
   }
 
   getResponseType(
@@ -865,7 +1010,7 @@ export default class ApiGenerator {
         if (requestBody) {
           body = this.resolve(requestBody);
           const schema = this.getSchemaFromContent(body.content);
-          const type = this.getTypeFromSchema(schema);
+          const type = this.getTypeFromSchema(schema, undefined, "writeOnly");
           bodyVar = toIdentifier(
             (type as any).name || getReferenceName(schema) || "body"
           );
@@ -1015,7 +1160,7 @@ export default class ApiGenerator {
                       args,
                       returnType === "json" || returnType === "blob"
                         ? [
-                            this.getTypeFromResponses(responses!) ||
+                            this.getTypeFromResponses(responses!, "readOnly") ||
                               ts.SyntaxKind.AnyKeyword,
                           ]
                         : undefined

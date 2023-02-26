@@ -100,6 +100,13 @@ describe("generateSource", () => {
       "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file${QS.query(QS.json({ filter }))}`, { ...opts });"
     );
   });
+
+  it("should generate a base interface and extended interfaces with readOnly and writeOnly properties", async () => {
+    const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml");
+    expect(src).toContain(
+      "export interface ExampleSchema { always_present: string; } export interface ExampleSchemaRead extends ExampleSchema { read_only_prop: string; } export interface ExampleSchemaWrite extends ExampleSchema { write_only_prop: string; }"
+    );
+  });
 });
 
 describe("useEnumType", () => {
