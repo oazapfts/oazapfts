@@ -1,5 +1,6 @@
 import fs from "fs";
 import ts, { factory } from "typescript";
+import { toIdentifier } from "./generate";
 
 export const questionToken = factory.createToken(ts.SyntaxKind.QuestionToken);
 
@@ -67,6 +68,45 @@ export function createTypeAliasDeclaration({
     name,
     typeParameters,
     type
+  );
+}
+
+export function createIntefaceAliasDeclaration({
+  modifiers,
+  name,
+  typeParameters,
+  type,
+  inheritedNodeNames,
+}: {
+  modifiers?: Array<ts.Modifier>;
+  name: string | ts.Identifier;
+  typeParameters?: Array<ts.TypeParameterDeclaration>;
+  type: ts.TypeNode;
+  inheritedNodeNames?: (string | ts.Identifier)[];
+}) {
+  const heritageClauses = inheritedNodeNames
+    ? [
+        factory.createHeritageClause(
+          ts.SyntaxKind.ExtendsKeyword,
+          inheritedNodeNames.map((name) => {
+            const extendedInterfaceName =
+              typeof name === "string" ? name : name.escapedText.toString();
+            return factory.createExpressionWithTypeArguments(
+              factory.createIdentifier(
+                toIdentifier(extendedInterfaceName, true)
+              ),
+              undefined
+            );
+          })
+        ),
+      ]
+    : [];
+  return factory.createInterfaceDeclaration(
+    modifiers,
+    name,
+    typeParameters,
+    heritageClauses,
+    (type as ts.TypeLiteralNode).members
   );
 }
 
