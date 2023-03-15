@@ -1,4 +1,4 @@
-import { ApiResponse } from "./runtime";
+import { ApiResponse, WithHeaders } from "./runtime";
 
 /**
  * Type to access a response's data property for a given status.
@@ -33,14 +33,14 @@ export type FunctionReturnType<T> = T extends (args: any[]) => any
  * })
  **/
 export async function handle<
-  T extends ApiResponse,
+  T extends WithHeaders<ApiResponse>,
   H extends ResponseHandler<T>
 >(promise: Promise<T>, handler: H): Promise<FunctionReturnType<H[keyof H]>> {
-  const { status, data } = await promise;
+  const { status, data, headers } = await promise;
   const statusHandler = (handler as any)[status];
   if (statusHandler) return statusHandler(data);
   if (handler.default) return handler.default(status, data);
-  throw new HttpError(status, data);
+  throw new HttpError(status, data, headers);
 }
 
 export const SUCCESS_CODES = [200, 201, 202, 204] as const;
@@ -61,16 +61,16 @@ export type SuccessResponse<T extends ApiResponse> = DataType<T, SuccessCodes>;
  *   console.log(err.status)
  * }
  */
-export async function ok<T extends ApiResponse>(
+export async function ok<T extends WithHeaders<ApiResponse>>(
   promise: Promise<T>
 ): Promise<SuccessResponse<T>> {
   const res = await promise;
   if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
-  throw new HttpError(res.status, res.data);
+  throw new HttpError(res.status, res.data, res.headers);
 }
 
 export type Args<T> = T extends (...args: infer U) => any ? U : any;
-export type ApiFunction = (...args: any[]) => Promise<ApiResponse>;
+export type ApiFunction = (...args: any[]) => Promise<WithHeaders<ApiResponse>>;
 export type AsyncReturnType<T> = T extends (...args: any[]) => Promise<infer V>
   ? V
   : never;
@@ -110,9 +110,12 @@ export function optimistic<T extends Record<string, ApiFunction | unknown>>(
 export class HttpError extends Error {
   status: number;
   data?: any;
-  constructor(status: number, data: any) {
+  headers: Headers;
+
+  constructor(status: number, data: any, headers: Headers) {
     super(`Error: ${status}`);
     this.status = status;
     this.data = data;
+    this.headers = headers;
   }
 }
