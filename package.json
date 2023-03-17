@@ -1,6 +1,6 @@
 {
   "name": "oazapfts",
-  "version": "4.6.0",
+  "version": "0.0.0-development",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
@@ -22,6 +22,20 @@
   "author": "Felix Gnass",
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
+  "release": {
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ]
+  },
   "devDependencies": {
     "@jest/types": "^29.3.1",
     "@ts-morph/bootstrap": "^0.18.0",
