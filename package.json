@@ -59,7 +59,7 @@
     "lodash": "^4.17.21",
     "minimist": "^1.2.7",
     "swagger2openapi": "^7.0.8",
-    "typescript": "^4.9.3"
+    "typescript": "^5.0.4"
   },
   "lint-staged": {
     "*.{ts,js,json,md,yml}": "prettier --write"
