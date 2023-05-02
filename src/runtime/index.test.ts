@@ -1,4 +1,5 @@
 import * as Oazapfts from ".";
+import { HttpError, ok } from "../";
 
 const oazapfts = Oazapfts.runtime({});
 
@@ -37,5 +38,32 @@ describe("request", () => {
 
     expect(customFetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
     expect(g.fetch).not.toHaveBeenCalled();
+  });
+
+  it("should throw error with headers", async () => {
+    const fn = () =>
+      ok(
+        oazapfts.fetchText("bar", {
+          fetch: async () => {
+            return new Response("", {
+              status: 401,
+              headers: { "x-request-id": "1234" },
+            });
+          },
+        })
+      );
+
+    let throwed;
+    let err: HttpError | undefined;
+    try {
+      await fn();
+    } catch (e) {
+      err = e as HttpError;
+      throwed = true;
+    }
+
+    expect(throwed).toBe(true);
+    expect(err).toBeInstanceOf(HttpError);
+    expect(err?.headers?.get("x-request-id")).toBe("1234");
   });
 });

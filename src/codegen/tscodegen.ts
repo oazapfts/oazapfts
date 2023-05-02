@@ -219,14 +219,12 @@ export function createFunctionDeclaration(
 }
 
 export function createClassDeclaration({
-  decorators,
   modifiers,
   name,
   typeParameters,
   heritageClauses,
   members,
 }: {
-  decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
   name?: string | ts.Identifier;
   typeParameters?: Array<ts.TypeParameterDeclaration>;
@@ -234,7 +232,6 @@ export function createClassDeclaration({
   members: Array<ts.ClassElement>;
 }) {
   return factory.createClassDeclaration(
-    decorators,
     modifiers,
     name,
     typeParameters,
@@ -244,22 +241,15 @@ export function createClassDeclaration({
 }
 
 export function createConstructor({
-  decorators,
   modifiers,
   parameters,
   body,
 }: {
-  decorators?: Array<ts.Decorator>;
   modifiers?: Array<ts.Modifier>;
   parameters: Array<ts.ParameterDeclaration>;
   body?: ts.Block;
 }) {
-  return factory.createConstructorDeclaration(
-    decorators,
-    modifiers,
-    parameters,
-    body
-  );
+  return factory.createConstructorDeclaration(modifiers, parameters, body);
 }
 
 export function createMethod(

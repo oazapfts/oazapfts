@@ -172,11 +172,10 @@ export function toIdentifier(
   upperFirst = false,
   onlyMode?: OnlyMode
 ) {
-  let cc = _.camelCase(s);
+  let cc = _.camelCase(s) + getOnlyModeSuffix(onlyMode);
   if (upperFirst) cc = _.upperFirst(cc);
-  const onlyModeSuffix = getOnlyModeSuffix(onlyMode);
-  if (cg.isValidIdentifier(cc)) return cc + onlyModeSuffix;
-  return "$" + cc + onlyModeSuffix;
+  if (cg.isValidIdentifier(cc)) return cc;
+  return "$" + cc;
 }
 
 /**
@@ -386,7 +385,7 @@ export default class ApiGenerator {
 
       const type = this.getTypeFromSchema(schema);
       // Create a type if no readOnly or writeOnly properties found
-      if (!this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema))
+      if (!this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)) {
         this.aliases.push(
           cg.createTypeAliasDeclaration({
             modifiers: [cg.modifier.export],
@@ -394,7 +393,7 @@ export default class ApiGenerator {
             type,
           })
         );
-      else {
+      } else {
         // Create an interface to be extended
         this.aliases.push(
           cg.createIntefaceAliasDeclaration({

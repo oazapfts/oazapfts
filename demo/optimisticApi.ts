@@ -76,9 +76,7 @@ export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
         }
       | {
           status: number;
-          data: {
-            errors?: string[];
-          };
+          data: {};
         }
     >(
       "/pet",
@@ -102,9 +100,7 @@ export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
         }
       | {
           status: 201;
-          data: {
-            id?: string;
-          };
+          data: {};
         }
     >(
       "/pet",
@@ -198,10 +194,7 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
  */
 export function updatePetWithForm(
   petId: number,
-  body?: {
-    name?: string;
-    status?: string;
-  },
+  body?: {},
   opts?: Oazapfts.RequestOpts
 ) {
   return oazapfts.ok(
@@ -243,10 +236,7 @@ export function deletePet(
  */
 export function uploadFile(
   petId: number,
-  body?: {
-    additionalMetadata?: string;
-    file?: Blob;
-  },
+  body?: {},
   opts?: Oazapfts.RequestOpts
 ) {
   return oazapfts.ok(

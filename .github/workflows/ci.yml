@@ -15,3 +15,7 @@ jobs:
           check-latest: true
       - run: npm ci
       - run: npm test
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

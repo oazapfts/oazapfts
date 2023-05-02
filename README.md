@@ -1,6 +1,7 @@
 # 🍻 oazapfts!
 
-[![CI](https://github.com/cellular/oazapfts/actions/workflows/ci.yml/badge.svg)](https://github.com/cellular/oazapfts/actions/workflows/ci.yml)
+[![CI](https://github.com/oazapfts/oazapfts/actions/workflows/ci.yml/badge.svg)](https://github.com/oazapfts/oazapfts/actions/workflows/ci.yml)
+[![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
 Generate TypeScript clients to tap into OpenAPI servers.
 
