@@ -731,30 +731,34 @@ export default class ApiGenerator {
       | OpenAPIV3.ReferenceObject,
     onlyMode?: OnlyMode
   ): ts.TypeLiteralNode {
-    const members: ts.TypeElement[] = Object.keys(props)
-      .filter((name) => {
-        const schema = props[name];
-        if (!onlyMode)
-          return (
-            !this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)
-          );
-        if (onlyMode === "readOnly") return this.isSchemaReadOnly(schema);
-        else if (onlyMode === "writeOnly")
-          return this.isSchemaWriteOnly(schema);
-      })
-      .map((name) => {
-        const schema = props[name];
-        const isRequired = required && required.includes(name);
-        let type = this.getTypeFromSchema(schema, name);
-        if (!isRequired && this.opts.unionUndefined) {
-          type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
-        }
-        return cg.createPropertySignature({
-          questionToken: !isRequired,
-          name,
-          type,
-        });
+    // Check if any of the props are readOnly or writeOnly schemas
+    const propertyNames = Object.keys(props);
+    const filteredPropertyNames = propertyNames.filter((name) => {
+      const schema = props[name];
+      if (!onlyMode)
+        return (
+          !this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)
+        );
+      if (onlyMode === "readOnly") return this.isSchemaReadOnly(schema);
+      else if (onlyMode === "writeOnly") return this.isSchemaWriteOnly(schema);
+    });
+    // By filtering by readOnly/writeOnly props, we may have filtered out all props in schemas
+    const hasFilteredAllProps = filteredPropertyNames.length === 0;
+    const names = hasFilteredAllProps ? propertyNames : filteredPropertyNames;
+
+    const members: ts.TypeElement[] = names.map((name) => {
+      const schema = props[name];
+      const isRequired = required && required.includes(name);
+      let type = this.getTypeFromSchema(schema, name);
+      if (!isRequired && this.opts.unionUndefined) {
+        type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
+      }
+      return cg.createPropertySignature({
+        questionToken: !isRequired,
+        name,
+        type,
       });
+    });
     if (additionalProperties) {
       const type =
         additionalProperties === true
