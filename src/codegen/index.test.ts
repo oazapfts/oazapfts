@@ -107,6 +107,12 @@ describe("generateSource", () => {
       "export interface ExampleSchema { always_present: string; } export interface ExampleSchemaRead extends ExampleSchema { read_only_prop: string; } export interface ExampleSchemaWrite extends ExampleSchema { write_only_prop: string; }"
     );
   });
+
+  it("shouldn't filter all properties of schema when using readOnly/writeOnly", async () => {
+    const src = await generate("/__fixtures__/issue-419.json");
+
+    expect(src).toContain("message: string");
+  });
 });
 
 describe("useEnumType", () => {
