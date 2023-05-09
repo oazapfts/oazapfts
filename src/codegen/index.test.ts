@@ -108,8 +108,8 @@ describe("generateSource", () => {
     );
   });
 
-  it("shouln't filter all properties of schema when using readOnly/writeOnly", async () => {
-    const src = await generate("/__fixtures__/petstore.json");
+  it("shouldn't filter all properties of schema when using readOnly/writeOnly", async () => {
+    const src = await generate("/__fixtures__/issue-419.json");
 
     expect(src).toContain("message: string");
   });
