@@ -14,7 +14,7 @@ export function query(...params: string[]) {
  */
 export function deep(
   params: Record<string, any>,
-  [k, v] = encodeReserved
+  [k, v] = encodeReserved,
 ): string {
   const qk = encode([(s) => s, k]);
   const qv = encode([(s) => s, v]);
@@ -44,7 +44,7 @@ export function deep(
  */
 export function explode(
   params: Record<string, any>,
-  encoders = encodeReserved
+  encoders = encodeReserved,
 ): string {
   const q = encode(encoders);
   return Object.entries(params)
@@ -63,7 +63,7 @@ export function explode(
 
 export function json(
   params: Record<string, any>,
-  encoders = encodeReserved
+  encoders = encodeReserved,
 ): string {
   const q = encode(encoders);
   return Object.entries(params)

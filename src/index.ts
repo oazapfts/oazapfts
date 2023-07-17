@@ -34,7 +34,7 @@ export type FunctionReturnType<T> = T extends (args: any[]) => any
  **/
 export async function handle<
   T extends WithHeaders<ApiResponse>,
-  H extends ResponseHandler<T>
+  H extends ResponseHandler<T>,
 >(promise: Promise<T>, handler: H): Promise<FunctionReturnType<H[keyof H]>> {
   const { status, data, headers } = await promise;
   const statusHandler = (handler as any)[status];
@@ -44,7 +44,7 @@ export async function handle<
 }
 
 export const SUCCESS_CODES = [200, 201, 202, 204] as const;
-export type SuccessCodes = typeof SUCCESS_CODES[number];
+export type SuccessCodes = (typeof SUCCESS_CODES)[number];
 
 export type SuccessResponse<T extends ApiResponse> = DataType<T, SuccessCodes>;
 
@@ -62,7 +62,7 @@ export type SuccessResponse<T extends ApiResponse> = DataType<T, SuccessCodes>;
  * }
  */
 export async function ok<T extends WithHeaders<ApiResponse>>(
-  promise: Promise<T>
+  promise: Promise<T>,
 ): Promise<SuccessResponse<T>> {
   const res = await promise;
   if (SUCCESS_CODES.some((s) => s == res.status)) return res.data;
@@ -98,7 +98,7 @@ type OptimisticApi<T> = {
  * Utility to `okify` each function of an API.
  */
 export function optimistic<T extends Record<string, ApiFunction | unknown>>(
-  api: T
+  api: T,
 ): OptimisticApi<T> {
   const okApi: any = {};
   Object.entries(api).forEach(([key, value]) => {

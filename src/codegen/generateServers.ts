@@ -11,13 +11,13 @@ function createTemplate(url: string) {
     chunks.map(([expression, literal]) => ({
       expression: factory.createIdentifier(expression),
       literal,
-    }))
+    })),
   );
 }
 
 function createServerFunction(
   template: string,
-  vars: Record<string, OpenAPIV3.ServerVariableObject>
+  vars: Record<string, OpenAPIV3.ServerVariableObject>,
 ) {
   const params = [
     cg.createParameter(
@@ -27,7 +27,7 @@ function createServerFunction(
             name,
             initializer: cg.createLiteral(value.default),
           };
-        })
+        }),
       ),
       {
         type: factory.createTypeLiteralNode(
@@ -42,9 +42,9 @@ function createServerFunction(
                     cg.keywordType.boolean,
                   ]),
             });
-          })
+          }),
         ),
-      }
+      },
     ),
   ];
 
@@ -62,7 +62,7 @@ function defaultUrl(server?: OpenAPIV3.ServerObject) {
   const { url, variables } = server;
   if (!variables) return url;
   return url.replace(/\{(.+?)\}/g, (m, name) =>
-    variables[name] ? String(variables[name].default) : m
+    variables[name] ? String(variables[name].default) : m,
   );
 }
 
@@ -77,12 +77,12 @@ function serverName(server: OpenAPIV3.ServerObject, index: number) {
 }
 
 export default function generateServers(
-  servers: OpenAPIV3.ServerObject[]
+  servers: OpenAPIV3.ServerObject[],
 ): ts.ObjectLiteralExpression {
   return cg.createObjectLiteral(
     servers.map((server, i) => [
       serverName(server, i),
       generateServerExpression(server),
-    ])
+    ]),
   );
 }

@@ -19,7 +19,7 @@ export function encode(encoders: Encoders, delimiter = ",") {
       }
       const flat = Object.entries(v).reduce(
         (flat, entry) => [...flat, ...entry],
-        [] as any
+        [] as any,
       );
       return flat.map(encoder).join(delimiter);
     }

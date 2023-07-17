@@ -84,8 +84,8 @@ export function updatePet(pet: Pet, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "PUT",
         body: pet,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -108,8 +108,8 @@ export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "POST",
         body: pet,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -117,7 +117,7 @@ export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
  */
 export function findPetsByStatus(
   status: ("available" | "pending" | "sold")[],
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchJson<
@@ -133,12 +133,12 @@ export function findPetsByStatus(
       `/pet/findByStatus${QS.query(
         QS.explode({
           status,
-        })
+        }),
       )}`,
       {
         ...opts,
-      }
-    )
+      },
+    ),
   );
 }
 /**
@@ -159,12 +159,12 @@ export function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
       `/pet/findByTags${QS.query(
         QS.explode({
           tags,
-        })
+        }),
       )}`,
       {
         ...opts,
-      }
-    )
+      },
+    ),
   );
 }
 /**
@@ -186,7 +186,7 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
         }
     >(`/pet/${encodeURIComponent(petId)}`, {
       ...opts,
-    })
+    }),
   );
 }
 /**
@@ -195,7 +195,7 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
 export function updatePetWithForm(
   petId: number,
   body?: {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -204,8 +204,8 @@ export function updatePetWithForm(
         ...opts,
         method: "POST",
         body,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -218,7 +218,7 @@ export function deletePet(
   }: {
     apiKey?: string;
   } = {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(`/pet/${encodeURIComponent(petId)}`, {
@@ -228,7 +228,7 @@ export function deletePet(
         ...(opts && opts.headers),
         api_key: apiKey,
       },
-    })
+    }),
   );
 }
 /**
@@ -237,7 +237,7 @@ export function deletePet(
 export function uploadFile(
   petId: number,
   body?: {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchJson<{
@@ -249,8 +249,8 @@ export function uploadFile(
         ...opts,
         method: "POST",
         body,
-      })
-    )
+      }),
+    ),
   );
 }
 export function customizePet(
@@ -264,7 +264,7 @@ export function customizePet(
     color?: string;
     xColorOptions?: boolean;
   } = {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -272,7 +272,7 @@ export function customizePet(
         QS.explode({
           "fur.color": furColor,
           color,
-        })
+        }),
       )}`,
       {
         ...opts,
@@ -281,8 +281,8 @@ export function customizePet(
           ...(opts && opts.headers),
           "x-color-options": xColorOptions,
         },
-      }
-    )
+      },
+    ),
   );
 }
 /**
@@ -297,7 +297,7 @@ export function getInventory(opts?: Oazapfts.RequestOpts) {
       };
     }>("/store/inventory", {
       ...opts,
-    })
+    }),
   );
 }
 /**
@@ -320,8 +320,8 @@ export function placeOrder(order: Order, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "POST",
         body: order,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -344,7 +344,7 @@ export function getOrderById(orderId: number, opts?: Oazapfts.RequestOpts) {
         }
     >(`/store/order/${encodeURIComponent(orderId)}`, {
       ...opts,
-    })
+    }),
   );
 }
 /**
@@ -355,7 +355,7 @@ export function deleteOrder(orderId: number, opts?: Oazapfts.RequestOpts) {
     oazapfts.fetchText(`/store/order/${encodeURIComponent(orderId)}`, {
       ...opts,
       method: "DELETE",
-    })
+    }),
   );
 }
 /**
@@ -369,8 +369,8 @@ export function createUser(user: User, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "POST",
         body: user,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -378,7 +378,7 @@ export function createUser(user: User, opts?: Oazapfts.RequestOpts) {
  */
 export function createUsersWithArrayInput(
   body: User[],
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -387,8 +387,8 @@ export function createUsersWithArrayInput(
         ...opts,
         method: "POST",
         body,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -396,7 +396,7 @@ export function createUsersWithArrayInput(
  */
 export function createUsersWithListInput(
   body: User[],
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -405,8 +405,8 @@ export function createUsersWithListInput(
         ...opts,
         method: "POST",
         body,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -415,7 +415,7 @@ export function createUsersWithListInput(
 export function loginUser(
   username: string,
   password: string,
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchJson<
@@ -432,12 +432,12 @@ export function loginUser(
         QS.explode({
           username,
           password,
-        })
+        }),
       )}`,
       {
         ...opts,
-      }
-    )
+      },
+    ),
   );
 }
 /**
@@ -447,7 +447,7 @@ export function logoutUser(opts?: Oazapfts.RequestOpts) {
   return oazapfts.ok(
     oazapfts.fetchText("/user/logout", {
       ...opts,
-    })
+    }),
   );
 }
 /**
@@ -470,7 +470,7 @@ export function getUserByName(username: string, opts?: Oazapfts.RequestOpts) {
         }
     >(`/user/${encodeURIComponent(username)}`, {
       ...opts,
-    })
+    }),
   );
 }
 /**
@@ -479,7 +479,7 @@ export function getUserByName(username: string, opts?: Oazapfts.RequestOpts) {
 export function updateUser(
   username: string,
   user: User,
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -488,8 +488,8 @@ export function updateUser(
         ...opts,
         method: "PUT",
         body: user,
-      })
-    )
+      }),
+    ),
   );
 }
 /**
@@ -500,7 +500,7 @@ export function deleteUser(username: string, opts?: Oazapfts.RequestOpts) {
     oazapfts.fetchText(`/user/${encodeURIComponent(username)}`, {
       ...opts,
       method: "DELETE",
-    })
+    }),
   );
 }
 export function getIssue31ByFoo(
@@ -514,7 +514,7 @@ export function getIssue31ByFoo(
     baz?: number;
     boo?: Schema2;
   } = {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -523,12 +523,12 @@ export function getIssue31ByFoo(
           bar,
           baz,
           boo,
-        })
+        }),
       )}`,
       {
         ...opts,
-      }
-    )
+      },
+    ),
   );
 }
 export function getObjectParameters(
@@ -561,7 +561,7 @@ export function getObjectParameters(
     commaObject?: Tag;
     deepObject?: Tag;
   } = {},
-  opts?: Oazapfts.RequestOpts
+  opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
     oazapfts.fetchText(
@@ -588,12 +588,12 @@ export function getObjectParameters(
         }),
         QS.deep({
           deepObject,
-        })
+        }),
       )}`,
       {
         ...opts,
-      }
-    )
+      },
+    ),
   );
 }
 /**
@@ -608,7 +608,7 @@ export function uploadPng(body?: Blob, opts?: Oazapfts.RequestOpts) {
       ...opts,
       method: "POST",
       body,
-    })
+    }),
   );
 }
 export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
@@ -619,7 +619,7 @@ export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "PUT",
         body,
-      })
-    )
+      }),
+    ),
   );
 }

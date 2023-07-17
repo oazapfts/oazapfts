@@ -12,7 +12,7 @@ describe("delimited", () => {
   });
   it("should enumerate entries", () => {
     expect(qs.form({ author: { firstName: "Felix", role: "admin" } })).toEqual(
-      "author=firstName,Felix,role,admin"
+      "author=firstName,Felix,role,admin",
     );
   });
   it("should omit undefined values", () => {
@@ -29,7 +29,7 @@ describe("explode", () => {
   });
   it("should explode objects", () => {
     expect(
-      qs.explode({ author: { firstName: "Felix", role: "admin" } })
+      qs.explode({ author: { firstName: "Felix", role: "admin" } }),
     ).toEqual("firstName=Felix&role=admin");
   });
   it("should omit undefined values", () => {
@@ -40,22 +40,22 @@ describe("explode", () => {
 describe("deep", () => {
   it("should serialize objects", () => {
     expect(qs.deep({ author: { firstName: "Felix", role: "admin" } })).toEqual(
-      "author[firstName]=Felix&author[role]=admin"
+      "author[firstName]=Felix&author[role]=admin",
     );
   });
   it("should serialize nested objects", () => {
     expect(
-      qs.deep({ author: { name: { first: "Felix", last: "Gnass" } } })
+      qs.deep({ author: { name: { first: "Felix", last: "Gnass" } } }),
     ).toEqual("author[name][first]=Felix&author[name][last]=Gnass");
   });
   it("should omit undefined values", () => {
     expect(qs.deep({ author: { name: "Felix", role: undefined } })).toEqual(
-      "author[name]=Felix"
+      "author[name]=Felix",
     );
   });
   it("should serialize nested arrays", () => {
     expect(qs.deep({ names: ["Felix", "Dario"] })).toEqual(
-      "names[]=Felix&names[]=Dario"
+      "names[]=Felix&names[]=Dario",
     );
   });
 });

@@ -6,12 +6,12 @@ describe("getOperationName", () => {
   });
   it("should use the verb and path", () => {
     expect(getOperationName("GET", "/pets/{color}/{status}")).toEqual(
-      "getPetsByColorAndStatus"
+      "getPetsByColorAndStatus",
     );
   });
   it("should not use ids with special chars", () => {
     expect(
-      getOperationName("GET", "/pets", "API\\PetController::listPetAction")
+      getOperationName("GET", "/pets", "API\\PetController::listPetAction"),
     ).toEqual("getPets");
   });
 });

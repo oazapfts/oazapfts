@@ -15,7 +15,7 @@ describe("ok", () => {
 
   it("should throw if status != 200", async () => {
     const promise = ok(
-      api.getPetById(4, { headers: { Prefer: "statusCode=404" } })
+      api.getPetById(4, { headers: { Prefer: "statusCode=404" } }),
     );
     await expect(promise).rejects.toHaveProperty("status", 404);
   });
@@ -25,7 +25,7 @@ describe("ok", () => {
       api.placeOrder({
         petId: 1,
         quantity: 1,
-      })
+      }),
     );
     expect(order).toMatchObject({
       quantity: 1,
@@ -56,7 +56,7 @@ describe("object query parameters", () => {
     [
       name: string,
       parameters: Parameters<typeof api.getObjectParameters>[0],
-      expectedQuery: string
+      expectedQuery: string,
     ]
   >([
     [
@@ -140,9 +140,9 @@ describe("object query parameters", () => {
             expect(new URL(init as string).search).toEqual(expectedSearch);
             return Promise.resolve(new Response("", { status: 200 }));
           },
-        })
+        }),
       );
-    }
+    },
   );
 });
 
@@ -173,7 +173,7 @@ describe("handle", () => {
         default(status) {
           return `default: ${status}`;
         },
-      }
+      },
     );
     expect(res).toBe("default: 400");
   });
@@ -185,7 +185,7 @@ describe("handle", () => {
         default(status, data) {
           return "default called";
         },
-      }
+      },
     );
     expect(res).toBe("default called");
   });
@@ -342,12 +342,12 @@ describe("Blob", () => {
           0xae,
           0x42,
           0x60,
-          0x82
+          0x82,
         ),
       ],
       {
         type: "image/png",
-      }
+      },
     );
 
     const up = await api.uploadPng(emptyPng);
@@ -363,7 +363,7 @@ describe("Blob", () => {
     it("should return headers", async () => {
       const res = await api.getPetById(1);
       expect(res.headers.get("x-powered-by")).toBe(
-        "jormaechea/open-api-mocker"
+        "jormaechea/open-api-mocker",
       );
     });
   });

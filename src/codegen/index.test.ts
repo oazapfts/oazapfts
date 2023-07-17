@@ -53,21 +53,21 @@ describe("generateSource", () => {
   it("should handle properties both inside and outside of allOf", async () => {
     const src = await generate("/__fixtures__/allOf.json");
     expect(src).toContain(
-      "export type Circle = Shape & { radius?: number; } & { circumference?: number; };"
+      "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
     );
   });
 
   it("should handle application/geo+json", async () => {
     const src = await generate("/__fixtures__/geojson.json");
     expect(src).toContain(
-      'return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>("/geojson", { ...opts });'
+      'return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>("/geojson", { ...opts });',
     );
   });
 
   it("should generate an api using fetchBlob", async () => {
     const src = await generate("/__fixtures__/binary.json");
     expect(src).toContain(
-      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${encodeURIComponent(fileId)}/download`, { ...opts });"
+      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${encodeURIComponent(fileId)}/download`, { ...opts });",
     );
   });
 
@@ -94,17 +94,17 @@ describe("generateSource", () => {
   it("should support parameters specified with content", async () => {
     const src = await generate("/__fixtures__/contentParams.json");
     expect(src).toContain(
-      "export function queryFiles({ filter }: { filter?: { where?: { fileId?: number; }; }; } = {}, opts?: Oazapfts.RequestOpts)"
+      "export function queryFiles({ filter }: { filter?: { where?: { fileId?: number; }; }; } = {}, opts?: Oazapfts.RequestOpts)",
     );
     expect(src).toContain(
-      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file${QS.query(QS.json({ filter }))}`, { ...opts });"
+      "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file${QS.query(QS.json({ filter }))}`, { ...opts });",
     );
   });
 
   it("should generate a base interface and extended interfaces with readOnly and writeOnly properties", async () => {
     const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml");
     expect(src).toContain(
-      "export interface ExampleSchema { always_present: string; } export interface ExampleSchemaRead extends ExampleSchema { read_only_prop: string; } export interface ExampleSchemaWrite extends ExampleSchema { write_only_prop: string; }"
+      "export interface ExampleSchema { always_present: string; } export interface ExampleSchemaRead extends ExampleSchema { read_only_prop: string; } export interface ExampleSchemaWrite extends ExampleSchema { write_only_prop: string; }",
     );
   });
 
@@ -124,26 +124,26 @@ describe("useEnumType", () => {
 
   it("should create string enums", () => {
     expect(src).toContain(
-      `export enum Status { Available = "available", Pending = "pending", Sold = "sold", Private = "private", $10Percent = "10percent" }`
+      `export enum Status { Available = "available", Pending = "pending", Sold = "sold", Private = "private", $10Percent = "10percent" }`,
     );
   });
 
   it("should create number enums", () => {
     expect(src).toContain(
-      `export enum Size { P = "P", M = "M", G = "G", $0 = "0" }`
+      `export enum Size { P = "P", M = "M", G = "G", $0 = "0" }`,
     );
   });
 
   it("should handle values with the same name", () => {
     expect(src).toContain(
-      `export enum Status2 { Placed = "placed", Approved = "approved", Delivered = "delivered" }`
+      `export enum Status2 { Placed = "placed", Approved = "approved", Delivered = "delivered" }`,
     );
   });
 
   it("should avoid name conflicts between types and enums", () => {
     // Type Category is defined as `Category`
     expect(src).toContain(
-      `export type Category = { id?: number; name?: string; };`
+      `export type Category = { id?: number; name?: string; };`,
     );
 
     // Enum Category is also defined as `Category` which would be a conflict to type `Category`
@@ -151,7 +151,7 @@ describe("useEnumType", () => {
 
     // Enum Category is defined as `Category2` to avoid name conflict with type Category
     expect(src).toContain(
-      `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`
+      `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`,
     );
   });
 });

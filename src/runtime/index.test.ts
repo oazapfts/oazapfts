@@ -50,7 +50,7 @@ describe("request", () => {
               headers: { "x-request-id": "1234" },
             });
           },
-        })
+        }),
       );
 
     let throwed;

@@ -18,7 +18,7 @@ export type Opts = {
 export function generateAst(
   doc: OpenAPIV3.Document,
   opts: Opts,
-  isConverted: boolean
+  isConverted: boolean,
 ) {
   return new ApiGenerator(doc, opts, isConverted).generateApi();
 }

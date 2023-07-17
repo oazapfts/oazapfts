@@ -47,7 +47,7 @@ export function createEnumTypeNode(values: Array<string | boolean | number>) {
   const types = values.map((v) =>
     v === null
       ? keywordType.null
-      : factory.createLiteralTypeNode(createLiteral(v))
+      : factory.createLiteralTypeNode(createLiteral(v)),
   );
   return types.length > 1 ? factory.createUnionTypeNode(types) : types[0];
 }
@@ -67,7 +67,7 @@ export function createTypeAliasDeclaration({
     modifiers,
     name,
     typeParameters,
-    type
+    type,
   );
 }
 
@@ -93,11 +93,11 @@ export function createIntefaceAliasDeclaration({
               typeof name === "string" ? name : name.escapedText.toString();
             return factory.createExpressionWithTypeArguments(
               factory.createIdentifier(
-                toIdentifier(extendedInterfaceName, true)
+                toIdentifier(extendedInterfaceName, true),
               ),
-              undefined
+              undefined,
             );
-          })
+          }),
         ),
       ]
     : [];
@@ -106,7 +106,7 @@ export function createIntefaceAliasDeclaration({
     name,
     typeParameters,
     heritageClauses,
-    (type as ts.TypeLiteralNode).members
+    (type as ts.TypeLiteralNode).members,
   );
 }
 
@@ -123,7 +123,7 @@ export function createCall(
   }: {
     typeArgs?: Array<ts.TypeNode>;
     args?: Array<ts.Expression>;
-  } = {}
+  } = {},
 ) {
   return factory.createCallExpression(toExpression(expression), typeArgs, args);
 }
@@ -133,26 +133,26 @@ export function createMethodCall(
   opts: {
     typeArgs?: Array<ts.TypeNode>;
     args?: Array<ts.Expression>;
-  }
+  },
 ) {
   return createCall(
     factory.createPropertyAccessExpression(factory.createThis(), method),
-    opts
+    opts,
   );
 }
 
 export function createObjectLiteral(props: [string, string | ts.Expression][]) {
   return factory.createObjectLiteralExpression(
     props.map(([name, identifier]) =>
-      createPropertyAssignment(name, toExpression(identifier))
+      createPropertyAssignment(name, toExpression(identifier)),
     ),
-    true
+    true,
   );
 }
 
 export function createPropertyAssignment(
   name: string,
-  expression: ts.Expression
+  expression: ts.Expression,
 ) {
   if (ts.isIdentifier(expression)) {
     if (expression.text === name) {
@@ -179,7 +179,7 @@ export function createArrowFunction(
     typeParameters?: ts.TypeParameterDeclaration[];
     type?: ts.TypeNode;
     equalsGreaterThanToken?: ts.EqualsGreaterThanToken;
-  } = {}
+  } = {},
 ) {
   return factory.createArrowFunction(
     modifiers,
@@ -187,7 +187,7 @@ export function createArrowFunction(
     parameters,
     type,
     equalsGreaterThanToken,
-    body
+    body,
   );
 }
 
@@ -205,7 +205,7 @@ export function createFunctionDeclaration(
     type?: ts.TypeNode;
   },
   parameters: ts.ParameterDeclaration[],
-  body?: ts.Block
+  body?: ts.Block,
 ): ts.FunctionDeclaration {
   return factory.createFunctionDeclaration(
     modifiers,
@@ -214,7 +214,7 @@ export function createFunctionDeclaration(
     typeParameters,
     parameters,
     type,
-    body
+    body,
   );
 }
 
@@ -236,7 +236,7 @@ export function createClassDeclaration({
     name,
     typeParameters,
     heritageClauses,
-    members
+    members,
   );
 }
 
@@ -273,7 +273,7 @@ export function createMethod(
     type?: ts.TypeNode;
   } = {},
   parameters: ts.ParameterDeclaration[] = [],
-  body?: ts.Block
+  body?: ts.Block,
 ): ts.MethodDeclaration {
   return factory.createMethodDeclaration(
     modifiers,
@@ -283,7 +283,7 @@ export function createMethod(
     typeParameters,
     parameters,
     type,
-    body
+    body,
   );
 }
 
@@ -301,7 +301,7 @@ export function createParameter(
     questionToken?: ts.QuestionToken | boolean;
     type?: ts.TypeNode;
     initializer?: ts.Expression;
-  }
+  },
 ): ts.ParameterDeclaration {
   return factory.createParameterDeclaration(
     modifiers,
@@ -309,7 +309,7 @@ export function createParameter(
     name,
     createQuestionToken(questionToken),
     type,
-    initializer
+    initializer,
   );
 }
 
@@ -337,7 +337,7 @@ export function createPropertySignature({
     modifiers,
     propertyName(name),
     createQuestionToken(questionToken),
-    type
+    type,
   );
 }
 
@@ -351,12 +351,12 @@ export function createIndexSignature(
     indexName?: string;
     indexType?: ts.TypeNode;
     modifiers?: Array<ts.Modifier>;
-  } = {}
+  } = {},
 ) {
   return factory.createIndexSignature(
     modifiers,
     [createParameter(indexName, { type: indexType })],
-    type
+    type,
   );
 }
 
@@ -366,7 +366,7 @@ export function createObjectBinding(
     dotDotDotToken?: ts.DotDotDotToken;
     propertyName?: string | ts.PropertyName;
     initializer?: ts.Expression;
-  }>
+  }>,
 ) {
   return factory.createObjectBindingPattern(
     elements.map(({ dotDotDotToken, propertyName, name, initializer }) =>
@@ -374,15 +374,15 @@ export function createObjectBinding(
         dotDotDotToken,
         propertyName,
         name,
-        initializer
-      )
-    )
+        initializer,
+      ),
+    ),
   );
 }
 
 export function createTemplateString(
   head: string,
-  spans: Array<{ literal: string; expression: ts.Expression }>
+  spans: Array<{ literal: string; expression: ts.Expression }>,
 ) {
   if (!spans.length) return factory.createStringLiteral(head);
   return factory.createTemplateExpression(
@@ -392,19 +392,19 @@ export function createTemplateString(
         expression,
         i === spans.length - 1
           ? factory.createTemplateTail(literal)
-          : factory.createTemplateMiddle(literal)
-      )
-    )
+          : factory.createTemplateMiddle(literal),
+      ),
+    ),
   );
 }
 
 export function findNode<T extends ts.Node>(
   nodes: ts.NodeArray<ts.Node>,
   kind: T extends { kind: infer K } ? K : never,
-  test?: (node: T) => boolean | undefined
+  test?: (node: T) => boolean | undefined,
 ): T {
   const node = nodes.find(
-    (s) => s.kind === kind && (!test || test(s as T))
+    (s) => s.kind === kind && (!test || test(s as T)),
   ) as T;
   if (!node) throw new Error(`Node not found: ${kind}`);
   return node;
@@ -427,12 +427,12 @@ export function getFirstDeclarationName(n: ts.VariableStatement) {
 
 export function findFirstVariableDeclaration(
   nodes: ts.NodeArray<ts.Node>,
-  name: string
+  name: string,
 ) {
   const statement = findNode<ts.VariableStatement>(
     nodes,
     ts.SyntaxKind.VariableStatement,
-    (n) => getFirstDeclarationName(n) === name
+    (n) => getFirstDeclarationName(n) === name,
   );
   const [first] = statement.declarationList.declarations;
   if (!first) throw new Error("Missing declaration");
@@ -442,10 +442,10 @@ export function findFirstVariableDeclaration(
 export function changePropertyValue(
   o: ts.ObjectLiteralExpression,
   property: string,
-  value: ts.Expression
+  value: ts.Expression,
 ) {
   const p = o.properties.find(
-    (p) => ts.isPropertyAssignment(p) && getName(p.name) === property
+    (p) => ts.isPropertyAssignment(p) && getName(p.name) === property,
   );
   if (p && ts.isPropertyAssignment(p)) {
     // p.initializer is readonly, this might break in a future TS version, but works fine for now.
@@ -468,7 +468,7 @@ export function addComment<T extends ts.Node>(node: T, comment?: string) {
     node,
     ts.SyntaxKind.MultiLineCommentTrivia,
     `*\n * ${comment.replace(/\n/g, "\n * ")}\n `,
-    true
+    true,
   );
 }
 
@@ -478,7 +478,7 @@ export function parseFile(file: string) {
     fs.readFileSync(file, "utf8"),
     ts.ScriptTarget.Latest,
     /*setParentNodes*/ false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
 }
 
@@ -492,7 +492,7 @@ export function printNode(node: ts.Node) {
     "",
     ts.ScriptTarget.Latest,
     /*setParentNodes*/ false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
   return printer.printNode(ts.EmitHint.Unspecified, node, file);
 }
@@ -503,7 +503,7 @@ export function printNodes(nodes: ts.Node[]) {
     "",
     ts.ScriptTarget.Latest,
     /*setParentNodes*/ false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
   return nodes
     .map((node) => printer.printNode(ts.EmitHint.Unspecified, node, file))

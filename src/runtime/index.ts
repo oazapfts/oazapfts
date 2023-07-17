@@ -47,7 +47,7 @@ export function runtime(defaults: RequestOpts) {
 
   async function fetchJson<T extends ApiResponse>(
     url: string,
-    req: FetchRequestOpts = {}
+    req: FetchRequestOpts = {},
   ) {
     const { status, headers, contentType, data } = await fetchText(url, {
       ...req,
@@ -72,7 +72,7 @@ export function runtime(defaults: RequestOpts) {
 
   async function fetchBlob<T extends ApiResponse>(
     url: string,
-    req: FetchRequestOpts = {}
+    req: FetchRequestOpts = {},
   ) {
     const res = await doFetch(url, req);
     let data;
