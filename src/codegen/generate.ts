@@ -376,6 +376,13 @@ export default class ApiGenerator {
       const schema = this.resolve<SchemaObject>(obj);
       const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
+
+      // When this is a true enum we can reference it directly,
+      // no need to create a type alias
+      if (this.isTrueEnum(schema, name)) {
+        return this.getTypeFromSchema(schema, name);
+      }
+
       const alias = this.getUniqueAlias(identifier);
 
       ref = this.refs[$ref]["none"] = factory.createTypeReferenceNode(
@@ -592,7 +599,7 @@ export default class ApiGenerator {
     }
     if (schema.enum) {
       // enum -> enum or union
-      return this.opts.useEnumType && name && schema.type !== "boolean"
+      return this.isTrueEnum(schema, name)
         ? this.getTrueEnum(schema, name)
         : cg.createEnumTypeNode(schema.enum);
     }
@@ -609,6 +616,12 @@ export default class ApiGenerator {
     }
 
     return cg.keywordType.any;
+  }
+
+  isTrueEnum(schema: SchemaObject, name?: string): name is string {
+    return Boolean(
+      schema.enum && this.opts.useEnumType && name && schema.type !== "boolean",
+    );
   }
 
   /**

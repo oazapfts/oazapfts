@@ -583,6 +583,16 @@ export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
     }),
   );
 }
+export function getIssue367(opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: {
+      foo?: EnumToRef;
+    };
+  }>("/issue367", {
+    ...opts,
+  });
+}
 export enum Status {
   Available = "available",
   Pending = "pending",
@@ -613,4 +623,9 @@ export enum Category2 {
   Rich = "rich",
   Wealthy = "wealthy",
   Poor = "poor",
+}
+export enum EnumToRef {
+  Monkey = "monkey",
+  Dog = "dog",
+  Cat = "cat",
 }
