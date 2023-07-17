@@ -520,6 +520,6 @@ export function isValidIdentifier(str: string) {
   return (
     !!node &&
     node.kind === ts.SyntaxKind.Identifier &&
-    node.originalKeywordKind === undefined
+    ts.identifierToKeywordKind(node) === undefined
   );
 }
