@@ -60,6 +60,7 @@ export type User = {
 export type Schema = string;
 export type Schema2 = number;
 export type Option = ("one" | "two" | "three")[];
+export type EnumToRef = "monkey" | "dog" | "cat";
 /**
  * Update an existing pet
  */
@@ -582,4 +583,14 @@ export function issue330(body?: string, opts?: Oazapfts.RequestOpts) {
       body,
     }),
   );
+}
+export function getIssue367(opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: {
+      foo?: EnumToRef;
+    };
+  }>("/issue367", {
+    ...opts,
+  });
 }

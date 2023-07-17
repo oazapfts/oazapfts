@@ -1,6 +1,7 @@
 import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
 import * as optimisticApi from "./optimisticApi";
+import * as enumApi from "./enumApi";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
@@ -365,6 +366,16 @@ describe("Blob", () => {
       expect(res.headers.get("x-powered-by")).toBe(
         "jormaechea/open-api-mocker",
       );
+    });
+  });
+
+  describe("enum API", () => {
+    it("should create enum types for $ref", () => {
+      expect(enumApi.EnumToRef).toEqual({
+        Cat: "cat",
+        Dog: "dog",
+        Monkey: "monkey",
+      });
     });
   });
 });
