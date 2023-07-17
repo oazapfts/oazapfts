@@ -1067,6 +1067,27 @@
           }
         }
       }
+    },
+    "/issue367": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "foo": {
+                      "$ref": "#/components/schemas/EnumToRef"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1258,6 +1279,10 @@
           "default": ["one"],
           "enum": ["one", "two", "three"]
         }
+      },
+      "EnumToRef": {
+        "enum": ["monkey", "dog", "cat"],
+        "type": "string"
       }
     },
     "securitySchemes": {
