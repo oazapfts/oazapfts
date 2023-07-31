@@ -710,6 +710,10 @@ export default class ApiGenerator {
    * Check if schema is readOnly or has readOnly properties
    */
   isSchemaReadOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
+    if (this.opts.mergeReadWriteOnly) {
+      return false;
+    }
+
     if ("$ref" in schema) return false;
     if (schema.readOnly) return true;
     if (!schema.properties) return false;
@@ -722,6 +726,10 @@ export default class ApiGenerator {
    * Check if schema is writeOnly or has writeOnly properties
    */
   isSchemaWriteOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
+    if (this.opts.mergeReadWriteOnly) {
+      return false;
+    }
+
     if ("$ref" in schema) return false;
     if (schema.writeOnly) return true;
     if (!schema.properties) return false;

@@ -10,7 +10,7 @@ const argv = minimist(process.argv.slice(2), {
     i: "include",
     e: "exclude",
   },
-  boolean: ["optimistic", "useEnumType"],
+  boolean: ["optimistic", "useEnumType", "mergeReadWriteOnly"],
 });
 
 async function generate(spec: string, dest: string, opts: Opts) {
@@ -19,7 +19,7 @@ async function generate(spec: string, dest: string, opts: Opts) {
   else console.log(code);
 }
 
-const { include, exclude, optimistic, useEnumType } = argv;
+const { include, exclude, optimistic, useEnumType, mergeReadWriteOnly } = argv;
 const [spec, dest] = argv._;
 if (!spec) {
   console.error(`
@@ -31,6 +31,7 @@ if (!spec) {
     --include, -i <tag to include>
     --optimistic
     --useEnumType
+    --mergeReadWriteOnly
 `);
   process.exit(1);
 }
@@ -40,4 +41,5 @@ generate(spec, dest, {
   exclude,
   optimistic,
   useEnumType,
+  mergeReadWriteOnly,
 });
