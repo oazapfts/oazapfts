@@ -13,6 +13,7 @@ export type Opts = {
   optimistic?: boolean;
   unionUndefined?: boolean;
   useEnumType?: boolean;
+  mergeReadWriteOnly?: boolean;
 };
 
 export function generateAst(
