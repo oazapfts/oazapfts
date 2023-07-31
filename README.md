@@ -35,6 +35,7 @@ Options:
 --include, -i tag to include
 --optimistic
 --useEnumType
+--mergeReadWriteOnly
 ```
 
 Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either json or yml) and `<filename>` is the location of the `.ts` file to be generated. If the filename is omitted, the code is written to stdout.
@@ -44,6 +45,8 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 - `--optimistic` generare a client in [optimistic mode](#optimistic-mode)
 
 - `--useEnumType` generate enums instead of union types
+
+- `--mergeReadWriteOnly` by default oazapfs will generate separate types for read-only and write-only properties. This option will merge them into one type.
 
 ## Consuming the generated API
 
