@@ -61,6 +61,21 @@ export type Schema = string;
 export type Schema2 = number;
 export type Option = ("one" | "two" | "three")[];
 export type EnumToRef = "monkey" | "dog" | "cat";
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  hidden?: boolean;
+  currency: string;
+  producerID: string;
+};
+export type PagedListOfProduct = {
+  items: Product[];
+  totalPages: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+};
 /**
  * Update an existing pet
  */
@@ -593,4 +608,34 @@ export function getIssue367(opts?: Oazapfts.RequestOpts) {
   }>("/issue367", {
     ...opts,
   });
+}
+export function productsGetAll(opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchJson<
+    | {
+        status: 200;
+        data: PagedListOfProduct;
+      }
+    | {
+        status: 210;
+        data: Product & {
+          producerId: string;
+          hidden?: boolean;
+        };
+      }
+  >("/issue-446", {
+    ...opts,
+  });
+}
+export function productsCreateMany(
+  body?: PagedListOfProduct | Pet,
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.fetchText(
+    "/issue-446",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body,
+    }),
+  );
 }
