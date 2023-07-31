@@ -1088,10 +1088,158 @@
           }
         }
       }
+    },
+    "/issue-446": {
+      "get": {
+        "operationId": "Products_GetAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedListOfProduct"
+                }
+              }
+            }
+          },
+          "210": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Product"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["producerId"],
+                      "properties": {
+                        "producerId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "readOnly": true
+                        },
+                        "hidden": {
+                          "type": "boolean",
+                          "writeOnly": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "post": {
+        "operationId": "Products_CreateMany",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PagedListOfProduct"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Pet"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "PagedListOfProduct": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "totalPages",
+          "pageIndex",
+          "pageSize",
+          "totalCount"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description", "currency", "producerID"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "format": "guid",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hidden": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 1
+          },
+          "producerID": {
+            "type": "string",
+            "readOnly": true,
+            "format": "guid",
+            "minLength": 1
+          }
+        }
+      },
       "Order": {
         "type": "object",
         "properties": {

@@ -60,6 +60,45 @@ export type User = {
 export type Schema = string;
 export type Schema2 = number;
 export type Option = ("one" | "two" | "three")[];
+export type Product = {
+  name: string;
+  description: string;
+  currency: string;
+};
+export type ProductRead = {
+  id: string;
+  name: string;
+  description: string;
+  currency: string;
+  producerID: string;
+};
+export type ProductWrite = {
+  name: string;
+  description: string;
+  hidden?: boolean;
+  currency: string;
+};
+export type PagedListOfProduct = {
+  items: Product[];
+  totalPages: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+};
+export type PagedListOfProductRead = {
+  items: ProductRead[];
+  totalPages: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+};
+export type PagedListOfProductWrite = {
+  items: ProductWrite[];
+  totalPages: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+};
 /**
  * Update an existing pet
  */
@@ -592,6 +631,35 @@ export function getIssue367(opts?: Oazapfts.RequestOpts) {
   }>("/issue367", {
     ...opts,
   });
+}
+export function productsGetAll(opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchJson<
+    | {
+        status: 200;
+        data: PagedListOfProductRead;
+      }
+    | {
+        status: 210;
+        data: ProductRead & {
+          producerId: string;
+        };
+      }
+  >("/issue-446", {
+    ...opts,
+  });
+}
+export function productsCreateMany(
+  body?: PagedListOfProductWrite | Pet,
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.fetchText(
+    "/issue-446",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body,
+    }),
+  );
 }
 export enum Status {
   Available = "available",

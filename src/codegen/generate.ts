@@ -289,16 +289,15 @@ export default class ApiGenerator {
 
   // Collect the types of all referenced schemas so we can export them later
   // Referenced schemas can be pointing at the following versions:
-  // - "none": The regular type/interface e.g. ExampleSchema
+  // - "base": The regular type/interface e.g. ExampleSchema
   // - "readOnly": The readOnly version e.g. ExampleSchemaRead
   // - "writeOnly": The writeOnly version e.g. ExampleSchemaWrite
   refs: Record<
     string,
     {
-      [k in OnlyMode | "none"]:
-        | ts.TypeReferenceNode
-        | ts.InterfaceDeclaration
-        | undefined;
+      base: ts.TypeReferenceNode;
+      readOnly?: ts.TypeReferenceNode;
+      writeOnly?: ts.TypeReferenceNode;
     }
   > = {};
 
@@ -364,15 +363,6 @@ export default class ApiGenerator {
   getRefAlias(obj: OpenAPIV3.ReferenceObject, onlyMode?: OnlyMode) {
     const { $ref } = obj;
     if (!this.refs[$ref]) {
-      this.refs[$ref] = {
-        none: undefined,
-        readOnly: undefined,
-        writeOnly: undefined,
-      };
-    }
-    let ref = this.refs[$ref][onlyMode ?? "none"];
-
-    if (!this.refs[$ref]["none"]) {
       const schema = this.resolve<SchemaObject>(obj);
       const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
@@ -385,85 +375,67 @@ export default class ApiGenerator {
 
       const alias = this.getUniqueAlias(identifier);
 
-      ref = this.refs[$ref]["none"] = factory.createTypeReferenceNode(
-        alias,
-        undefined,
+      this.refs[$ref] = {
+        base: factory.createTypeReferenceNode(alias, undefined),
+        readOnly: undefined,
+        writeOnly: undefined,
+      };
+
+      const type = this.getTypeFromSchema(schema, undefined);
+      this.aliases.push(
+        cg.createTypeAliasDeclaration({
+          modifiers: [cg.modifier.export],
+          name: alias,
+          type,
+        }),
       );
 
-      const type = this.getTypeFromSchema(schema);
-      // Create a type if no readOnly or writeOnly properties found
-      if (!this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)) {
-        this.aliases.push(
-          cg.createTypeAliasDeclaration({
-            modifiers: [cg.modifier.export],
-            name: alias,
-            type,
-          }),
-        );
-      } else {
-        // Create an interface to be extended
-        this.aliases.push(
-          cg.createIntefaceAliasDeclaration({
-            modifiers: [cg.modifier.export],
-            name: alias,
-            type,
-          }),
-        );
-      }
-    }
-    if (onlyMode === "readOnly" && !this.refs[$ref]["readOnly"]) {
-      const schema = this.resolve<SchemaObject>(obj);
-      const name = schema.title || getRefName($ref);
-      if (this.isSchemaReadOnly(schema)) {
+      if (this.checkSchemaOnlyMode(schema, "readOnly")) {
         const readOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "readOnly"),
         );
-        ref = this.refs[$ref]["readOnly"] = factory.createTypeReferenceNode(
+        this.refs[$ref]["readOnly"] = factory.createTypeReferenceNode(
           readOnlyAlias,
           undefined,
         );
 
         const readOnlyType = this.getTypeFromSchema(schema, name, "readOnly");
         this.aliases.push(
-          cg.createIntefaceAliasDeclaration({
+          cg.createTypeAliasDeclaration({
             modifiers: [cg.modifier.export],
             name: readOnlyAlias,
             type: readOnlyType,
-            inheritedNodeNames: [name],
           }),
         );
       }
-    }
-    if (onlyMode === "writeOnly" && !this.refs[$ref]["writeOnly"]) {
-      const schema = this.resolve<SchemaObject>(obj);
-      const name = schema.title || getRefName($ref);
-      if (this.isSchemaWriteOnly(schema)) {
+
+      if (this.checkSchemaOnlyMode(schema, "writeOnly")) {
         const writeOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "writeOnly"),
         );
-        ref = this.refs[$ref]["writeOnly"] = factory.createTypeReferenceNode(
+        this.refs[$ref]["writeOnly"] = factory.createTypeReferenceNode(
           writeOnlyAlias,
           undefined,
         );
         const writeOnlyType = this.getTypeFromSchema(schema, name, "writeOnly");
         this.aliases.push(
-          cg.createIntefaceAliasDeclaration({
+          cg.createTypeAliasDeclaration({
             modifiers: [cg.modifier.export],
             name: writeOnlyAlias,
             type: writeOnlyType,
-            inheritedNodeNames: [name],
           }),
         );
       }
     }
 
     // If not ref fallback to the regular reference
-    return ref ?? this.refs[$ref]["none"];
+    return this.refs[$ref][onlyMode || "base"] ?? this.refs[$ref].base;
   }
 
   getUnionType(
     variants: (OpenAPIV3.ReferenceObject | SchemaObject)[],
     discriminator?: OpenAPIV3.DiscriminatorObject,
+    onlyMode?: OnlyMode,
   ) {
     if (discriminator) {
       // oneOf + discriminator -> tagged union (polymorphism)
@@ -514,14 +486,16 @@ export default class ApiGenerator {
                 ),
               }),
             ]),
-            this.getTypeFromSchema(variant),
+            this.getTypeFromSchema(variant, undefined, onlyMode),
           ]),
         ),
       );
     } else {
       // oneOf -> untagged union
       return factory.createUnionTypeNode(
-        variants.map((schema) => this.getTypeFromSchema(schema)),
+        variants.map((schema) =>
+          this.getTypeFromSchema(schema, undefined, onlyMode),
+        ),
       );
     }
   }
@@ -558,18 +532,16 @@ export default class ApiGenerator {
 
     if (schema.oneOf) {
       // oneOf -> union
-      return this.getUnionType(schema.oneOf, schema.discriminator);
+      return this.getUnionType(schema.oneOf, schema.discriminator, onlyMode);
     }
     if (schema.anyOf) {
       // anyOf -> union
-      return factory.createUnionTypeNode(
-        schema.anyOf.map((schema) => this.getTypeFromSchema(schema)),
-      );
+      return this.getUnionType(schema.anyOf, undefined, onlyMode);
     }
     if (schema.allOf) {
       // allOf -> intersection
       const types = schema.allOf.map((schema) =>
-        this.getTypeFromSchema(schema),
+        this.getTypeFromSchema(schema, undefined, onlyMode),
       );
 
       if (schema.properties || schema.additionalProperties) {
@@ -579,6 +551,7 @@ export default class ApiGenerator {
             schema.properties || {},
             schema.required,
             schema.additionalProperties,
+            onlyMode,
           ),
         );
       }
@@ -586,7 +559,9 @@ export default class ApiGenerator {
     }
     if ("items" in schema) {
       // items -> array
-      return factory.createArrayTypeNode(this.getTypeFromSchema(schema.items));
+      return factory.createArrayTypeNode(
+        this.getTypeFromSchema(schema.items, undefined, onlyMode),
+      );
     }
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
@@ -706,36 +681,46 @@ export default class ApiGenerator {
     return type;
   }
 
-  /**
-   * Check if schema is readOnly or has readOnly properties
-   */
-  isSchemaReadOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
+  checkSchemaOnlyMode(
+    schema: SchemaObject | OpenAPIV3.ReferenceObject,
+    onlyMode: OnlyMode,
+    resolveRefs = true,
+  ): boolean {
     if (this.opts.mergeReadWriteOnly) {
       return false;
     }
 
-    if ("$ref" in schema) return false;
-    if (schema.readOnly) return true;
-    if (!schema.properties) return false;
-    return Object.values(schema.properties).some((property) =>
-      "$ref" in property ? false : property.readOnly,
-    );
-  }
-
-  /**
-   * Check if schema is writeOnly or has writeOnly properties
-   */
-  isSchemaWriteOnly(schema: SchemaObject | OpenAPIV3.ReferenceObject) {
-    if (this.opts.mergeReadWriteOnly) {
-      return false;
+    if (isReference(schema)) {
+      return resolveRefs
+        ? this.checkSchemaOnlyMode(this.resolve(schema), onlyMode, resolveRefs)
+        : false;
     }
 
-    if ("$ref" in schema) return false;
-    if (schema.writeOnly) return true;
-    if (!schema.properties) return false;
-    return Object.values(schema.properties).some((property) =>
-      "$ref" in property ? false : property.writeOnly,
-    );
+    if (
+      (onlyMode === "readOnly" && schema.readOnly) ||
+      (onlyMode === "writeOnly" && schema.writeOnly)
+    ) {
+      return true;
+    }
+
+    if (schema.type === "array") {
+      return schema.items
+        ? this.checkSchemaOnlyMode(schema.items, onlyMode, resolveRefs)
+        : false;
+    }
+
+    const subSchemas = [
+      ...Object.values(schema.properties || {}),
+      ...(schema.allOf || []),
+      ...(schema.anyOf || []),
+      ...(schema.oneOf || []),
+    ];
+
+    return subSchemas
+      .filter(Boolean)
+      .some((property) =>
+        this.checkSchemaOnlyMode(property, onlyMode, resolveRefs),
+      );
   }
 
   /**
@@ -756,12 +741,17 @@ export default class ApiGenerator {
     const propertyNames = Object.keys(props);
     const filteredPropertyNames = propertyNames.filter((name) => {
       const schema = props[name];
-      if (!onlyMode)
-        return (
-          !this.isSchemaReadOnly(schema) && !this.isSchemaWriteOnly(schema)
-        );
-      if (onlyMode === "readOnly") return this.isSchemaReadOnly(schema);
-      else if (onlyMode === "writeOnly") return this.isSchemaWriteOnly(schema);
+      const isReadOnly = this.checkSchemaOnlyMode(schema, "readOnly", false);
+      const isWriteOnly = this.checkSchemaOnlyMode(schema, "writeOnly", false);
+
+      switch (onlyMode) {
+        case "readOnly":
+          return isReadOnly || !isWriteOnly;
+        case "writeOnly":
+          return isWriteOnly || !isReadOnly;
+        default:
+          return !isReadOnly && !isWriteOnly;
+      }
     });
     // By filtering by readOnly/writeOnly props, we may have filtered out all props in schemas
     const hasFilteredAllProps = filteredPropertyNames.length === 0;
@@ -770,7 +760,7 @@ export default class ApiGenerator {
     const members: ts.TypeElement[] = names.map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
-      let type = this.getTypeFromSchema(schema, name);
+      let type = this.getTypeFromSchema(schema, name, onlyMode);
       if (!isRequired && this.opts.unionUndefined) {
         type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
       }
@@ -784,7 +774,7 @@ export default class ApiGenerator {
       const type =
         additionalProperties === true
           ? cg.keywordType.any
-          : this.getTypeFromSchema(additionalProperties);
+          : this.getTypeFromSchema(additionalProperties, undefined, onlyMode);
 
       members.push(cg.createIndexSignature(type));
     }

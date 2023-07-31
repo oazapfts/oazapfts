@@ -101,11 +101,47 @@ describe("generateSource", () => {
     );
   });
 
-  it("should generate a base interface and extended interfaces with readOnly and writeOnly properties", async () => {
+  it("should generate a base types and extended types with readOnly and writeOnly properties", async () => {
     const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml");
+
+    // Base types + Read & Write
     expect(src).toContain(
-      "export interface ExampleSchema { always_present: string; } export interface ExampleSchemaRead extends ExampleSchema { read_only_prop: string; } export interface ExampleSchemaWrite extends ExampleSchema { write_only_prop: string; }",
+      "export type ExampleSchema = { always_present: string; }; export type ExampleSchemaRead = { always_present: string; read_only_prop: string; }; export type ExampleSchemaWrite = { always_present: string; write_only_prop: string; }",
     );
+    // Parent types using Read/Write nested types
+    expect(src).toContain(
+      "export type ExampleParentSchema = { child_schema: ExampleSchema; }; export type ExampleParentSchemaRead = { child_schema: ExampleSchemaRead; }; export type ExampleParentSchemaWrite = { child_schema: ExampleSchemaWrite; }",
+    );
+
+    // oneOf using Read nested types
+    expect(src).toContain("data: ExampleSchemaRead | ExampleBaseSchema");
+    // oneOf using Write nested types
+    expect(src).toContain("body: ExampleSchemaWrite | ExampleBaseSchema");
+
+    // allOf using Read nested types
+    expect(src).toContain("data: ExampleSchemaRead & ExampleBaseSchema");
+    // allOf using Write nested types
+    expect(src).toContain("body: ExampleSchemaWrite & ExampleBaseSchema");
+  });
+
+  it("should generate merged types with mergeReadWriteOnly", async () => {
+    const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml", {
+      mergeReadWriteOnly: true,
+    });
+
+    // Base types + Read & Write
+    expect(src).toContain(
+      "export type ExampleSchema = { always_present: string; read_only_prop: string; write_only_prop: string; }",
+    );
+    expect(src).not.toContain("ExampleSchemaRead");
+    expect(src).not.toContain("ExampleSchemaWrite");
+
+    // Parent types using Read/Write nested types
+    expect(src).toContain(
+      "export type ExampleParentSchema = { child_schema: ExampleSchema; };",
+    );
+    expect(src).not.toContain("ExampleParentSchemaRead");
+    expect(src).not.toContain("ExampleParentSchemaWrite");
   });
 
   it("shouldn't filter all properties of schema when using readOnly/writeOnly", async () => {

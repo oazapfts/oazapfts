@@ -28,8 +28,108 @@ paths:
                 $ref: "#/components/schemas/ExampleSchema"
           description: OK
       operationId: setExample
+  /example-extend:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExampleParentSchema"
+          description: OK
+      operationId: getPatentExampleExtend
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExampleParentSchema"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExampleBaseSchema"
+          description: OK
+      operationId: setPatentExampleExtend
+  /example-all-of:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ExampleSchema"
+                  - $ref: "#/components/schemas/ExampleBaseSchema"
+          description: OK
+      operationId: getExampleAllOf
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/ExampleSchema"
+                - $ref: "#/components/schemas/ExampleBaseSchema"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExampleBaseSchema"
+          description: OK
+      operationId: setExampleAllOf
+  /example-one-of:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ExampleSchema"
+                  - $ref: "#/components/schemas/ExampleBaseSchema"
+          description: OK
+      operationId: getExampleOneOf
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ExampleSchema"
+                - $ref: "#/components/schemas/ExampleBaseSchema"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExampleBaseSchema"
+          description: OK
+      operationId: setExampleOneOf
 components:
   schemas:
+    ExampleBaseSchema:
+      description: ""
+      required:
+        - id
+      type: object
+      properties:
+        always_present:
+          description: ""
+          type: string
+    ExampleParentSchema:
+      description: ""
+      required:
+        - child_schema
+      type: object
+      properties:
+        child_schema:
+          $ref: "#/components/schemas/ExampleSchema"
     ExampleSchema:
       description: ""
       required:

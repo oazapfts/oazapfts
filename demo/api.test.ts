@@ -2,9 +2,11 @@ import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
 import * as api from "./api";
 import * as optimisticApi from "./optimisticApi";
 import * as enumApi from "./enumApi";
+import * as mergedReadWriteApi from "./mergedReadWriteApi";
 
 api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
+mergedReadWriteApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
 (global as any).FormData = require("form-data");
 
@@ -46,6 +48,65 @@ describe("ok", () => {
     const pet = await ok(api.addPet({ name: "doggie", photoUrls: [] }));
     //@ts-expect-error
     expect(pet.name).toBe("doggie");
+  });
+
+  it("handles merged readonly and writeonly properties", async () => {
+    const product = await ok(mergedReadWriteApi.productsGetAll());
+    expect(product.items[0].id).toBe("string");
+    expect(product.items[0].producerID).toBe("string");
+    expect(product.items[0].hidden).toBe(true);
+
+    await ok(
+      mergedReadWriteApi.productsCreateMany({
+        items: [
+          {
+            id: "one",
+            producerID: "two",
+            name: "test",
+            currency: "Sickles",
+            description: "Test",
+            hidden: true,
+          },
+        ],
+        pageIndex: 0,
+        pageSize: 1,
+        totalCount: 1,
+        totalPages: 1,
+      }),
+    );
+  });
+
+  it("handles readOnly and writeOnly parameters", async () => {
+    const product = await ok(api.productsGetAll());
+    expect(product.items[0].id).toBe("string");
+    expect(product.items[0].producerID).toBe("string");
+
+    const res = await api.productsCreateMany({
+      items: [
+        {
+          name: "test",
+          currency: "Sickles",
+          description: "Test",
+          hidden: true,
+        },
+      ],
+      pageIndex: 0,
+      pageSize: 1,
+      totalCount: 1,
+      totalPages: 1,
+    });
+    // This responds with a 400 because the mock server does not
+    // handle the writeOnly property correctly :(
+
+    // @ts-expect-error (readonly Property)
+    type WriteId = api.PagedListOfProductWrite["items"][number]["id"];
+
+    type WriteProducerId =
+      // @ts-expect-error (readonly Property)
+      api.PagedListOfProductWrite["items"][number]["producerID"];
+
+    // @ts-expect-error (writeonly Property)
+    type ReadHidden = api.PagedListOfProductRead["items"][number]["hidden"];
   });
 });
 
