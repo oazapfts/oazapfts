@@ -100,6 +100,20 @@ export function runtime(defaults: RequestOpts) {
     return res;
   }
 
+  function hasJsonContentType(contentTypeHeader: string) {
+    console.log("hasJsonContentType");
+    return contentTypeHeader?.match(/\bjson\b/i)
+      ? contentTypeHeader
+      : "application/json";
+  }
+
+  function hasFormContentType(contentTypeHeader: string) {
+    console.log("hasFormContentType");
+    return contentTypeHeader?.startsWith("application/x-www-form-urlencoded")
+      ? contentTypeHeader
+      : "application/x-www-form-urlencoded";
+  }
+
   return {
     ok,
     fetchText,
@@ -111,8 +125,8 @@ export function runtime(defaults: RequestOpts) {
         ...req,
         ...(body != null && { body: JSON.stringify(body) }),
         headers: {
-          "Content-Type": "application/json",
           ...headers,
+          "Content-Type": hasJsonContentType(String(headers?.["Content-Type"])),
         },
       };
     },
@@ -123,7 +137,7 @@ export function runtime(defaults: RequestOpts) {
         ...(body != null && { body: qs.form(body) }),
         headers: {
           ...headers,
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": hasFormContentType(String(headers?.["Content-Type"])),
         },
       };
     },
