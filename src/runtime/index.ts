@@ -111,8 +111,8 @@ export function runtime(defaults: RequestOpts) {
         ...req,
         ...(body != null && { body: JSON.stringify(body) }),
         headers: {
-          ...headers,
           "Content-Type": "application/json",
+          ...headers,
         },
       };
     },
