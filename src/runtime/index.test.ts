@@ -66,4 +66,22 @@ describe("request", () => {
     expect(err).toBeInstanceOf(HttpError);
     expect(err?.headers?.get("x-request-id")).toBe("1234");
   });
+
+  it("should allow 'Content-Type' header to be customized", async () => {
+    const jsonUTF8ContentType = "application/json; charset=UTF-8";
+    const formUTF8ContentType =
+      "application/x-www-form-urlencoded; charset=UTF-8";
+
+    const jsonResponse = oazapfts.json({
+      body: { value: "body value" },
+      headers: { "Content-Type": jsonUTF8ContentType },
+    });
+    const formResponse = oazapfts.form({
+      body: { value: "body value" },
+      headers: { "Content-Type": formUTF8ContentType },
+    });
+
+    expect(jsonResponse.headers["Content-Type"]).toEqual(jsonUTF8ContentType);
+    expect(formResponse.headers["Content-Type"]).toEqual(formUTF8ContentType);
+  });
 });

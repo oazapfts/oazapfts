@@ -100,6 +100,20 @@ export function runtime(defaults: RequestOpts) {
     return res;
   }
 
+  /* TODO: maybe we want to get rid of this checks (ensureJsonContentType & ensureFormContentType)
+  in a future major release (ref https://github.com/oazapfts/oazapfts/pull/456) */
+  function ensureJsonContentType(contentTypeHeader: string) {
+    return contentTypeHeader?.match(/\bjson\b/i)
+      ? contentTypeHeader
+      : "application/json";
+  }
+
+  function ensureFormContentType(contentTypeHeader: string) {
+    return contentTypeHeader?.startsWith("application/x-www-form-urlencoded")
+      ? contentTypeHeader
+      : "application/x-www-form-urlencoded";
+  }
+
   return {
     ok,
     fetchText,
@@ -112,7 +126,9 @@ export function runtime(defaults: RequestOpts) {
         ...(body != null && { body: JSON.stringify(body) }),
         headers: {
           ...headers,
-          "Content-Type": "application/json",
+          "Content-Type": ensureJsonContentType(
+            String(headers?.["Content-Type"]),
+          ),
         },
       };
     },
@@ -123,7 +139,9 @@ export function runtime(defaults: RequestOpts) {
         ...(body != null && { body: qs.form(body) }),
         headers: {
           ...headers,
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": ensureFormContentType(
+            String(headers?.["Content-Type"]),
+          ),
         },
       };
     },
