@@ -108,6 +108,27 @@ describe("ok", () => {
     // @ts-expect-error (writeonly Property)
     type ReadHidden = api.PagedListOfProductRead["items"][number]["hidden"];
   });
+
+  it("handles mixed readonly and writeonly properties", async () => {
+    const base: api.ReadWriteMixed = {};
+    // @ts-expect-error (readonly Property)
+    base.message = "nope";
+    // @ts-expect-error (writeonly Property)
+    base.email = "hi@example.org";
+
+    const write: api.ReadWriteMixedWrite = {
+      email: "hi@example.org",
+      password: "123",
+    };
+    // @ts-expect-error (readonly Property)
+    write.message = "nope";
+
+    const read: api.ReadWriteMixedRead = {
+      message: "hi",
+    };
+    // @ts-expect-error (writeonly Property)
+    read.email = "hi@example.org";
+  });
 });
 
 describe("object query parameters", () => {
