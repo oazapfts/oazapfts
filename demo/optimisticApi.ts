@@ -100,6 +100,14 @@ export type PagedListOfProductWrite = {
   pageSize: number;
   totalCount: number;
 };
+export type ReadWriteMixed = {};
+export type ReadWriteMixedRead = {
+  message: string;
+};
+export type ReadWriteMixedWrite = {
+  email: string;
+  password: string;
+};
 /**
  * Update an existing pet
  */
@@ -708,12 +716,33 @@ export function productsCreateMany(
   opts?: Oazapfts.RequestOpts,
 ) {
   return oazapfts.ok(
-    oazapfts.fetchText(
+    oazapfts.fetchJson<{
+      status: 200;
+      data: {};
+    }>(
       "/issue-446",
       oazapfts.json({
         ...opts,
         method: "POST",
         body,
+      }),
+    ),
+  );
+}
+export function readWriteMixed(
+  readWriteMixed?: ReadWriteMixedWrite,
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.ok(
+    oazapfts.fetchJson<{
+      status: 200;
+      data: ReadWriteMixedRead;
+    }>(
+      "issue-453",
+      oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: readWriteMixed,
       }),
     ),
   );

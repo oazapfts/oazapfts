@@ -753,11 +753,8 @@ export default class ApiGenerator {
           return !isReadOnly && !isWriteOnly;
       }
     });
-    // By filtering by readOnly/writeOnly props, we may have filtered out all props in schemas
-    const hasFilteredAllProps = filteredPropertyNames.length === 0;
-    const names = hasFilteredAllProps ? propertyNames : filteredPropertyNames;
 
-    const members: ts.TypeElement[] = names.map((name) => {
+    const members: ts.TypeElement[] = filteredPropertyNames.map((name) => {
       const schema = props[name];
       const isRequired = required && required.includes(name);
       let type = this.getTypeFromSchema(schema, name, onlyMode);

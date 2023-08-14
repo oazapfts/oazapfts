@@ -1136,7 +1136,6 @@
           }
         }
       },
-
       "post": {
         "operationId": "Products_CreateMany",
         "parameters": [],
@@ -1159,9 +1158,40 @@
         "responses": {
           "200": {
             "description": "A successful response.",
-            "schema": {
-              "type": "object",
-              "properties": {}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issue-453": {
+      "post": {
+        "operationId": "ReadWriteMixed",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadWriteMixed"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadWriteMixed"
+                }
+              }
             }
           }
         }
@@ -1170,6 +1200,24 @@
   },
   "components": {
     "schemas": {
+      "ReadWriteMixed": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "password": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "message": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "required": ["email", "password", "message"]
+      },
       "PagedListOfProduct": {
         "type": "object",
         "additionalProperties": false,
