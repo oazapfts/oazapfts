@@ -51,6 +51,7 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
+  prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
 };
 
 /**
@@ -588,18 +589,10 @@ export default class ApiGenerator {
       // items -> array
       return factory.createArrayTypeNode(this.getTypeFromSchema(schema.items));
     }
-    if ("prefixItems" in schema) {
+    if ("prefixItems" in schema && schema.prefixItems) {
       // prefixItems -> typed tuple
-      // Because we are mixing OpenAPI 3.0 and OpenAPI 3.1 types prefixItems can be defined without items
-      // For some reason typescript assumes schema to be NonArraySchemaObject after the above if statement so we cast it back
-      // Also the definition of prefixItems in openapi-types seems to be wrong so we cast again
-      const prefixItems = (schema as unknown as OpenAPIV3.ArraySchemaObject)
-        .prefixItems as unknown as (
-        | OpenAPIV3.SchemaObject
-        | OpenAPIV3.ReferenceObject
-      )[];
       return factory.createTupleTypeNode(
-        prefixItems.map((schema) => this.getTypeFromSchema(schema)),
+        schema.prefixItems.map((schema) => this.getTypeFromSchema(schema)),
       );
     }
     if (schema.properties || schema.additionalProperties) {
