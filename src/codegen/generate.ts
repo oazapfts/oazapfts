@@ -51,6 +51,7 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
+  prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
 };
 
 /**
@@ -561,6 +562,12 @@ export default class ApiGenerator {
       // items -> array
       return factory.createArrayTypeNode(
         this.getTypeFromSchema(schema.items, undefined, onlyMode),
+      );
+    }
+    if ("prefixItems" in schema && schema.prefixItems) {
+      // prefixItems -> typed tuple
+      return factory.createTupleTypeNode(
+        schema.prefixItems.map((schema) => this.getTypeFromSchema(schema)),
       );
     }
     if (schema.properties || schema.additionalProperties) {
