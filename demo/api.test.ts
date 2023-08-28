@@ -277,6 +277,17 @@ describe("handle", () => {
     const promise = handle(api.updatePet({ name: "Gizmo", photoUrls: [] }), {});
     await expect(promise).rejects.toHaveProperty("status", 204);
   });
+
+  it("should type response as Pet", async () => {
+    const res = await handle(api.getPetById(1), {
+      200(res) {
+        return res;
+      },
+    });
+
+    ({}) as api.Pet satisfies typeof res;
+    expect(res).toBeDefined();
+  });
 });
 
 describe("okify", () => {
