@@ -18,7 +18,7 @@ export type ResponseHandler<T extends ApiResponse> = {
   default?: (status: number, data: any) => any;
 };
 
-export type FunctionReturnType<T> = T extends (args: any[]) => any
+export type FunctionReturnType<T> = T extends (...args: any[]) => any
   ? ReturnType<T>
   : never;
 
