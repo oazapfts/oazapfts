@@ -1,0 +1,67 @@
+{
+  "info": {
+    "title": "example with prefixItems introduced in OpenAPI 3.1",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/test/": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "operationId": "get_test",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coordinates"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Coordinates": {
+        "prefixItems": [
+          {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Lon"
+          },
+          {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Lat"
+          }
+        ],
+        "type": "array",
+        "maxItems": 2,
+        "minItems": 2
+      }
+    }
+  }
+}
