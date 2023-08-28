@@ -88,9 +88,7 @@ describe("generateSource", () => {
 
   it("should generate correct array type for prefixItems", async () => {
     const src = await generate("/__fixtures__/prefixItems.json");
-    expect(src).toContain(
-      "export type Coordinates = [ number | number, number | number ];",
-    );
+    expect(src).toContain("export type Coordinates = [ number, number ];");
   });
 
   it("should generate valid identifiers for oneOf with refs", async () => {

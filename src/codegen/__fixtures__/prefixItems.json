@@ -39,9 +39,6 @@
             "anyOf": [
               {
                 "type": "number"
-              },
-              {
-                "type": "integer"
               }
             ],
             "title": "Lon"
@@ -50,9 +47,6 @@
             "anyOf": [
               {
                 "type": "number"
-              },
-              {
-                "type": "integer"
               }
             ],
             "title": "Lat"
