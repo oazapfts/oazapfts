@@ -1,0 +1,58 @@
+{
+  "info": {
+    "title": "example with multipart data download",
+    "version": "0.0.1"
+  },
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/image/{imageId}/download": {
+      "get": {
+        "operationId": "DownloadFile",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "$ref": "#/components/schemas/Image"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get an image.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imageId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Image": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      }
+    }
+  }
+}

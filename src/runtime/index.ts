@@ -82,6 +82,21 @@ export function runtime(defaults: RequestOpts) {
     return { status: res.status, headers: res.headers, data } as WithHeaders<T>;
   }
 
+  async function fetchMultipart<T extends ApiResponse>(
+    url: string,
+    req: FetchRequestOpts = {},
+  ) {
+    const res = await doFetch(url, req);
+    let data: any = {};
+    try {
+      (await res.formData()).forEach((val, key) => {
+        data[key] = val;
+      });
+    } catch (err) {}
+
+    return { status: res.status, headers: res.headers, data } as WithHeaders<T>;
+  }
+
   async function doFetch(url: string, req: FetchRequestOpts = {}) {
     const {
       baseUrl,
@@ -119,6 +134,7 @@ export function runtime(defaults: RequestOpts) {
     fetchText,
     fetchJson,
     fetchBlob,
+    fetchMultipart,
 
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {
