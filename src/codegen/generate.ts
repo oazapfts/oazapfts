@@ -56,7 +56,7 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
   prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
-  metadata?: SchemaMetadata; // information oazapfts uses while generating code
+  metadata?: SchemaMetadata; // information added by oazapfts
 };
 
 /**
@@ -288,8 +288,7 @@ export default class ApiGenerator {
     public readonly isConverted = false,
   ) {}
 
-  // Store which schemas are parent schemas.
-  // See `preprocessSchemas` for the definition of a parent schema.
+  // Store parent schemas (see `preprocessSchemas` for the definition of a parent schema)
   parentSchemaRefs: Set<string> = new Set();
 
   aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
@@ -968,11 +967,10 @@ export default class ApiGenerator {
   /**
    * Does three things:
    * 1. Add a `metadata` property.
-   * 2. Record which schemas are parent schemas in `this.parentSchemaRefs`. The parent schema refers
-   *    to the schema that has a `discriminator` property which is neither used in conjunction with
-   *    `oneOf` nor `anyOf`.
-   * 3. Make all mappings of parent schemas explicit in order to generate types of parent schemas on
-   *    the spot.
+   * 2. Record parent schemas in `this.parentSchemaRefs`. A parent schema refers to a schema that
+   *    has a `discriminator` property which is neither used in conjunction with `oneOf` nor
+   *    `anyOf`.
+   * 3. Make all mappings of parent schemas explicit to generate types immediately.
    */
   preprocessSchemas(schemas: {
     [key: string]: OpenAPIV3.ReferenceObject | SchemaObject;
