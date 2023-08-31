@@ -45,6 +45,10 @@ export function getBodyFormatter(body?: OpenAPIV3.RequestBodyObject) {
   }
 }
 
+type SchemaMetadata = {
+  selfRef?: string;
+};
+
 // Augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 // and support custom vendor extensions.
 type SchemaObject = OpenAPIV3.SchemaObject & {
@@ -52,6 +56,7 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
   prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
+  metadata?: SchemaMetadata; // information oazapfts uses while generating code
 };
 
 /**
@@ -283,6 +288,10 @@ export default class ApiGenerator {
     public readonly isConverted = false,
   ) {}
 
+  // Store which schemas are parent schemas.
+  // See `preprocessSchemas` for the definition of a parent schema.
+  parentSchemaRefs: Set<string> = new Set();
+
   aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
 
   enumAliases: ts.Statement[] = [];
@@ -360,12 +369,26 @@ export default class ApiGenerator {
 
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
+   * @param ignoreDiscriminator If true, the discriminator property of the schema referenced by
+   * `obj` will be ignored. This is meant to be used when getting the type of a parent schema in an
+   * `allOf` constructor.
    */
-  getRefAlias(obj: OpenAPIV3.ReferenceObject, onlyMode?: OnlyMode) {
-    const { $ref } = obj;
+  getRefAlias(
+    obj: OpenAPIV3.ReferenceObject,
+    onlyMode?: OnlyMode,
+    ignoreDiscriminator?: boolean,
+  ) {
+    let { $ref } = obj;
+    if (ignoreDiscriminator) $ref = "ignoreDiscriminator:" + $ref;
     if (!this.refs[$ref]) {
-      const schema = this.resolve<SchemaObject>(obj);
-      const name = schema.title || getRefName($ref);
+      let schema = this.resolve<SchemaObject>(obj);
+      if (ignoreDiscriminator) {
+        schema = _.cloneDeep(schema);
+        delete schema.discriminator;
+      }
+      const name =
+        (schema.title || getRefName($ref)) +
+        (ignoreDiscriminator ? "Base" : "");
       const identifier = toIdentifier(name, true);
 
       // When this is a true enum we can reference it directly,
@@ -539,11 +562,45 @@ export default class ApiGenerator {
       // anyOf -> union
       return this.getUnionType(schema.anyOf, undefined, onlyMode);
     }
+    if (schema.discriminator) {
+      // parent schema -> union
+      const mapping = schema.discriminator.mapping || {};
+      return this.getUnionType(
+        Object.values(mapping).map((ref) => ({ $ref: ref })),
+        undefined,
+        onlyMode,
+      );
+    }
     if (schema.allOf) {
       // allOf -> intersection
-      const types = schema.allOf.map((schema) =>
-        this.getTypeFromSchema(schema, undefined, onlyMode),
-      );
+      const types = [];
+      for (const schema_ of schema.allOf) {
+        if (isReference(schema_) && this.parentSchemaRefs.has(schema_.$ref)) {
+          const parentSchema = this.resolve<SchemaObject>(schema_);
+          const discriminator = parentSchema.discriminator!;
+          const matched = Object.entries(discriminator.mapping || {}).find(
+            ([, ref]) => ref === schema.metadata?.selfRef,
+          );
+          if (matched) {
+            const [discriminatorValue] = matched;
+            types.push(
+              factory.createTypeLiteralNode([
+                cg.createPropertySignature({
+                  name: discriminator.propertyName,
+                  type: factory.createLiteralTypeNode(
+                    factory.createStringLiteral(discriminatorValue),
+                  ),
+                }),
+              ]),
+            );
+          }
+          types.push(
+            this.getRefAlias(schema_, onlyMode, /* ignoreDiscriminator */ true),
+          );
+        } else {
+          types.push(this.getTypeFromSchema(schema_, undefined, onlyMode));
+        }
+      }
 
       if (schema.properties || schema.additionalProperties) {
         // properties -> literal type
@@ -908,6 +965,57 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
+  /**
+   * Does three things:
+   * 1. Add a `metadata` property.
+   * 2. Record which schemas are parent schemas in `this.parentSchemaRefs`. The parent schema refers
+   *    to the schema that has a `discriminator` property which is neither used in conjunction with
+   *    `oneOf` nor `anyOf`.
+   * 3. Make all mappings of parent schemas explicit in order to generate types of parent schemas on
+   *    the spot.
+   */
+  preprocessSchemas(schemas: {
+    [key: string]: OpenAPIV3.ReferenceObject | SchemaObject;
+  }) {
+    const prefix = "#/components/schemas/";
+
+    for (const name of Object.keys(schemas)) {
+      const schema = schemas[name];
+      if (isReference(schema)) continue;
+      schema.metadata = { selfRef: prefix + name };
+      if (!schema.discriminator || !!schema.oneOf || !!schema.anyOf) continue;
+      this.parentSchemaRefs.add(prefix + name);
+    }
+
+    const isExplicit = (
+      discriminator: OpenAPIV3.DiscriminatorObject,
+      ref: string,
+    ) => {
+      const refs = Object.values(discriminator.mapping || {});
+      return refs.includes(ref);
+    };
+
+    for (const name of Object.keys(schemas)) {
+      if (this.parentSchemaRefs.has(prefix + name)) continue;
+      const schema = schemas[name];
+      if (isReference(schema)) continue;
+      if (!schema.allOf) continue;
+      for (const schema_ of schema.allOf) {
+        if (!isReference(schema_)) continue;
+        if (!this.parentSchemaRefs.has(schema_.$ref)) continue;
+        const parentSchema = schemas[
+          getRefBasename(schema_.$ref)
+        ] as SchemaObject;
+        const discriminator = parentSchema.discriminator!;
+        if (isExplicit(discriminator, prefix + name)) continue;
+        if (!discriminator.mapping) {
+          discriminator.mapping = {};
+        }
+        discriminator.mapping[name] = prefix + name;
+      }
+    }
+  }
+
   generateApi() {
     this.reset();
 
@@ -942,6 +1050,10 @@ export default class ApiGenerator {
 
     // Keep track of names to detect duplicates
     const names: Record<string, number> = {};
+
+    if (this.spec.components?.schemas) {
+      this.preprocessSchemas(this.spec.components.schemas);
+    }
 
     Object.keys(this.spec.paths).forEach((path) => {
       const item = this.spec.paths[path];

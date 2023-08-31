@@ -57,6 +57,18 @@ describe("generateSource", () => {
     );
   });
 
+  it("should support discriminator used in conjunction with allOf", async () => {
+    const src = await generate("/__fixtures__/allOf.json");
+    expect(src).toContain("export type PetBase = { petType: string; };");
+    expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
+    expect(src).toContain(
+      'export type Dog = { petType: "dog"; } & PetBase & { bark?: string; };',
+    );
+    expect(src).toContain(
+      'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
+    );
+  });
+
   it("should handle application/geo+json", async () => {
     const src = await generate("/__fixtures__/geojson.json");
     expect(src).toContain(
