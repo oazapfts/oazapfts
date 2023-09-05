@@ -89,8 +89,25 @@ export function runtime(defaults: RequestOpts) {
     const res = await doFetch(url, req);
     let data: any = {};
     try {
-      (await res.formData()).forEach((val, key) => {
-        data[key] = val;
+      (await res.formData()).forEach(async (val, key) => {
+        // If the value is JSON encoded it is parsed. Other complex types are left as-is.
+        val =
+          val instanceof Blob && val.type === "application/json"
+            ? JSON.parse(await val.text())
+            : val;
+
+        if (key in data) {
+          // If a key is repeated, we join the corresponding values into an array.
+          if (Array.isArray(data[key])) {
+            // If an array has already been created, push the new value onto it.
+            data[key].push(val);
+          } else {
+            // Otherwise create a new array containing both values.
+            data[key] = [data[key], val];
+          }
+        } else {
+          data[key] = val;
+        }
       });
     } catch (err) {}
 
