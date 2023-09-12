@@ -26,7 +26,7 @@ export type ApiResponse = { status: number; data?: any };
 export type WithHeaders<T extends ApiResponse> = T & { headers: Headers };
 
 type MultipartRequestOpts = RequestOpts & {
-  body?: Record<string, string | Blob | undefined | any>;
+  body?: Record<string, unknown>;
 };
 
 export function runtime(defaults: RequestOpts) {
@@ -114,6 +114,12 @@ export function runtime(defaults: RequestOpts) {
       : "application/x-www-form-urlencoded";
   }
 
+  function ensureMultipartContentType(contentTypeHeader: string) {
+    return contentTypeHeader?.startsWith("multipart/form-data")
+      ? contentTypeHeader
+      : "multipart/form-data";
+  }
+
   return {
     ok,
     fetchText,
@@ -146,17 +152,40 @@ export function runtime(defaults: RequestOpts) {
       };
     },
 
-    multipart({ body, ...req }: MultipartRequestOpts) {
+    multipart({ body, headers, ...req }: MultipartRequestOpts) {
       if (body == null) return req;
       const data = new (defaults.formDataConstructor ||
         req.formDataConstructor ||
         FormData)();
+
+      const append = (name: string, value: unknown) => {
+        if (typeof value === "string" || value instanceof Blob) {
+          data.append(name, value);
+        } else {
+          data.append(
+            name,
+            new Blob([JSON.stringify(value)], { type: "application/json" }),
+          );
+        }
+      };
+
       Object.entries(body).forEach(([name, value]) => {
-        data.append(name, value);
+        if (Array.isArray(value)) {
+          value.forEach((v) => append(name, v));
+        } else {
+          append(name, value);
+        }
       });
+
       return {
         ...req,
         body: data,
+        headers: {
+          ...headers,
+          "Content-Type": ensureMultipartContentType(
+            String(headers?.["Content-Type"]),
+          ),
+        },
       };
     },
   };

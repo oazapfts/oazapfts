@@ -335,22 +335,80 @@ describe("--optimistic", () => {
   });
 });
 
-describe("upload files", () => {
+describe("multipart", () => {
   it("is able to upload multiple files along with complex data", async () => {
-    const res = await api.uploadFiles(5, {
-      files: [emptyPng, emptyPng],
-      imageMeta: [
-        {
-          name: "foto1.png",
+    /* Test was flaky when hitting the mock server, so we're mocking the fetch */
+    const customFetch = jest.fn((url, init) => {
+      return {
+        headers: new Headers({
+          "content-type": "application/json",
+        }),
+        status: 200,
+        ok: true,
+        text() {
+          return JSON.stringify({});
         },
-        {
-          name: "foto2.png",
-          description: "Not much to see here",
-        },
-      ],
+      };
     });
 
+    const res = await api.uploadFiles(
+      5,
+      {
+        files: [
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+        ],
+        imageMeta: [
+          {
+            name: "foto1.png",
+          },
+          {
+            name: "foto2.png",
+            description: "Not much to see here",
+          },
+        ],
+      },
+      {
+        fetch: customFetch as any,
+      },
+    );
+
     expect(res.status).toBe(200);
+
+    expect(customFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/v2/pet/5/uploadImage",
+      expect.objectContaining({
+        body: expect.any(FormData),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+        method: "POST",
+      }),
+    );
+    const formData = customFetch.mock.calls[0][1].body as FormData;
+    expect(formData.getAll("files").length).toBe(10);
+    const meta = formData.getAll("imageMeta") as Blob[];
+    expect(meta.length).toEqual(2);
+    expect(meta[0]).toEqual(expect.any(Blob));
+    expect(meta[0].type).toBe("application/json");
+    expect(JSON.parse(await meta[0].text())).toEqual({
+      name: "foto1.png",
+    });
+    expect(meta[1]).toEqual(expect.any(Blob));
+    expect(meta[1].type).toBe("application/json");
+    expect(JSON.parse(await meta[1].text())).toEqual({
+      name: "foto2.png",
+      description: "Not much to see here",
+    });
   });
 });
 
