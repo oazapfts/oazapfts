@@ -248,11 +248,14 @@ export function deletePet(
 /**
  * uploads an image
  */
-export function uploadFile(
+export function uploadFiles(
   petId: number,
-  body?: {
-    additionalMetadata?: string;
-    file?: Blob;
+  body: {
+    imageMeta: {
+      name: string;
+      description?: string;
+    }[];
+    files: Blob[];
   },
   opts?: Oazapfts.RequestOpts,
 ) {

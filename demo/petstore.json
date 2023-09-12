@@ -366,7 +366,7 @@
       "post": {
         "tags": ["pet"],
         "summary": "uploads an image",
-        "operationId": "uploadFile",
+        "operationId": "uploadFiles",
         "parameters": [
           {
             "name": "petId",
@@ -379,18 +379,34 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
+                "required": ["imageMeta", "files"],
                 "properties": {
-                  "additionalMetadata": {
-                    "type": "string",
-                    "description": "Additional data to pass to server"
+                  "imageMeta": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   },
-                  "file": {
-                    "type": "string",
-                    "description": "file to upload",
-                    "format": "binary"
+                  "files": {
+                    "type": "array",
+                    "description": "files to upload",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
                   }
                 }
               }
