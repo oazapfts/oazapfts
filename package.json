@@ -1,6 +1,6 @@
 {
   "name": "oazapfts",
-  "version": "0.0.0-development",
+  "version": "4.9.0-fix-multipart-uploading.1",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "bin": {
