@@ -8,8 +8,6 @@ api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 mergedReadWriteApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
-(global as any).FormData = require("form-data");
-
 describe("ok", () => {
   it("should get pets by id", async () => {
     const pet = await ok(api.getPetById(1));
