@@ -45,18 +45,14 @@ export function getBodyFormatter(body?: OpenAPIV3.RequestBodyObject) {
   }
 }
 
-type SchemaMetadata = {
-  selfRef?: string;
-};
-
 // Augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 // and support custom vendor extensions.
 type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
+  "x-component-ref-path"?: string;
   prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
-  metadata?: SchemaMetadata; // information added by oazapfts
 };
 
 /**
@@ -288,8 +284,8 @@ export default class ApiGenerator {
     public readonly isConverted = false,
   ) {}
 
-  // Store parent schemas (see `preprocessSchemas` for the definition of a parent schema)
-  parentSchemaRefs: Set<string> = new Set();
+  // Store parent schemas (see `preprocessComponents` for the definition of a parent schema)
+  parentSchemas: Set<string> = new Set();
 
   aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
 
@@ -573,12 +569,15 @@ export default class ApiGenerator {
     if (schema.allOf) {
       // allOf -> intersection
       const types = [];
-      for (const schema_ of schema.allOf) {
-        if (isReference(schema_) && this.parentSchemaRefs.has(schema_.$ref)) {
-          const parentSchema = this.resolve<SchemaObject>(schema_);
+      for (const childSchema of schema.allOf) {
+        if (
+          isReference(childSchema) &&
+          this.parentSchemas.has(childSchema.$ref)
+        ) {
+          const parentSchema = this.resolve<SchemaObject>(childSchema);
           const discriminator = parentSchema.discriminator!;
           const matched = Object.entries(discriminator.mapping || {}).find(
-            ([, ref]) => ref === schema.metadata?.selfRef,
+            ([, ref]) => ref === schema["x-component-ref-path"],
           );
           if (matched) {
             const [discriminatorValue] = matched;
@@ -594,10 +593,14 @@ export default class ApiGenerator {
             );
           }
           types.push(
-            this.getRefAlias(schema_, onlyMode, /* ignoreDiscriminator */ true),
+            this.getRefAlias(
+              childSchema,
+              onlyMode,
+              /* ignoreDiscriminator */ true,
+            ),
           );
         } else {
-          types.push(this.getTypeFromSchema(schema_, undefined, onlyMode));
+          types.push(this.getTypeFromSchema(childSchema, undefined, onlyMode));
         }
       }
 
@@ -966,23 +969,27 @@ export default class ApiGenerator {
 
   /**
    * Does three things:
-   * 1. Add a `metadata` property.
-   * 2. Record parent schemas in `this.parentSchemaRefs`. A parent schema refers to a schema that
+   * 1. Add a `x-component-ref-path` property.
+   * 2. Record parent schemas in `this.parentSchemas`. A parent schema refers to a schema that
    *    has a `discriminator` property which is neither used in conjunction with `oneOf` nor
    *    `anyOf`.
    * 3. Make all mappings of parent schemas explicit to generate types immediately.
    */
-  preprocessSchemas(schemas: {
+  preprocessComponents(schemas: {
     [key: string]: OpenAPIV3.ReferenceObject | SchemaObject;
   }) {
     const prefix = "#/components/schemas/";
 
+    // First scan: Add `x-component-ref-path` property and record parent schemas
     for (const name of Object.keys(schemas)) {
       const schema = schemas[name];
       if (isReference(schema)) continue;
-      schema.metadata = { selfRef: prefix + name };
-      if (!schema.discriminator || !!schema.oneOf || !!schema.anyOf) continue;
-      this.parentSchemaRefs.add(prefix + name);
+
+      schema["x-component-ref-path"] = prefix + name;
+
+      if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
+        this.parentSchemas.add(prefix + name);
+      }
     }
 
     const isExplicit = (
@@ -993,18 +1000,25 @@ export default class ApiGenerator {
       return refs.includes(ref);
     };
 
+    // Second scan: Make all mappings of parent schemas explicit
     for (const name of Object.keys(schemas)) {
-      if (this.parentSchemaRefs.has(prefix + name)) continue;
       const schema = schemas[name];
-      if (isReference(schema)) continue;
-      if (!schema.allOf) continue;
-      for (const schema_ of schema.allOf) {
-        if (!isReference(schema_)) continue;
-        if (!this.parentSchemaRefs.has(schema_.$ref)) continue;
+
+      if (isReference(schema) || !schema.allOf) continue;
+
+      for (const childSchema of schema.allOf) {
+        if (
+          !isReference(childSchema) ||
+          !this.parentSchemas.has(childSchema.$ref)
+        ) {
+          continue;
+        }
+
         const parentSchema = schemas[
-          getRefBasename(schema_.$ref)
+          getRefBasename(childSchema.$ref)
         ] as SchemaObject;
         const discriminator = parentSchema.discriminator!;
+
         if (isExplicit(discriminator, prefix + name)) continue;
         if (!discriminator.mapping) {
           discriminator.mapping = {};
@@ -1050,7 +1064,7 @@ export default class ApiGenerator {
     const names: Record<string, number> = {};
 
     if (this.spec.components?.schemas) {
-      this.preprocessSchemas(this.spec.components.schemas);
+      this.preprocessComponents(this.spec.components.schemas);
     }
 
     Object.keys(this.spec.paths).forEach((path) => {
