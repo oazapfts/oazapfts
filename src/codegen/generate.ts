@@ -373,17 +373,40 @@ export default class ApiGenerator {
     onlyMode?: OnlyMode,
     ignoreDiscriminator?: boolean,
   ) {
-    let { $ref } = obj;
-    if (ignoreDiscriminator) $ref = "ignoreDiscriminator:" + $ref;
+    const available = ($ref: string) => {
+      try {
+        this.resolve({ $ref });
+        return false;
+      } catch (error) {
+        return true;
+      }
+    };
+
+    const $ref = ((
+      obj: OpenAPIV3.ReferenceObject,
+      ignoreDiscriminator: boolean,
+    ) => {
+      let { $ref } = obj;
+      if (!ignoreDiscriminator) return $ref;
+
+      $ref += "Base";
+      if (available($ref)) return $ref;
+
+      let i = 2;
+      while (true) {
+        const $ref_ = $ref + String(i);
+        if (available($ref_)) return $ref_;
+        i += 1;
+      }
+    })(obj, ignoreDiscriminator ?? false);
+
     if (!this.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
       if (ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
         delete schema.discriminator;
       }
-      const name =
-        (schema.title || getRefName($ref)) +
-        (ignoreDiscriminator ? "Base" : "");
+      const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
 
       // When this is a true enum we can reference it directly,
