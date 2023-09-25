@@ -1,5 +1,5 @@
 import * as qs from "./query";
-import { joinUrl, stripUndefined } from "./util";
+import { joinUrl, parseMultipart, stripUndefined } from "./util";
 import { ok } from "../";
 
 export type RequestOpts = {
@@ -87,28 +87,9 @@ export function runtime(defaults: RequestOpts) {
     req: FetchRequestOpts = {},
   ) {
     const res = await doFetch(url, req);
-    let data: any = {};
+    let data;
     try {
-      (await res.formData()).forEach(async (val, key) => {
-        // If the value is JSON encoded it is parsed. Other complex types are left as-is.
-        val =
-          val instanceof Blob && val.type === "application/json"
-            ? JSON.parse(await val.text())
-            : val;
-
-        if (key in data) {
-          // If a key is repeated, we join the corresponding values into an array.
-          if (Array.isArray(data[key])) {
-            // If an array has already been created, push the new value onto it.
-            data[key].push(val);
-          } else {
-            // Otherwise create a new array containing both values.
-            data[key] = [data[key], val];
-          }
-        } else {
-          data[key] = val;
-        }
-      });
+      data = parseMultipart(await res.formData());
     } catch (err) {}
 
     return { status: res.status, headers: res.headers, data } as WithHeaders<T>;
