@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@jest/types": "^29.6.3",
-    "@ts-morph/bootstrap": "^0.20.0",
+    "@ts-morph/bootstrap": "^0.21.0",
     "@types/jest": "^29.5.4",
     "@types/lodash": "^4.14.197",
     "@types/minimist": "^1.2.2",
