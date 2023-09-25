@@ -64,28 +64,39 @@ export function joinUrl(...parts: Array<string | undefined>) {
  * Parses a FormData object into a Record.
  */
 export async function parseMultipart(formData: FormData) {
-  let data: Record<string, any> = {};
+  let vals: [string, any][] = [];
 
-  formData.forEach(async (val, key) => {
-    // If the value is JSON encoded it is parsed.
-    val =
-      val instanceof Blob && val.type === "application/json"
-        ? JSON.parse(await val.text())
-        : val;
-
-    if (key in data) {
-      // If a key is repeated, we join the corresponding values into an array.
-      if (Array.isArray(data[key])) {
-        // If value already is array, push the new value onto it.
-        data[key].push(val);
-      } else {
-        // Otherwise create a new array with both values.
-        data[key] = [data[key], val];
-      }
-    } else {
-      data[key] = val;
-    }
+  formData.forEach((val, key) => {
+    vals.push([key, val]);
   });
 
-  return data;
+  // Parse JSON parts
+  vals = await Promise.all(
+    vals.map(async ([key, val]) => [
+      key,
+      val instanceof Blob && val.type === "application/json"
+        ? JSON.parse(await val.text())
+        : val,
+    ]),
+  );
+
+  // Join repeated keys
+  return vals.reduce(
+    (data, [key, val]) => {
+      if (key in data) {
+        if (Array.isArray(data[key])) {
+          // If property already is array, push new value.
+          data[key].push(val);
+        } else {
+          // Otherwise create a new array with prev and new value.
+          data[key] = [data[key], val];
+        }
+      } else {
+        data[key] = val;
+      }
+
+      return data;
+    },
+    {} as Record<string, any>,
+  );
 }
