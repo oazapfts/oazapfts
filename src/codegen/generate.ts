@@ -284,8 +284,8 @@ export default class ApiGenerator {
     public readonly isConverted = false,
   ) {}
 
-  // Store parent schemas (see `preprocessComponents` for the definition of a parent schema)
-  parentSchemas: Set<string> = new Set();
+  // see `preprocessComponents` for the definition of a discriminating schema
+  discriminatingSchemas: Set<string> = new Set();
 
   aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
 
@@ -343,6 +343,26 @@ export default class ApiGenerator {
     return false;
   }
 
+  findAvailableRef(ref: string) {
+    const available = (ref: string) => {
+      try {
+        this.resolve({ $ref: ref });
+        return false;
+      } catch (error) {
+        return true;
+      }
+    };
+
+    if (available(ref)) return ref;
+
+    let i = 2;
+    while (true) {
+      const key = ref + String(i);
+      if (available(key)) return key;
+      i += 1;
+    }
+  }
+
   getUniqueAlias(name: string) {
     let used = this.typeAliases[name] || 0;
     if (used) {
@@ -364,41 +384,18 @@ export default class ApiGenerator {
 
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
-   * @param ignoreDiscriminator If true, the discriminator property of the schema referenced by
-   * `obj` will be ignored. This is meant to be used when getting the type of a parent schema in an
-   * `allOf` constructor.
    */
   getRefAlias(
     obj: OpenAPIV3.ReferenceObject,
     onlyMode?: OnlyMode,
+    // If true, the discriminator property of the schema referenced by `obj` will be ignored.
+    // This is meant to be used when getting the type of a discriminating schema in an `allOf`
+    // constructor.
     ignoreDiscriminator?: boolean,
   ) {
-    const available = ($ref: string) => {
-      try {
-        this.resolve({ $ref });
-        return false;
-      } catch (error) {
-        return true;
-      }
-    };
-
-    const $ref = ((
-      obj: OpenAPIV3.ReferenceObject,
-      ignoreDiscriminator: boolean,
-    ) => {
-      let { $ref } = obj;
-      if (!ignoreDiscriminator) return $ref;
-
-      $ref += "Base";
-      if (available($ref)) return $ref;
-
-      let i = 2;
-      while (true) {
-        const $ref_ = $ref + String(i);
-        if (available($ref_)) return $ref_;
-        i += 1;
-      }
-    })(obj, ignoreDiscriminator ?? false);
+    const $ref = ignoreDiscriminator
+      ? this.findAvailableRef(obj.$ref + "Base")
+      : obj.$ref;
 
     if (!this.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
@@ -581,7 +578,7 @@ export default class ApiGenerator {
       return this.getUnionType(schema.anyOf, undefined, onlyMode);
     }
     if (schema.discriminator) {
-      // parent schema -> union
+      // discriminating schema -> union
       const mapping = schema.discriminator.mapping || {};
       return this.getUnionType(
         Object.values(mapping).map((ref) => ({ $ref: ref })),
@@ -595,10 +592,10 @@ export default class ApiGenerator {
       for (const childSchema of schema.allOf) {
         if (
           isReference(childSchema) &&
-          this.parentSchemas.has(childSchema.$ref)
+          this.discriminatingSchemas.has(childSchema.$ref)
         ) {
-          const parentSchema = this.resolve<SchemaObject>(childSchema);
-          const discriminator = parentSchema.discriminator!;
+          const discriminatingSchema = this.resolve<SchemaObject>(childSchema);
+          const discriminator = discriminatingSchema.discriminator!;
           const matched = Object.entries(discriminator.mapping || {}).find(
             ([, ref]) => ref === schema["x-component-ref-path"],
           );
@@ -993,17 +990,17 @@ export default class ApiGenerator {
   /**
    * Does three things:
    * 1. Add a `x-component-ref-path` property.
-   * 2. Record parent schemas in `this.parentSchemas`. A parent schema refers to a schema that
-   *    has a `discriminator` property which is neither used in conjunction with `oneOf` nor
-   *    `anyOf`.
-   * 3. Make all mappings of parent schemas explicit to generate types immediately.
+   * 2. Record discriminating schemas in `this.discriminatingSchemas`. A discriminating schema
+   *    refers to a schema that has a `discriminator` property which is neither used in conjunction
+   *    with `oneOf` nor `anyOf`.
+   * 3. Make all mappings of discriminating schemas explicit to generate types immediately.
    */
   preprocessComponents(schemas: {
     [key: string]: OpenAPIV3.ReferenceObject | SchemaObject;
   }) {
     const prefix = "#/components/schemas/";
 
-    // First scan: Add `x-component-ref-path` property and record parent schemas
+    // First scan: Add `x-component-ref-path` property and record discriminating schemas
     for (const name of Object.keys(schemas)) {
       const schema = schemas[name];
       if (isReference(schema)) continue;
@@ -1011,7 +1008,7 @@ export default class ApiGenerator {
       schema["x-component-ref-path"] = prefix + name;
 
       if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
-        this.parentSchemas.add(prefix + name);
+        this.discriminatingSchemas.add(prefix + name);
       }
     }
 
@@ -1023,7 +1020,7 @@ export default class ApiGenerator {
       return refs.includes(ref);
     };
 
-    // Second scan: Make all mappings of parent schemas explicit
+    // Second scan: Make all mappings of discriminating schemas explicit
     for (const name of Object.keys(schemas)) {
       const schema = schemas[name];
 
@@ -1032,15 +1029,15 @@ export default class ApiGenerator {
       for (const childSchema of schema.allOf) {
         if (
           !isReference(childSchema) ||
-          !this.parentSchemas.has(childSchema.$ref)
+          !this.discriminatingSchemas.has(childSchema.$ref)
         ) {
           continue;
         }
 
-        const parentSchema = schemas[
+        const discriminatingSchema = schemas[
           getRefBasename(childSchema.$ref)
         ] as SchemaObject;
-        const discriminator = parentSchema.discriminator!;
+        const discriminator = discriminatingSchema.discriminator!;
 
         if (isExplicit(discriminator, prefix + name)) continue;
         if (!discriminator.mapping) {
