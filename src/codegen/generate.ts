@@ -51,6 +51,7 @@ type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
+  "x-component-ref-path"?: string;
   prefixItems?: (OpenAPIV3.ReferenceObject | SchemaObject)[];
 };
 
@@ -137,7 +138,7 @@ function getRefBasename(ref: string) {
 
 /**
  * Returns a name for the given ref that can be used as basis for a type
- * alias. This usually is the baseName, unless the ref ends with a number,
+ * alias. This usually is the baseName, unless the ref starts with a number,
  * in which case the whole ref is returned, with slashes turned into
  * underscores.
  */
@@ -283,6 +284,9 @@ export default class ApiGenerator {
     public readonly isConverted = false,
   ) {}
 
+  // see `preprocessComponents` for the definition of a discriminating schema
+  discriminatingSchemas: Set<string> = new Set();
+
   aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
 
   enumAliases: ts.Statement[] = [];
@@ -339,6 +343,26 @@ export default class ApiGenerator {
     return false;
   }
 
+  findAvailableRef(ref: string) {
+    const available = (ref: string) => {
+      try {
+        this.resolve({ $ref: ref });
+        return false;
+      } catch (error) {
+        return true;
+      }
+    };
+
+    if (available(ref)) return ref;
+
+    let i = 2;
+    while (true) {
+      const key = ref + String(i);
+      if (available(key)) return key;
+      i += 1;
+    }
+  }
+
   getUniqueAlias(name: string) {
     let used = this.typeAliases[name] || 0;
     if (used) {
@@ -361,10 +385,24 @@ export default class ApiGenerator {
   /**
    * Create a type alias for the schema referenced by the given ReferenceObject
    */
-  getRefAlias(obj: OpenAPIV3.ReferenceObject, onlyMode?: OnlyMode) {
-    const { $ref } = obj;
+  getRefAlias(
+    obj: OpenAPIV3.ReferenceObject,
+    onlyMode?: OnlyMode,
+    // If true, the discriminator property of the schema referenced by `obj` will be ignored.
+    // This is meant to be used when getting the type of a discriminating schema in an `allOf`
+    // constructor.
+    ignoreDiscriminator?: boolean,
+  ) {
+    const $ref = ignoreDiscriminator
+      ? this.findAvailableRef(obj.$ref + "Base")
+      : obj.$ref;
+
     if (!this.refs[$ref]) {
-      const schema = this.resolve<SchemaObject>(obj);
+      let schema = this.resolve<SchemaObject>(obj);
+      if (ignoreDiscriminator) {
+        schema = _.cloneDeep(schema);
+        delete schema.discriminator;
+      }
       const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
 
@@ -539,11 +577,52 @@ export default class ApiGenerator {
       // anyOf -> union
       return this.getUnionType(schema.anyOf, undefined, onlyMode);
     }
+    if (schema.discriminator) {
+      // discriminating schema -> union
+      const mapping = schema.discriminator.mapping || {};
+      return this.getUnionType(
+        Object.values(mapping).map((ref) => ({ $ref: ref })),
+        undefined,
+        onlyMode,
+      );
+    }
     if (schema.allOf) {
       // allOf -> intersection
-      const types = schema.allOf.map((schema) =>
-        this.getTypeFromSchema(schema, undefined, onlyMode),
-      );
+      const types = [];
+      for (const childSchema of schema.allOf) {
+        if (
+          isReference(childSchema) &&
+          this.discriminatingSchemas.has(childSchema.$ref)
+        ) {
+          const discriminatingSchema = this.resolve<SchemaObject>(childSchema);
+          const discriminator = discriminatingSchema.discriminator!;
+          const matched = Object.entries(discriminator.mapping || {}).find(
+            ([, ref]) => ref === schema["x-component-ref-path"],
+          );
+          if (matched) {
+            const [discriminatorValue] = matched;
+            types.push(
+              factory.createTypeLiteralNode([
+                cg.createPropertySignature({
+                  name: discriminator.propertyName,
+                  type: factory.createLiteralTypeNode(
+                    factory.createStringLiteral(discriminatorValue),
+                  ),
+                }),
+              ]),
+            );
+          }
+          types.push(
+            this.getRefAlias(
+              childSchema,
+              onlyMode,
+              /* ignoreDiscriminator */ true,
+            ),
+          );
+        } else {
+          types.push(this.getTypeFromSchema(childSchema, undefined, onlyMode));
+        }
+      }
 
       if (schema.properties || schema.additionalProperties) {
         // properties -> literal type
@@ -908,6 +987,67 @@ export default class ApiGenerator {
     return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
+  /**
+   * Does three things:
+   * 1. Add a `x-component-ref-path` property.
+   * 2. Record discriminating schemas in `this.discriminatingSchemas`. A discriminating schema
+   *    refers to a schema that has a `discriminator` property which is neither used in conjunction
+   *    with `oneOf` nor `anyOf`.
+   * 3. Make all mappings of discriminating schemas explicit to generate types immediately.
+   */
+  preprocessComponents(schemas: {
+    [key: string]: OpenAPIV3.ReferenceObject | SchemaObject;
+  }) {
+    const prefix = "#/components/schemas/";
+
+    // First scan: Add `x-component-ref-path` property and record discriminating schemas
+    for (const name of Object.keys(schemas)) {
+      const schema = schemas[name];
+      if (isReference(schema)) continue;
+
+      schema["x-component-ref-path"] = prefix + name;
+
+      if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
+        this.discriminatingSchemas.add(prefix + name);
+      }
+    }
+
+    const isExplicit = (
+      discriminator: OpenAPIV3.DiscriminatorObject,
+      ref: string,
+    ) => {
+      const refs = Object.values(discriminator.mapping || {});
+      return refs.includes(ref);
+    };
+
+    // Second scan: Make all mappings of discriminating schemas explicit
+    for (const name of Object.keys(schemas)) {
+      const schema = schemas[name];
+
+      if (isReference(schema) || !schema.allOf) continue;
+
+      for (const childSchema of schema.allOf) {
+        if (
+          !isReference(childSchema) ||
+          !this.discriminatingSchemas.has(childSchema.$ref)
+        ) {
+          continue;
+        }
+
+        const discriminatingSchema = schemas[
+          getRefBasename(childSchema.$ref)
+        ] as SchemaObject;
+        const discriminator = discriminatingSchema.discriminator!;
+
+        if (isExplicit(discriminator, prefix + name)) continue;
+        if (!discriminator.mapping) {
+          discriminator.mapping = {};
+        }
+        discriminator.mapping[name] = prefix + name;
+      }
+    }
+  }
+
   generateApi() {
     this.reset();
 
@@ -942,6 +1082,10 @@ export default class ApiGenerator {
 
     // Keep track of names to detect duplicates
     const names: Record<string, number> = {};
+
+    if (this.spec.components?.schemas) {
+      this.preprocessComponents(this.spec.components.schemas);
+    }
 
     Object.keys(this.spec.paths).forEach((path) => {
       const item = this.spec.paths[path];
