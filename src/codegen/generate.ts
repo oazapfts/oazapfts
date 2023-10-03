@@ -776,10 +776,35 @@ export default class ApiGenerator {
       return false;
     }
 
+    return this.checkSchemaOnlyModeHelper(
+      schema,
+      onlyMode,
+      resolveRefs,
+      new Set<string>(),
+    );
+  }
+
+  checkSchemaOnlyModeHelper(
+    schema: SchemaObject | OpenAPIV3.ReferenceObject,
+    onlyMode: OnlyMode,
+    resolveRefs: boolean,
+    history: Set<string>,
+  ): boolean {
     if (isReference(schema)) {
-      return resolveRefs
-        ? this.checkSchemaOnlyMode(this.resolve(schema), onlyMode, resolveRefs)
-        : false;
+      if (!resolveRefs) return false;
+
+      // history is used to prevent infinite recursion
+      if (history.has(schema.$ref)) return false;
+
+      history.add(schema.$ref);
+      const ret = this.checkSchemaOnlyModeHelper(
+        this.resolve(schema),
+        onlyMode,
+        resolveRefs,
+        history,
+      );
+      history.delete(schema.$ref);
+      return ret;
     }
 
     if (
@@ -791,7 +816,12 @@ export default class ApiGenerator {
 
     if (schema.type === "array") {
       return schema.items
-        ? this.checkSchemaOnlyMode(schema.items, onlyMode, resolveRefs)
+        ? this.checkSchemaOnlyModeHelper(
+            schema.items,
+            onlyMode,
+            resolveRefs,
+            history,
+          )
         : false;
     }
 
@@ -805,7 +835,12 @@ export default class ApiGenerator {
     return subSchemas
       .filter(Boolean)
       .some((property) =>
-        this.checkSchemaOnlyMode(property, onlyMode, resolveRefs),
+        this.checkSchemaOnlyModeHelper(
+          property,
+          onlyMode,
+          resolveRefs,
+          history,
+        ),
       );
   }
 
