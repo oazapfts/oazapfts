@@ -8,8 +8,6 @@ api.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 optimisticApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 mergedReadWriteApi.defaults.baseUrl = `${process.env.SERVER_URL}/v2`;
 
-(global as any).FormData = require("form-data");
-
 describe("ok", () => {
   it("should get pets by id", async () => {
     const pet = await ok(api.getPetById(1));
@@ -337,113 +335,85 @@ describe("--optimistic", () => {
   });
 });
 
-describe("Blob", () => {
-  it("should be uploaded", async () => {
-    const emptyPng = new Blob(
-      [
-        Uint8Array.of(
-          0x89,
-          0x50,
-          0x4e,
-          0x47,
-          0xd,
-          0xa,
-          0x1a,
-          0xa,
-          0x0,
-          0x0,
-          0x0,
-          0xd,
-          0x49,
-          0x48,
-          0x44,
-          0x52,
-          0x0,
-          0x0,
-          0x0,
-          0x1,
-          0x0,
-          0x0,
-          0x0,
-          0x1,
-          0x1,
-          0x3,
-          0x0,
-          0x0,
-          0x0,
-          0x25,
-          0xdb,
-          0x56,
-          0xca,
-          0x0,
-          0x0,
-          0x0,
-          0x3,
-          0x50,
-          0x4c,
-          0x54,
-          0x45,
-          0x0,
-          0x0,
-          0x0,
-          0xa7,
-          0x7a,
-          0x3d,
-          0xda,
-          0x0,
-          0x0,
-          0x0,
-          0x1,
-          0x74,
-          0x52,
-          0x4e,
-          0x53,
-          0x0,
-          0x40,
-          0xe6,
-          0xd8,
-          0x66,
-          0x0,
-          0x0,
-          0x0,
-          0xa,
-          0x49,
-          0x44,
-          0x41,
-          0x54,
-          0x8,
-          0xd7,
-          0x63,
-          0x60,
-          0x0,
-          0x0,
-          0x0,
-          0x2,
-          0x0,
-          0x1,
-          0xe2,
-          0x21,
-          0xbc,
-          0x33,
-          0x0,
-          0x0,
-          0x0,
-          0x0,
-          0x49,
-          0x45,
-          0x4e,
-          0x44,
-          0xae,
-          0x42,
-          0x60,
-          0x82,
-        ),
-      ],
+describe("multipart", () => {
+  it("is able to upload multiple files along with complex data", async () => {
+    /* Test was flaky when hitting the mock server, so we're mocking the fetch */
+    const customFetch = jest.fn((url, init) => {
+      return {
+        headers: new Headers({
+          "content-type": "application/json",
+        }),
+        status: 200,
+        ok: true,
+        text() {
+          return JSON.stringify({});
+        },
+      };
+    });
+
+    const res = await api.uploadFiles(
+      5,
       {
-        type: "image/png",
+        files: [
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+          emptyPng,
+        ],
+        imageMeta: [
+          {
+            name: "foto1.png",
+          },
+          {
+            name: "foto2.png",
+            description: "Not much to see here",
+          },
+        ],
+      },
+      {
+        fetch: customFetch as any,
       },
     );
 
+    expect(res.status).toBe(200);
+
+    expect(customFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/v2/pet/5/uploadImage",
+      expect.objectContaining({
+        body: expect.any(FormData),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+        method: "POST",
+      }),
+    );
+    const formData = customFetch.mock.calls[0][1].body as FormData;
+    expect(formData.getAll("files").length).toBe(10);
+    const meta = formData.getAll("imageMeta") as Blob[];
+    expect(meta.length).toEqual(2);
+    expect(meta[0]).toEqual(expect.any(Blob));
+    expect(meta[0].type).toBe("application/json");
+    expect(JSON.parse(await meta[0].text())).toEqual({
+      name: "foto1.png",
+    });
+    expect(meta[1]).toEqual(expect.any(Blob));
+    expect(meta[1].type).toBe("application/json");
+    expect(JSON.parse(await meta[1].text())).toEqual({
+      name: "foto2.png",
+      description: "Not much to see here",
+    });
+  });
+});
+
+describe("Blob", () => {
+  it("should be uploaded", async () => {
     const up = await api.uploadPng(emptyPng);
 
     expect(up.data).toMatchObject({
@@ -472,3 +442,108 @@ describe("Blob", () => {
     });
   });
 });
+
+const emptyPng = new Blob(
+  [
+    Uint8Array.of(
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0xd,
+      0xa,
+      0x1a,
+      0xa,
+      0x0,
+      0x0,
+      0x0,
+      0xd,
+      0x49,
+      0x48,
+      0x44,
+      0x52,
+      0x0,
+      0x0,
+      0x0,
+      0x1,
+      0x0,
+      0x0,
+      0x0,
+      0x1,
+      0x1,
+      0x3,
+      0x0,
+      0x0,
+      0x0,
+      0x25,
+      0xdb,
+      0x56,
+      0xca,
+      0x0,
+      0x0,
+      0x0,
+      0x3,
+      0x50,
+      0x4c,
+      0x54,
+      0x45,
+      0x0,
+      0x0,
+      0x0,
+      0xa7,
+      0x7a,
+      0x3d,
+      0xda,
+      0x0,
+      0x0,
+      0x0,
+      0x1,
+      0x74,
+      0x52,
+      0x4e,
+      0x53,
+      0x0,
+      0x40,
+      0xe6,
+      0xd8,
+      0x66,
+      0x0,
+      0x0,
+      0x0,
+      0xa,
+      0x49,
+      0x44,
+      0x41,
+      0x54,
+      0x8,
+      0xd7,
+      0x63,
+      0x60,
+      0x0,
+      0x0,
+      0x0,
+      0x2,
+      0x0,
+      0x1,
+      0xe2,
+      0x21,
+      0xbc,
+      0x33,
+      0x0,
+      0x0,
+      0x0,
+      0x0,
+      0x49,
+      0x45,
+      0x4e,
+      0x44,
+      0xae,
+      0x42,
+      0x60,
+      0x82,
+    ),
+  ],
+  {
+    type: "image/png",
+  },
+);
