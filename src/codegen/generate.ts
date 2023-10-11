@@ -776,72 +776,46 @@ export default class ApiGenerator {
       return false;
     }
 
-    return this.checkSchemaOnlyModeHelper(
-      schema,
-      onlyMode,
-      resolveRefs,
-      new Set<string>(),
-    );
-  }
+    const check = (
+      schema: SchemaObject | OpenAPIV3.ReferenceObject,
+      history: Set<string>,
+    ): boolean => {
+      if (isReference(schema)) {
+        if (!resolveRefs) return false;
 
-  checkSchemaOnlyModeHelper(
-    schema: SchemaObject | OpenAPIV3.ReferenceObject,
-    onlyMode: OnlyMode,
-    resolveRefs: boolean,
-    history: Set<string>,
-  ): boolean {
-    if (isReference(schema)) {
-      if (!resolveRefs) return false;
+        // history is used to prevent infinite recursion
+        if (history.has(schema.$ref)) return false;
 
-      // history is used to prevent infinite recursion
-      if (history.has(schema.$ref)) return false;
+        history.add(schema.$ref);
+        const ret = check(this.resolve(schema), history);
+        history.delete(schema.$ref);
+        return ret;
+      }
 
-      history.add(schema.$ref);
-      const ret = this.checkSchemaOnlyModeHelper(
-        this.resolve(schema),
-        onlyMode,
-        resolveRefs,
-        history,
-      );
-      history.delete(schema.$ref);
-      return ret;
-    }
+      if (
+        (onlyMode === "readOnly" && schema.readOnly) ||
+        (onlyMode === "writeOnly" && schema.writeOnly)
+      ) {
+        return true;
+      }
 
-    if (
-      (onlyMode === "readOnly" && schema.readOnly) ||
-      (onlyMode === "writeOnly" && schema.writeOnly)
-    ) {
-      return true;
-    }
+      if (schema.type === "array") {
+        return schema.items ? check(schema.items, history) : false;
+      }
 
-    if (schema.type === "array") {
-      return schema.items
-        ? this.checkSchemaOnlyModeHelper(
-            schema.items,
-            onlyMode,
-            resolveRefs,
-            history,
-          )
-        : false;
-    }
+      const subSchemas = [
+        ...Object.values(schema.properties || {}),
+        ...(schema.allOf || []),
+        ...(schema.anyOf || []),
+        ...(schema.oneOf || []),
+      ];
 
-    const subSchemas = [
-      ...Object.values(schema.properties || {}),
-      ...(schema.allOf || []),
-      ...(schema.anyOf || []),
-      ...(schema.oneOf || []),
-    ];
+      return subSchemas
+        .filter(Boolean)
+        .some((property) => check(property, history));
+    };
 
-    return subSchemas
-      .filter(Boolean)
-      .some((property) =>
-        this.checkSchemaOnlyModeHelper(
-          property,
-          onlyMode,
-          resolveRefs,
-          history,
-        ),
-      );
+    return check(schema, new Set<string>());
   }
 
   /**
