@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: OneOfMerge
+  version: 0.1.0
+paths:
+  /mix:
+    get:
+      description: stats
+      parameters:
+        - name: param1
+          in: query
+          schema:
+            oneOf:
+            - required:
+              - c
+              properties:
+                a:
+                  type: string
+            - required:
+              - b
+              properties:
+                b:
+                  type: string
+            required:
+            - d
+            properties:
+              c:
+                type: string
+              d:
+                enum:
+                - enum1
+                - enum2
+                type: string
+      responses:
+        "200":
+          description: ok

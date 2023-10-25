@@ -5,6 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
+import merge from "deepmerge";
 
 export const verbs = [
   "GET",
@@ -570,8 +571,14 @@ export default class ApiGenerator {
     }
 
     if (schema.oneOf) {
+      const clone = { ...schema };
+      delete clone.oneOf;
       // oneOf -> union
-      return this.getUnionType(schema.oneOf, schema.discriminator, onlyMode);
+      return this.getUnionType(
+        schema.oneOf.map((variant) => merge(variant as any, clone as any)),
+        schema.discriminator,
+        onlyMode,
+      );
     }
     if (schema.anyOf) {
       // anyOf -> union
