@@ -69,6 +69,13 @@ describe("generateSource", () => {
     );
   });
 
+  it("should support recursive schemas", async () => {
+    const src = await generate("/__fixtures__/recursive.yaml");
+    expect(src).toContain(
+      "export type FolderDto = { name?: string; files?: string[]; folders?: FolderDto[]; };",
+    );
+  });
+
   it("should handle application/geo+json", async () => {
     const src = await generate("/__fixtures__/geojson.json");
     expect(src).toContain(

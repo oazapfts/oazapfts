@@ -776,37 +776,46 @@ export default class ApiGenerator {
       return false;
     }
 
-    if (isReference(schema)) {
-      return resolveRefs
-        ? this.checkSchemaOnlyMode(this.resolve(schema), onlyMode, resolveRefs)
-        : false;
-    }
+    const check = (
+      schema: SchemaObject | OpenAPIV3.ReferenceObject,
+      history: Set<string>,
+    ): boolean => {
+      if (isReference(schema)) {
+        if (!resolveRefs) return false;
 
-    if (
-      (onlyMode === "readOnly" && schema.readOnly) ||
-      (onlyMode === "writeOnly" && schema.writeOnly)
-    ) {
-      return true;
-    }
+        // history is used to prevent infinite recursion
+        if (history.has(schema.$ref)) return false;
 
-    if (schema.type === "array") {
-      return schema.items
-        ? this.checkSchemaOnlyMode(schema.items, onlyMode, resolveRefs)
-        : false;
-    }
+        history.add(schema.$ref);
+        const ret = check(this.resolve(schema), history);
+        history.delete(schema.$ref);
+        return ret;
+      }
 
-    const subSchemas = [
-      ...Object.values(schema.properties || {}),
-      ...(schema.allOf || []),
-      ...(schema.anyOf || []),
-      ...(schema.oneOf || []),
-    ];
+      if (
+        (onlyMode === "readOnly" && schema.readOnly) ||
+        (onlyMode === "writeOnly" && schema.writeOnly)
+      ) {
+        return true;
+      }
 
-    return subSchemas
-      .filter(Boolean)
-      .some((property) =>
-        this.checkSchemaOnlyMode(property, onlyMode, resolveRefs),
-      );
+      if (schema.type === "array") {
+        return schema.items ? check(schema.items, history) : false;
+      }
+
+      const subSchemas = [
+        ...Object.values(schema.properties || {}),
+        ...(schema.allOf || []),
+        ...(schema.anyOf || []),
+        ...(schema.oneOf || []),
+      ];
+
+      return subSchemas
+        .filter(Boolean)
+        .some((property) => check(property, history));
+    };
+
+    return check(schema, new Set<string>());
   }
 
   /**
