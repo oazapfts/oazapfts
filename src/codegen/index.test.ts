@@ -115,6 +115,13 @@ describe("generateSource", () => {
     expect(src).toContain("PathsFilterGetParameters0SchemaOneOf0");
   });
 
+  it("should merge properties within oneOf schema variations", async () => {
+    const src = await generate("/__fixtures__/oneOfMerge.yaml");
+    expect(src).toContain(
+      '{ param1?: { a?: string; c: string; d: "enum1" | "enum2"; } | { b: string; c?: string; d: "enum1" | "enum2"; }'
+    );
+  });
+
   it("should support parameters specified with content", async () => {
     const src = await generate("/__fixtures__/contentParams.json");
     expect(src).toContain(
