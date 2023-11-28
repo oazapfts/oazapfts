@@ -282,7 +282,11 @@ export default class ApiGenerator {
     public readonly opts: Opts = {},
     /** Indicates if the document was converted from an older version of the OpenAPI specification. */
     public readonly isConverted = false,
-  ) {}
+  ) {
+    if (this.spec.components?.schemas) {
+      this.preprocessComponents(this.spec.components.schemas);
+    }
+  }
 
   // see `preprocessComponents` for the definition of a discriminating schema
   discriminatingSchemas: Set<string> = new Set();
@@ -1091,10 +1095,6 @@ export default class ApiGenerator {
 
     // Keep track of names to detect duplicates
     const names: Record<string, number> = {};
-
-    if (this.spec.components?.schemas) {
-      this.preprocessComponents(this.spec.components.schemas);
-    }
 
     Object.keys(this.spec.paths).forEach((path) => {
       const item = this.spec.paths[path];
