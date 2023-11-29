@@ -6,11 +6,11 @@ paths:
   /api/some-folder:
     get:
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FolderDto'
+                $ref: "#/components/schemas/FolderDto"
 components:
   schemas:
     FolderDto:
@@ -25,4 +25,4 @@ components:
         folders:
           type: array
           items:
-            $ref: '#/components/schemas/FolderDto'
+            $ref: "#/components/schemas/FolderDto"

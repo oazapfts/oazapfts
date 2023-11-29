@@ -11,25 +11,25 @@ paths:
           in: query
           schema:
             oneOf:
-            - required:
-              - c
-              properties:
-                a:
-                  type: string
-            - required:
-              - b
-              properties:
-                b:
-                  type: string
+              - required:
+                  - c
+                properties:
+                  a:
+                    type: string
+              - required:
+                  - b
+                properties:
+                  b:
+                    type: string
             required:
-            - d
+              - d
             properties:
               c:
                 type: string
               d:
                 enum:
-                - enum1
-                - enum2
+                  - enum1
+                  - enum2
                 type: string
       responses:
         "200":
