@@ -118,7 +118,7 @@ describe("generateSource", () => {
   it("should merge properties within oneOf schema variations", async () => {
     const src = await generate("/__fixtures__/oneOfMerge.yaml");
     expect(src).toContain(
-      '{ param1?: { a?: string; c: string; d: "enum1" | "enum2"; } | { b: string; c?: string; d: "enum1" | "enum2"; }'
+      '{ param1?: { c: string; d: "enum1" | "enum2"; a?: string; } | { c?: string; d: "enum1" | "enum2"; b: string; }',
     );
   });
 
