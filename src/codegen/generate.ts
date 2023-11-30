@@ -19,6 +19,7 @@ export const verbs = [
 
 type ContentType = "json" | "form" | "multipart";
 type OnlyMode = "readOnly" | "writeOnly";
+type OnlyModes = Record<OnlyMode, boolean>;
 
 const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
@@ -310,6 +311,10 @@ export default class ApiGenerator {
     }
   > = {};
 
+  // Maps a referenced schema to its readOnly/writeOnly status
+  // This field should be used exclusively within the `checkSchemaOnlyMode` method
+  refsOnlyMode: Map<string, OnlyModes> = new Map();
+
   // Keep track of already used type aliases
   typeAliases: Record<string, number> = {};
 
@@ -394,7 +399,7 @@ export default class ApiGenerator {
     onlyMode?: OnlyMode,
     // If true, the discriminator property of the schema referenced by `obj` will be ignored.
     // This is meant to be used when getting the type of a discriminating schema in an `allOf`
-    // constructor.
+    // construct.
     ignoreDiscriminator?: boolean,
   ) {
     const $ref = ignoreDiscriminator
@@ -433,7 +438,9 @@ export default class ApiGenerator {
         }),
       );
 
-      if (this.checkSchemaOnlyMode(schema, "readOnly")) {
+      const { readOnly, writeOnly } = this.checkSchemaOnlyMode(schema);
+
+      if (readOnly) {
         const readOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "readOnly"),
         );
@@ -452,7 +459,7 @@ export default class ApiGenerator {
         );
       }
 
-      if (this.checkSchemaOnlyMode(schema, "writeOnly")) {
+      if (writeOnly) {
         const writeOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "writeOnly"),
         );
@@ -784,52 +791,68 @@ export default class ApiGenerator {
     return type;
   }
 
+  /**
+   * Checks if readOnly/writeOnly properties are present in the given schema.
+   * Returns a tuple of booleans; the first one is about readOnly, the second
+   * one is about writeOnly.
+   */
   checkSchemaOnlyMode(
     schema: SchemaObject | OpenAPIV3.ReferenceObject,
-    onlyMode: OnlyMode,
     resolveRefs = true,
-  ): boolean {
+  ): OnlyModes {
     if (this.opts.mergeReadWriteOnly) {
-      return false;
+      return { readOnly: false, writeOnly: false };
     }
 
     const check = (
       schema: SchemaObject | OpenAPIV3.ReferenceObject,
       history: Set<string>,
-    ): boolean => {
+    ): OnlyModes => {
       if (isReference(schema)) {
-        if (!resolveRefs) return false;
+        if (!resolveRefs) return { readOnly: false, writeOnly: false };
 
         // history is used to prevent infinite recursion
-        if (history.has(schema.$ref)) return false;
+        if (history.has(schema.$ref))
+          return { readOnly: false, writeOnly: false };
+
+        // check if the result is cached in `this.refsOnlyMode`
+        const cached = this.refsOnlyMode.get(schema.$ref);
+        if (cached) return cached;
 
         history.add(schema.$ref);
         const ret = check(this.resolve(schema), history);
         history.delete(schema.$ref);
+
+        // cache the result
+        this.refsOnlyMode.set(schema.$ref, ret);
+
         return ret;
       }
 
-      if (
-        (onlyMode === "readOnly" && schema.readOnly) ||
-        (onlyMode === "writeOnly" && schema.writeOnly)
-      ) {
-        return true;
+      let readOnly = schema.readOnly ?? false;
+      let writeOnly = schema.writeOnly ?? false;
+
+      const subSchemas: (OpenAPIV3.ReferenceObject | SchemaObject)[] = [];
+      if ("items" in schema) {
+        subSchemas.push(schema.items);
+      } else {
+        subSchemas.push(...Object.values(schema.properties ?? {}));
+        subSchemas.push(...(schema.allOf ?? []));
+        subSchemas.push(...(schema.anyOf ?? []));
+        subSchemas.push(...(schema.oneOf ?? []));
       }
 
-      if (schema.type === "array") {
-        return schema.items ? check(schema.items, history) : false;
+      for (const schema of subSchemas) {
+        // `readOnly` and `writeOnly` do not change once they become true,
+        // so you can exit early if both are true.
+        if (readOnly && writeOnly) break;
+
+        const result = check(schema, history);
+        readOnly = readOnly || result.readOnly;
+        writeOnly = writeOnly || result.writeOnly;
       }
 
-      const subSchemas = [
-        ...Object.values(schema.properties || {}),
-        ...(schema.allOf || []),
-        ...(schema.anyOf || []),
-        ...(schema.oneOf || []),
-      ];
-
-      return subSchemas
-        .filter(Boolean)
-        .some((property) => check(property, history));
+      return { readOnly, writeOnly };
     };
 
     return check(schema, new Set<string>());
@@ -853,16 +876,15 @@ export default class ApiGenerator {
     const propertyNames = Object.keys(props);
     const filteredPropertyNames = propertyNames.filter((name) => {
       const schema = props[name];
-      const isReadOnly = this.checkSchemaOnlyMode(schema, "readOnly", false);
-      const isWriteOnly = this.checkSchemaOnlyMode(schema, "writeOnly", false);
+      const { readOnly, writeOnly } = this.checkSchemaOnlyMode(schema, false);
 
       switch (onlyMode) {
         case "readOnly":
-          return isReadOnly || !isWriteOnly;
+          return readOnly || !writeOnly;
         case "writeOnly":
-          return isWriteOnly || !isReadOnly;
+          return writeOnly || !readOnly;
         default:
-          return !isReadOnly && !isWriteOnly;
+          return !readOnly && !writeOnly;
       }
     });
 
