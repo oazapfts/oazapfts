@@ -114,12 +114,6 @@ export function runtime(defaults: RequestOpts) {
       : "application/x-www-form-urlencoded";
   }
 
-  function ensureMultipartContentType(contentTypeHeader: string) {
-    return contentTypeHeader?.startsWith("multipart/form-data")
-      ? contentTypeHeader
-      : "multipart/form-data";
-  }
-
   return {
     ok,
     fetchText,
@@ -177,15 +171,14 @@ export function runtime(defaults: RequestOpts) {
         }
       });
 
+      // Remove the Content-Type header because it should be automatically set
+      // by the Fetch API.
+      delete headers?.["Content-Type"];
+
       return {
         ...req,
         body: data,
-        headers: {
-          ...headers,
-          "Content-Type": ensureMultipartContentType(
-            String(headers?.["Content-Type"]),
-          ),
-        },
+        headers,
       };
     },
   };
