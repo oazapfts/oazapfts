@@ -387,10 +387,7 @@ describe("multipart", () => {
       "http://localhost:8000/v2/pet/5/uploadImage",
       expect.objectContaining({
         body: expect.any(FormData),
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { Accept: "application/json" },
         method: "POST",
       }),
     );
