@@ -1312,26 +1312,24 @@ export default class ApiGenerator {
           init.push(
             factory.createPropertyAssignment(
               "headers",
-              factory.createObjectLiteralExpression(
-                [
-                  factory.createSpreadAssignment(
-                    factory.createLogicalAnd(
-                      factory.createIdentifier("opts"),
-                      factory.createPropertyAccessExpression(
-                        factory.createIdentifier("opts"),
-                        "headers",
+              callOazapftsFunction("mergeHeaders", [
+                factory.createPropertyAccessChain(
+                  factory.createIdentifier("opts"),
+                  factory.createToken(ts.SyntaxKind.QuestionDotToken),
+                  "headers",
+                ),
+                factory.createObjectLiteralExpression(
+                  [
+                    ...header.map((param) =>
+                      cg.createPropertyAssignment(
+                        param.name,
+                        factory.createIdentifier(getArgName(param)),
                       ),
                     ),
-                  ),
-                  ...header.map((param) =>
-                    cg.createPropertyAssignment(
-                      param.name,
-                      factory.createIdentifier(getArgName(param)),
-                    ),
-                  ),
-                ],
-                true,
-              ),
+                  ],
+                  true,
+                ),
+              ]),
             ),
           );
         }

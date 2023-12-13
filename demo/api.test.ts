@@ -387,13 +387,12 @@ describe("multipart", () => {
       "http://localhost:8000/v2/pet/5/uploadImage",
       expect.objectContaining({
         body: expect.any(FormData),
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "multipart/form-data",
-        },
         method: "POST",
       }),
     );
+    expect(Object.fromEntries(customFetch.mock.calls[0][1].headers)).toEqual({
+      accept: "application/json",
+    });
     const formData = customFetch.mock.calls[0][1].body as FormData;
     expect(formData.getAll("files").length).toBe(10);
     const meta = formData.getAll("imageMeta") as Blob[];
