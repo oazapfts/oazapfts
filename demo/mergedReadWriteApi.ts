@@ -248,10 +248,9 @@ export function deletePet(
   return oazapfts.fetchText(`/pet/${encodeURIComponent(petId)}`, {
     ...opts,
     method: "DELETE",
-    headers: {
-      ...(opts && opts.headers),
+    headers: oazapfts.mergeHeaders(opts?.headers, {
       api_key: apiKey,
-    },
+    }),
   });
 }
 /**
@@ -304,10 +303,9 @@ export function customizePet(
     {
       ...opts,
       method: "POST",
-      headers: {
-        ...(opts && opts.headers),
+      headers: oazapfts.mergeHeaders(opts?.headers, {
         "x-color-options": xColorOptions,
-      },
+      }),
     },
   );
 }

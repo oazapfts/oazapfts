@@ -45,13 +45,6 @@ export function delimited(delimiter = ",") {
       .join("&");
 }
 
-/**
- * Deeply remove all properties with undefined values.
- */
-export function stripUndefined<T>(obj: T) {
-  return obj && JSON.parse(JSON.stringify(obj));
-}
-
 export function joinUrl(...parts: Array<string | undefined>) {
   return parts
     .filter(Boolean)

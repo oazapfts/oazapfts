@@ -67,21 +67,67 @@ describe("request", () => {
     expect(err?.headers?.get("x-request-id")).toBe("1234");
   });
 
-  it("should allow 'Content-Type' header to be customized", async () => {
+  it("allows 'Content-Type' header to be customized", () => {
     const jsonUTF8ContentType = "application/json; charset=UTF-8";
     const formUTF8ContentType =
       "application/x-www-form-urlencoded; charset=UTF-8";
+    const customContentType = "application/acme-custom; charset=UTF-8";
 
-    const jsonResponse = oazapfts.json({
+    const jsonRequest = oazapfts.json({
       body: { value: "body value" },
       headers: { "Content-Type": jsonUTF8ContentType },
     });
-    const formResponse = oazapfts.form({
+    const formRequest = oazapfts.form({
       body: { value: "body value" },
       headers: { "Content-Type": formUTF8ContentType },
     });
+    const multipartRequest = oazapfts.multipart({
+      body: { value: "body value" },
+      headers: { "Content-Type": customContentType },
+    });
 
-    expect(jsonResponse.headers["Content-Type"]).toEqual(jsonUTF8ContentType);
-    expect(formResponse.headers["Content-Type"]).toEqual(formUTF8ContentType);
+    expect(jsonRequest.headers.get("Content-Type")).toBe(jsonUTF8ContentType);
+    expect(formRequest.headers.get("Content-Type")).toBe(formUTF8ContentType);
+    expect(multipartRequest.headers.get("Content-Type")).toBe(
+      customContentType,
+    );
+  });
+
+  it("sets default Content-Type headers to json and form requests", () => {
+    expect(
+      oazapfts
+        .json({
+          body: { value: "body value" },
+        })
+        .headers.get("Content-Type"),
+    ).toBe("application/json");
+
+    expect(
+      oazapfts
+        .form({
+          body: { value: "body value" },
+        })
+        .headers.get("Content-Type"),
+    ).toBe("application/x-www-form-urlencoded");
+  });
+
+  // https://github.com/oazapfts/oazapfts/issues/512
+  it("does not set default Content-Type headers for multipart requests", () => {
+    expect(
+      oazapfts
+        .multipart({
+          body: { value: "body value" },
+        })
+        .headers.has("Content-Type"),
+    ).toBe(false);
+  });
+
+  it("allows multiple headers with the same name", () => {
+    const headers = new Headers();
+    headers.append("x-header", "value1");
+    headers.append("x-header", "value2");
+    const request = oazapfts.json({ headers });
+
+    expect(request.headers.get("x-header")).toBe("value1, value2");
   });
 });

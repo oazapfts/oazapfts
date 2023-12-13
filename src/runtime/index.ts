@@ -1,12 +1,13 @@
 import * as qs from "./query";
-import { joinUrl, stripUndefined } from "./util";
+import { joinUrl } from "./util";
 import { ok } from "../";
+import { CustomHeaders, mergeHeaders, normalizeHeaders } from "./headers";
 
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
   formDataConstructor?: new () => FormData;
-  headers?: Record<string, string | number | boolean | undefined>;
+  headers?: HeadersInit | CustomHeaders;
 } & Omit<RequestInit, "body" | "headers">;
 
 type FetchRequestOpts = RequestOpts & {
@@ -29,7 +30,7 @@ type MultipartRequestOpts = RequestOpts & {
   body?: Record<string, unknown>;
 };
 
-export function runtime(defaults: RequestOpts) {
+export function runtime(defaults: RequestOpts = {}) {
   async function fetchText(url: string, req?: FetchRequestOpts) {
     const res = await doFetch(url, req);
     let data;
@@ -51,10 +52,12 @@ export function runtime(defaults: RequestOpts) {
   ) {
     const { status, headers, contentType, data } = await fetchText(url, {
       ...req,
-      headers: {
-        Accept: "application/json",
-        ...req.headers,
-      },
+      headers: mergeHeaders(
+        {
+          Accept: "application/json",
+        },
+        req.headers,
+      ),
     });
 
     const isJson = contentType ? contentType.includes("json") : false;
@@ -85,39 +88,16 @@ export function runtime(defaults: RequestOpts) {
   async function doFetch(url: string, req: FetchRequestOpts = {}) {
     const {
       baseUrl,
-      headers,
       fetch: customFetch,
       ...init
     } = {
       ...defaults,
       ...req,
+      headers: mergeHeaders(defaults.headers, req.headers),
     };
     const href = joinUrl(baseUrl, url);
-    const res = await (customFetch || fetch)(href, {
-      ...init,
-      headers: stripUndefined({ ...defaults.headers, ...headers }),
-    });
+    const res = await (customFetch || fetch)(href, init);
     return res;
-  }
-
-  /* TODO: maybe we want to get rid of this checks (ensureJsonContentType & ensureFormContentType)
-  in a future major release (ref https://github.com/oazapfts/oazapfts/pull/456) */
-  function ensureJsonContentType(contentTypeHeader: string) {
-    return contentTypeHeader?.match(/\bjson\b/i)
-      ? contentTypeHeader
-      : "application/json";
-  }
-
-  function ensureFormContentType(contentTypeHeader: string) {
-    return contentTypeHeader?.startsWith("application/x-www-form-urlencoded")
-      ? contentTypeHeader
-      : "application/x-www-form-urlencoded";
-  }
-
-  function ensureMultipartContentType(contentTypeHeader: string) {
-    return contentTypeHeader?.startsWith("multipart/form-data")
-      ? contentTypeHeader
-      : "multipart/form-data";
   }
 
   return {
@@ -125,17 +105,18 @@ export function runtime(defaults: RequestOpts) {
     fetchText,
     fetchJson,
     fetchBlob,
+    mergeHeaders,
 
     json({ body, headers, ...req }: JsonRequestOpts) {
       return {
         ...req,
         ...(body != null && { body: JSON.stringify(body) }),
-        headers: {
-          ...headers,
-          "Content-Type": ensureJsonContentType(
-            String(headers?.["Content-Type"]),
-          ),
-        },
+        headers: mergeHeaders(
+          {
+            "Content-Type": "application/json",
+          },
+          headers,
+        ),
       };
     },
 
@@ -143,17 +124,19 @@ export function runtime(defaults: RequestOpts) {
       return {
         ...req,
         ...(body != null && { body: qs.form(body) }),
-        headers: {
-          ...headers,
-          "Content-Type": ensureFormContentType(
-            String(headers?.["Content-Type"]),
-          ),
-        },
+        headers: mergeHeaders(
+          {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          headers,
+        ),
       };
     },
 
     multipart({ body, headers, ...req }: MultipartRequestOpts) {
-      if (body == null) return req;
+      if (body == null)
+        return { ...req, body, headers: normalizeHeaders(headers) };
+
       const data = new (defaults.formDataConstructor ||
         req.formDataConstructor ||
         FormData)();
@@ -180,12 +163,7 @@ export function runtime(defaults: RequestOpts) {
       return {
         ...req,
         body: data,
-        headers: {
-          ...headers,
-          "Content-Type": ensureMultipartContentType(
-            String(headers?.["Content-Type"]),
-          ),
-        },
+        headers: normalizeHeaders(headers),
       };
     },
   };
