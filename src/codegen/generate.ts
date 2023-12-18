@@ -895,11 +895,24 @@ export default class ApiGenerator {
       if (!isRequired && this.opts.unionUndefined) {
         type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
       }
-      return cg.createPropertySignature({
+
+      const signature = cg.createPropertySignature({
         questionToken: !isRequired,
         name,
         type,
       });
+
+      if ("description" in schema && schema.description) {
+        ts.addSyntheticLeadingComment(
+          signature,
+          ts.SyntaxKind.MultiLineCommentTrivia,
+          // Ensures it is formatted like a JSDoc comment: /** description here */
+          `* ${schema.description} `,
+          true,
+        );
+      }
+
+      return signature;
     });
     if (additionalProperties) {
       const type =
