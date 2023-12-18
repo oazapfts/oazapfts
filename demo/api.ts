@@ -28,9 +28,13 @@ export type Pet = {
   name: string;
   photoUrls: string[];
   tags?: Tag[];
+  /** pet status in the store */
   status?: "available" | "pending" | "sold" | "private" | "10percent";
+  /** Always true for a pet */
   animal?: true;
+  /** Size scale for pets */
   size?: "P" | "M" | "G" | "0";
+  /** integer test case for #349 */
   typeId?: 1 | 2 | 3 | 4 | 6 | 8;
 };
 export type ApiResponse = {
@@ -43,6 +47,7 @@ export type Order = {
   petId?: number;
   quantity?: number;
   shipDate?: string;
+  /** Order Status */
   status?: "placed" | "approved" | "delivered";
   complete?: boolean;
 };
@@ -54,7 +59,9 @@ export type User = {
   email?: string;
   password?: string;
   phone?: string;
+  /** User Status */
   userStatus?: number;
+  /** user category in the store */
   category?: "rich" | "wealthy" | "poor";
 };
 export type Schema = string;
@@ -237,7 +244,9 @@ export function getPetById(petId: number, opts?: Oazapfts.RequestOpts) {
 export function updatePetWithForm(
   petId: number,
   body?: {
+    /** Updated name of the pet */
     name?: string;
+    /** Updated status of the pet */
     status?: string;
   },
   opts?: Oazapfts.RequestOpts,
@@ -282,6 +291,7 @@ export function uploadFiles(
       name: string;
       description?: string;
     }[];
+    /** files to upload */
     files: Blob[];
   },
   opts?: Oazapfts.RequestOpts,
