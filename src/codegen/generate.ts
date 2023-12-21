@@ -972,7 +972,7 @@ export default class ApiGenerator {
 
   getResponseType(
     responses?: OpenAPIV3.ResponsesObject,
-  ): "json" | "text" | "blob" {
+  ): "json" | "text" | "blob" | "multipart" {
     // backwards-compatibility
     if (!responses) return "text";
 
@@ -1006,6 +1006,17 @@ export default class ApiGenerator {
       )
     ) {
       return "text";
+    }
+
+    // if there’s `multipart/form-data`, assume `multipart`
+    if (
+      resolvedResponses.some((res) =>
+        Object.keys(res.content ?? {}).some(
+          (type) => contentTypes[type] === "multipart",
+        ),
+      )
+    ) {
+      return "multipart";
     }
 
     // for the rest, assume `blob`
@@ -1375,9 +1386,12 @@ export default class ApiGenerator {
                         json: "fetchJson",
                         text: "fetchText",
                         blob: "fetchBlob",
+                        multipart: "fetchMultipart",
                       }[returnType],
                       args,
-                      returnType === "json" || returnType === "blob"
+                      returnType === "json" ||
+                        returnType === "blob" ||
+                        returnType === "multipart"
                         ? [
                             this.getTypeFromResponses(responses!, "readOnly") ||
                               ts.SyntaxKind.AnyKeyword,

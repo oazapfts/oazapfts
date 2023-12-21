@@ -90,6 +90,13 @@ describe("generateSource", () => {
     );
   });
 
+  it("should handle multipart/form-data", async () => {
+    const src = await generate("/__fixtures__/multipart.json");
+    expect(src).toContain(
+      "return oazapfts.fetchMultipart<{ status: 200; data: Image; }>(`/image/${encodeURIComponent(imageId)}/download`, { ...opts });",
+    );
+  });
+
   it("should generate an api with literal type set to const value", async () => {
     const src = await generate("/__fixtures__/const.json");
     expect(src).toContain(`export type Shape = "circle";`);

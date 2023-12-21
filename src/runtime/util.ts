@@ -59,3 +59,44 @@ export function joinUrl(...parts: Array<string | undefined>) {
     .map((s, i, a) => (i === a.length - 1 ? s : s!.replace(/\/+$/, "")))
     .join("/");
 }
+
+/**
+ * Parses a FormData object into a Record.
+ */
+export async function parseMultipart(formData: FormData) {
+  let vals: [string, any][] = [];
+
+  formData.forEach((val, key) => {
+    vals.push([key, val]);
+  });
+
+  // Parse JSON parts
+  vals = await Promise.all(
+    vals.map(async ([key, val]) => [
+      key,
+      val instanceof Blob && val.type === "application/json"
+        ? JSON.parse(await val.text())
+        : val,
+    ]),
+  );
+
+  // Join repeated keys
+  return vals.reduce(
+    (data, [key, val]) => {
+      if (key in data) {
+        if (Array.isArray(data[key])) {
+          // If property already is array, push new value.
+          data[key].push(val);
+        } else {
+          // Otherwise create a new array with prev and new value.
+          data[key] = [data[key], val];
+        }
+      } else {
+        data[key] = val;
+      }
+
+      return data;
+    },
+    {} as Record<string, any>,
+  );
+}
