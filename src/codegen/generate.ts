@@ -903,11 +903,14 @@ export default class ApiGenerator {
       });
 
       if ("description" in schema && schema.description) {
+        // Escape any JSDoc comment closing tags in description
+        const description = schema.description.replace("*/", "*\\/");
+
         ts.addSyntheticLeadingComment(
           signature,
           ts.SyntaxKind.MultiLineCommentTrivia,
           // Ensures it is formatted like a JSDoc comment: /** description here */
-          `* ${schema.description} `,
+          `* ${description} `,
           true,
         );
       }
