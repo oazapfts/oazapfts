@@ -71,7 +71,7 @@ export function createTypeAliasDeclaration({
   );
 }
 
-export function createIntefaceAliasDeclaration({
+export function createInterfaceAliasDeclaration({
   modifiers,
   name,
   typeParameters,

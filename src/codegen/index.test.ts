@@ -5,7 +5,7 @@ import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
 
 /**
- * Generate an API from a releative path and convert it into a single line.
+ * Generate an API from a relative path and convert it into a single line.
  */
 async function generate(file: string, opts = {}) {
   const spec = path.join(__dirname, file);

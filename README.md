@@ -42,7 +42,7 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 
 ### Options
 
-- `--optimistic` generare a client in [optimistic mode](#optimistic-mode)
+- `--optimistic` generate a client in [optimistic mode](#optimistic-mode)
 
 - `--useEnumType` generate enums instead of union types
 
