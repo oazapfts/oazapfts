@@ -1212,6 +1212,38 @@
           }
         }
       }
+    },
+    "/issue-542": {
+      "post": {
+        "operationId": "DashInSchema",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Issue542"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "underscore_property": {
+                      "enum": ["one", "two", "three"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1495,6 +1527,22 @@
       "EnumToRef": {
         "enum": ["monkey", "dog", "cat"],
         "type": "string"
+      },
+      "Issue542": {
+        "type": "object",
+        "properties": {
+          "playlist": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 200
+          },
+          "media-protocol": {
+            "enum": ["hls", "mss", "dash"]
+          },
+          "dashed-property": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {

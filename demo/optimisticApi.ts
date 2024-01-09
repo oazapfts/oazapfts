@@ -115,6 +115,11 @@ export type ReadWriteMixedWrite = {
   email: string;
   password: string;
 };
+export type Issue542 = {
+  playlist?: string;
+  "media-protocol"?: "hls" | "mss" | "dash";
+  "dashed-property"?: string;
+};
 /**
  * Update an existing pet
  */
@@ -754,6 +759,23 @@ export function readWriteMixed(
         ...opts,
         method: "POST",
         body: readWriteMixed,
+      }),
+    ),
+  );
+}
+export function dashInSchema(issue542?: Issue542, opts?: Oazapfts.RequestOpts) {
+  return oazapfts.ok(
+    oazapfts.fetchJson<{
+      status: 200;
+      data: {
+        underscore_property?: "one" | "two" | "three";
+      };
+    }>(
+      "/issue-542",
+      oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: issue542,
       }),
     ),
   );

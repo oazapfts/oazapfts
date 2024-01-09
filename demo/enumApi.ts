@@ -114,6 +114,11 @@ export type ReadWriteMixedWrite = {
   email: string;
   password: string;
 };
+export type Issue542 = {
+  playlist?: string;
+  "media-protocol"?: MediaProtocol;
+  "dashed-property"?: string;
+};
 /**
  * Update an existing pet
  */
@@ -699,6 +704,21 @@ export function readWriteMixed(
     }),
   );
 }
+export function dashInSchema(issue542?: Issue542, opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: {
+      underscore_property?: Underscore_property;
+    };
+  }>(
+    "/issue-542",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body: issue542,
+    }),
+  );
+}
 export enum Status {
   Available = "available",
   Pending = "pending",
@@ -734,4 +754,14 @@ export enum EnumToRef {
   Monkey = "monkey",
   Dog = "dog",
   Cat = "cat",
+}
+export enum MediaProtocol {
+  Hls = "hls",
+  Mss = "mss",
+  Dash = "dash",
+}
+export enum Underscore_property {
+  One = "one",
+  Two = "two",
+  Three = "three",
 }
