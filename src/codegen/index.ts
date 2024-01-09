@@ -7,6 +7,7 @@ import { OpenAPI, OpenAPIV3 } from "openapi-types";
 
 export { cg };
 
+export const optsArgumentStyles = ["positional", "object"];
 export type Opts = {
   include?: string[];
   exclude?: string[];
@@ -14,6 +15,7 @@ export type Opts = {
   unionUndefined?: boolean;
   useEnumType?: boolean;
   mergeReadWriteOnly?: boolean;
+  argumentStyle?: (typeof optsArgumentStyles)[number];
 };
 
 export function generateAst(

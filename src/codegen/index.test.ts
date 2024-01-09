@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { generateSource } from "./index";
+import { Opts, generateSource } from "./index";
 
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
@@ -7,7 +7,7 @@ import { ScriptTarget } from "typescript";
 /**
  * Generate an API from a relative path and convert it into a single line.
  */
-async function generate(file: string, opts = {}) {
+async function generate(file: string, opts: Opts = {}) {
   const spec = path.join(__dirname, file);
   const src = await generateSource(spec, opts);
   const error = await checkForTypeErrors(src);
@@ -220,5 +220,37 @@ describe("useEnumType", () => {
     expect(src).toContain(
       `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`,
     );
+  });
+});
+
+describe("argumentStyle", () => {
+  let src: string;
+
+  describe("positional", () => {
+    beforeAll(async () => {
+      src = await generate("/../../demo/petstore.json", {
+        argumentStyle: "positional",
+      });
+    });
+
+    it("should generate positional argument", () => {
+      expect(src).toContain(
+        `function updatePetWithForm(petId: number, body?: { /** Updated name of the pet */ name?: string; /** Updated status of the pet */ status?: string; }, opts?: Oazapfts.RequestOpts)`,
+      );
+    });
+  });
+
+  describe("object", () => {
+    beforeAll(async () => {
+      src = await generate("/../../demo/petstore.json", {
+        argumentStyle: "object",
+      });
+    });
+
+    it("should generate object argument", () => {
+      expect(src).toContain(
+        `function updatePetWithForm({ petId, body }: { petId: number; body?: { /** Updated name of the pet */ name?: string; /** Updated status of the pet */ status?: string; }; }, opts?: Oazapfts.RequestOpts)`,
+      );
+    });
   });
 });
