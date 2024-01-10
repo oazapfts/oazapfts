@@ -1314,6 +1314,11 @@ export default class ApiGenerator {
               );
             }
 
+            // if there's no params, leave methodParams as is and prevent empty object argument generation
+            if (paramMembers.length === 0) {
+              break;
+            }
+
             methodParams.push(
               cg.createParameter(
                 cg.createObjectBinding([

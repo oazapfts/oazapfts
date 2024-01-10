@@ -234,8 +234,20 @@ describe("argumentStyle", () => {
     });
 
     it("should generate positional argument", () => {
+      // for path parameter and requestBody
       expect(src).toContain(
         `function updatePetWithForm(petId: number, body?: { /** Updated name of the pet */ name?: string; /** Updated status of the pet */ status?: string; }, opts?: Oazapfts.RequestOpts)`,
+      );
+
+      // for query and header parameter
+      expect(src).toContain(
+        `function customizePet(petId: number, { furColor, color, xColorOptions }: { furColor?: string; color?: string; xColorOptions?: boolean; } = {}, opts?: Oazapfts.RequestOpts) { return oazapfts.fetchText(\`/pet/\${encodeURIComponent(petId)}/customize\${QS.query(QS.explode({ "fur.color": furColor, color }))}\`, { ...opts, method: "POST", headers: { ...opts && opts.headers, "x-color-options": xColorOptions } }); }`,
+      );
+    });
+
+    it("should not generate argument when no parameters nor requestBody specified", () => {
+      expect(src).toContain(
+        `function getInventory(opts?: Oazapfts.RequestOpts) { return oazapfts.fetchJson<{ status: 200; data: { [key: string]: number; }; }>("/store/inventory", { ...opts }); }`,
       );
     });
   });
@@ -248,8 +260,20 @@ describe("argumentStyle", () => {
     });
 
     it("should generate object argument", () => {
+      // for path parameter and requestBody
       expect(src).toContain(
         `function updatePetWithForm({ petId, body }: { petId: number; body?: { /** Updated name of the pet */ name?: string; /** Updated status of the pet */ status?: string; }; }, opts?: Oazapfts.RequestOpts)`,
+      );
+
+      // for query and header parameter
+      expect(src).toContain(
+        `function customizePet({ petId, furColor, color, xColorOptions }: { petId: number; furColor?: string; color?: string; xColorOptions?: boolean; }, opts?: Oazapfts.RequestOpts) { return oazapfts.fetchText(\`/pet/\${encodeURIComponent(petId)}/customize\${QS.query(QS.explode({ "fur.color": furColor, color }))}\`, { ...opts, method: "POST", headers: { ...opts && opts.headers, "x-color-options": xColorOptions } }); }`,
+      );
+    });
+
+    it("should not generate argument when no parameters nor requestBody specified", () => {
+      expect(src).toContain(
+        `function getInventory(opts?: Oazapfts.RequestOpts) { return oazapfts.fetchJson<{ status: 200; data: { [key: string]: number; }; }>("/store/inventory", { ...opts }); }`,
       );
     });
   });
