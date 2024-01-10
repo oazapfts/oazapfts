@@ -3,6 +3,18 @@
   "version": "0.0.0-development",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
+  "exports": {
+    "./lib/runtime": {
+      "require": "./lib/runtime/index.js",
+      "default": "./lib/runtime/index.js",
+      "types": "./lib/runtime/index.d.ts"
+    },
+    "./lib/runtime/query": {
+      "require": "./lib/runtime/query.js",
+      "default": "./lib/runtime/query.js",
+      "types": "./lib/runtime/query.d.js"
+    }
+  },
   "bin": {
     "oazapfts": "lib/codegen/cli.js"
   },
