@@ -1121,6 +1121,8 @@ export default class ApiGenerator {
   generateApi() {
     this.reset();
 
+    /* TODO(hannes.diercks): remove `lib/` from ApiStub in next major https://github.com/oazapfts/oazapfts/pull/550 */
+
     // Parse ApiStub.ts so that we don't have to generate everything manually
     const stub = cg.parseFile(
       path.resolve(__dirname, "../../src/codegen/ApiStub.ts"),
