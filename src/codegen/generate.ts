@@ -1204,9 +1204,6 @@ export default class ApiGenerator {
           ? supportDeepObjects(resolvedParameters)
           : resolvedParameters;
 
-        // split into required/optional
-        const [required, optional] = _.partition(parameters, "required");
-
         // convert parameter names to argument names ...
         const argNames = new Map<OpenAPIV3.ParameterObject, string>();
         _.sortBy(parameters, "name.length").forEach((p) => {
@@ -1224,57 +1221,121 @@ export default class ApiGenerator {
           return name;
         };
 
-        // build the method signature - first all the required parameters
-        const methodParams = required.map((p) =>
-          cg.createParameter(getArgName(this.resolve(p)), {
-            type: this.getTypeFromParameter(p),
-          }),
-        );
+        const methodParams: ts.ParameterDeclaration[] = [];
+        let body: OpenAPIV3.RequestBodyObject | undefined = undefined;
+        let bodyVar: string | undefined = undefined;
+        switch (this.opts.argumentStyle ?? "positional") {
+          case "positional":
+            // split into required/optional
+            const [required, optional] = _.partition(parameters, "required");
 
-        let body: OpenAPIV3.RequestBodyObject | undefined;
-        let bodyVar;
+            // build the method signature - first all the required parameters
+            const requiredParams = required.map((p) =>
+              cg.createParameter(getArgName(this.resolve(p)), {
+                type: this.getTypeFromParameter(p),
+              }),
+            );
+            methodParams.push(...requiredParams);
 
-        // add body if present
-        if (requestBody) {
-          body = this.resolve(requestBody);
-          const schema = this.getSchemaFromContent(body.content);
-          const type = this.getTypeFromSchema(schema, undefined, "writeOnly");
-          bodyVar = toIdentifier(
-            (type as any).name || getReferenceName(schema) || "body",
-          );
-          methodParams.push(
-            cg.createParameter(bodyVar, {
-              type,
-              questionToken: !body.required,
-            }),
-          );
-        }
+            // add body if present
+            if (requestBody) {
+              body = this.resolve(requestBody);
+              const schema = this.getSchemaFromContent(body.content);
+              const type = this.getTypeFromSchema(
+                schema,
+                undefined,
+                "writeOnly",
+              );
+              bodyVar = toIdentifier(
+                (type as any).name || getReferenceName(schema) || "body",
+              );
+              methodParams.push(
+                cg.createParameter(bodyVar, {
+                  type,
+                  questionToken: !body.required,
+                }),
+              );
+            }
 
-        // add an object with all optional parameters
-        if (optional.length) {
-          methodParams.push(
-            cg.createParameter(
-              cg.createObjectBinding(
-                optional
-                  .map((param) => this.resolve(param))
-                  .map((param) => ({ name: getArgName(param) })),
-              ),
-              {
-                initializer: factory.createObjectLiteralExpression(),
-                type: factory.createTypeLiteralNode(
-                  optional.map((p) =>
-                    cg.createPropertySignature({
-                      name: getArgName(this.resolve(p)),
-                      questionToken: true,
-                      type: this.getTypeFromParameter(p),
-                    }),
+            // add an object with all optional parameters
+            if (optional.length) {
+              methodParams.push(
+                cg.createParameter(
+                  cg.createObjectBinding(
+                    optional
+                      .map((param) => this.resolve(param))
+                      .map((param) => ({ name: getArgName(param) })),
                   ),
+                  {
+                    initializer: factory.createObjectLiteralExpression(),
+                    type: factory.createTypeLiteralNode(
+                      optional.map((p) =>
+                        cg.createPropertySignature({
+                          name: getArgName(this.resolve(p)),
+                          questionToken: true,
+                          type: this.getTypeFromParameter(p),
+                        }),
+                      ),
+                    ),
+                  },
                 ),
-              },
-            ),
-          );
+              );
+            }
+            break;
+
+          case "object":
+            // build the method signature - first all the required/optional parameters
+            const paramMembers = parameters.map((p) =>
+              cg.createPropertySignature({
+                name: getArgName(this.resolve(p)),
+                questionToken: !p.required,
+                type: this.getTypeFromParameter(p),
+              }),
+            );
+
+            // add body if present
+            if (requestBody) {
+              body = this.resolve(requestBody);
+              const schema = this.getSchemaFromContent(body.content);
+              const type = this.getTypeFromSchema(
+                schema,
+                undefined,
+                "writeOnly",
+              );
+              bodyVar = toIdentifier(
+                (type as any).name || getReferenceName(schema) || "body",
+              );
+              paramMembers.push(
+                cg.createPropertySignature({
+                  name: bodyVar,
+                  questionToken: !body.required,
+                  type,
+                }),
+              );
+            }
+
+            // if there's no params, leave methodParams as is and prevent empty object argument generation
+            if (paramMembers.length === 0) {
+              break;
+            }
+
+            methodParams.push(
+              cg.createParameter(
+                cg.createObjectBinding([
+                  ...parameters
+                    .map((param) => this.resolve(param))
+                    .map((param) => ({ name: getArgName(param) })),
+                  ...(bodyVar ? [{ name: bodyVar }] : []),
+                ]),
+                {
+                  type: factory.createTypeLiteralNode(paramMembers),
+                },
+              ),
+            );
+            break;
         }
 
+        // add oazapfts options
         methodParams.push(
           cg.createParameter("opts", {
             type: factory.createTypeReferenceNode(
