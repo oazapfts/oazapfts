@@ -6,7 +6,8 @@
  */
 import * as Oazapfts from "oazapfts/lib/runtime";
 import * as QS from "oazapfts/lib/runtime/query";
-export const defaults: Oazapfts.RequestOpts = {
+export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
+  headers: {},
   baseUrl: "https://petstore.swagger.io/v2",
 };
 const oazapfts = Oazapfts.runtime(defaults);

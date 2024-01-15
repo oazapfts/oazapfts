@@ -3,12 +3,20 @@ import { joinUrl } from "./util";
 import { ok } from "../";
 import { CustomHeaders, mergeHeaders, normalizeHeaders } from "./headers";
 
+export { type CustomHeaders };
+
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
   formDataConstructor?: new () => FormData;
   headers?: HeadersInit | CustomHeaders;
 } & Omit<RequestInit, "body" | "headers">;
+
+export type Defaults<Headers extends RequestOpts["headers"] = CustomHeaders> =
+  Omit<RequestOpts, "headers" | "baseUrl"> & {
+    baseUrl: string;
+    headers: Headers;
+  };
 
 type FetchRequestOpts = RequestOpts & {
   body?: string | FormData | Blob;
