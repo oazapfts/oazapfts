@@ -5,33 +5,33 @@
   "main": "lib/index.js",
   "exports": {
     "./lib/runtime": {
-      "require": "./lib/runtime/index.js",
       "types": "./lib/runtime/index.d.ts",
+      "require": "./lib/runtime/index.js",
       "default": "./lib/runtime/index.js"
     },
     "./lib/runtime/query": {
-      "require": "./lib/runtime/query.js",
       "types": "./lib/runtime/query.d.js",
+      "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     },
     "./lib/runtime/index.js": {
-      "require": "./lib/runtime/index.js",
       "types": "./lib/runtime/index.d.ts",
+      "require": "./lib/runtime/index.js",
       "default": "./lib/runtime/index.js"
     },
     "./lib/runtime/query.js": {
-      "require": "./lib/runtime/query.js",
       "types": "./lib/runtime/query.d.js",
+      "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     },
     "./runtime": {
-      "require": "./lib/runtime/index.js",
       "types": "./lib/runtime/index.d.ts",
+      "require": "./lib/runtime/index.js",
       "default": "./lib/runtime/index.js"
     },
     "./runtime/query": {
-      "require": "./lib/runtime/query.js",
       "types": "./lib/runtime/query.d.js",
+      "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     }
   },
