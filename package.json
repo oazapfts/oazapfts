@@ -4,6 +4,11 @@
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
   "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "require": "./lib/index.js",
+      "default": "./lib/index.js"
+    },
     "./lib/runtime": {
       "types": "./lib/runtime/index.d.ts",
       "require": "./lib/runtime/index.js",
