@@ -2,10 +2,10 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
-    "target": "es2015",
+    "target": "esnext",
     "sourceMap": true,
     "declaration": true,
-    "lib": ["es2015", "dom"],
+    "lib": ["esnext", "dom"],
     "module": "commonjs",
     "strict": true,
     "resolveJsonModule": true,
