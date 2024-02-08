@@ -695,7 +695,19 @@ export default class ApiGenerator {
       return this.getTypeFromEnum([schema.const]);
     }
     if (schema.type) {
-      // string, boolean, null, number
+      // string, boolean, null, number, array
+      if (Array.isArray(schema.type)) {
+        return factory.createUnionTypeNode(
+          schema.type.map((type) => {
+            if (type === null) return cg.keywordType.null;
+            if (type === "integer") return cg.keywordType.number;
+            if (type in cg.keywordType)
+              return cg.keywordType[type as keyof typeof cg.keywordType];
+
+            return cg.keywordType.any;
+          }),
+        );
+      }
       if (schema.type === "integer") return cg.keywordType.number;
       if (schema.type in cg.keywordType) return cg.keywordType[schema.type];
     }

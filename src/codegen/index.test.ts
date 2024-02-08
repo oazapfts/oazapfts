@@ -180,6 +180,12 @@ describe("generateSource", () => {
 
     expect(src).toContain("message: string");
   });
+
+  it("should handle type array with nullable fields", async () => {
+    const src = await generate("/__fixtures__/array-type.yaml");
+
+    expect(src).toContain("name?: string | null; no?: number | null;");
+  });
 });
 
 describe("useEnumType", () => {
