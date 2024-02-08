@@ -29,6 +29,26 @@
       "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     },
+    "./lib/codegen": {
+      "types": "./lib/codegen/index.d.ts",
+      "require": "./lib/codegen/index.js",
+      "default": "./lib/codegen/index.js"
+    },
+    "./lib/codegen/index.js": {
+      "types": "./lib/codegen/index.d.ts",
+      "require": "./lib/codegen/index.js",
+      "default": "./lib/codegen/index.js"
+    },
+    "./codegen": {
+      "types": "./lib/codegen/index.d.ts",
+      "require": "./lib/codegen/index.js",
+      "default": "./lib/codegen/index.js"
+    },
+    "./codegen/index.js": {
+      "types": "./lib/codegen/index.d.ts",
+      "require": "./lib/codegen/index.js",
+      "default": "./lib/codegen/index.js"
+    },
     "./runtime": {
       "types": "./lib/runtime/index.d.ts",
       "require": "./lib/runtime/index.js",
