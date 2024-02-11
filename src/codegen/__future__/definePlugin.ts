@@ -3,8 +3,9 @@ import { type SchemaObject } from "../generate";
 import ts from "typescript";
 import { Opts } from "../index";
 import minimist from "minimist";
+import assert from "node:assert";
 
-export type OazapftsCodegenPlugin = {
+export type OazapftsCodegenPluginDefinition = {
   /**
    * Required identifier for this plugin
    */
@@ -161,14 +162,50 @@ export type OazapftsCodegenPlugin = {
   ): void | Promise<void>;
 };
 
+export const IS_OAZAPFTS_PLUGIN = Symbol("OazapftsPlugin");
+
+export type OazapftsCodegenPlugin = OazapftsCodegenPluginDefinition & {
+  [IS_OAZAPFTS_PLUGIN]: boolean;
+};
+
+/**
+ * Assigns a hidden key we can use to make sure the default export is in fact a plugin when we import it and prevent some
+ * potential headaches.
+ * @param plugin
+ * @param value
+ */
+function convertToPlugin(
+  plugin: OazapftsCodegenPluginDefinition,
+  value: boolean,
+): asserts plugin is OazapftsCodegenPlugin {
+  Object.defineProperty(plugin, IS_OAZAPFTS_PLUGIN, {
+    value,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+}
+
 export function defineOazapftsPlugin(
-  plugin: OazapftsCodegenPlugin,
+  plugin: OazapftsCodegenPluginDefinition,
 ): OazapftsCodegenPlugin {
   // Do some checks to ensure that we have a valid plugin (if there are required params)
+  let isPlugin = true;
   if (!plugin.name || plugin.name === "") {
-    throw new Error("defineOazapftsPlugin: 'name' property is required!");
+    console.warn("defineOazapftsPlugin: 'name' property is required!");
+    isPlugin = false;
   }
-
+  convertToPlugin(plugin, isPlugin);
   // Maybe we do the registration right here? force module developers to use this function?
   return plugin;
+}
+
+export function isOazapftsPlugin(
+  plugin: unknown,
+): plugin is OazapftsCodegenPlugin {
+  return (
+    plugin instanceof Object &&
+    plugin.hasOwnProperty(IS_OAZAPFTS_PLUGIN) &&
+    (plugin as OazapftsCodegenPlugin)[IS_OAZAPFTS_PLUGIN]
+  );
 }
