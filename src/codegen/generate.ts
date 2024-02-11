@@ -48,7 +48,7 @@ export function getBodyFormatter(body?: OpenAPIV3.RequestBodyObject) {
 
 // Augment SchemaObject type to allow slowly adopting new OAS3.1+ features
 // and support custom vendor extensions.
-type SchemaObject = OpenAPIV3.SchemaObject & {
+export type SchemaObject = OpenAPIV3.SchemaObject & {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
