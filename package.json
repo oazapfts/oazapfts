@@ -3,6 +3,7 @@
   "version": "0.0.0-development",
   "description": "OpenApi TypeScript client generator",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -15,7 +16,7 @@
       "default": "./lib/runtime/index.js"
     },
     "./lib/runtime/query": {
-      "types": "./lib/runtime/query.d.js",
+      "types": "./lib/runtime/query.d.ts",
       "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     },
@@ -25,7 +26,7 @@
       "default": "./lib/runtime/index.js"
     },
     "./lib/runtime/query.js": {
-      "types": "./lib/runtime/query.d.js",
+      "types": "./lib/runtime/query.d.ts",
       "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     },
@@ -55,7 +56,7 @@
       "default": "./lib/runtime/index.js"
     },
     "./runtime/query": {
-      "types": "./lib/runtime/query.d.js",
+      "types": "./lib/runtime/query.d.ts",
       "require": "./lib/runtime/query.js",
       "default": "./lib/runtime/query.js"
     }
