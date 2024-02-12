@@ -1,6 +1,6 @@
 import * as qs from "./query";
 import { joinUrl } from "./util";
-import { ok } from "../";
+import { ok } from "./index";
 import { CustomHeaders, mergeHeaders, normalizeHeaders } from "./headers";
 
 export { type CustomHeaders };

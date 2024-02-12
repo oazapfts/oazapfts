@@ -1,0 +1,42 @@
+{
+  "name": "oazapfts",
+  "version": "0.0.0-development",
+  "description": "OpenApi TypeScript client generator",
+  "license": "MIT",
+  "repository": "oazapfts/oazapfts",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "oazapfts": "dist/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc && node ./build.js && chmod +x dist/cli.mjs"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.11.6"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "lodash": "^4.17.21",
+    "minimist": "^1.2.8",
+    "swagger2openapi": "^7.0.8",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "openapi",
+    "typescript",
+    "codegen",
+    "oazapfts"
+  ]
+}

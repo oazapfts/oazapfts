@@ -1,15 +1,18 @@
+import { describe, it, expect, beforeAll } from "vitest";
 import * as path from "node:path";
 import { Opts, generateSource } from "./index";
-
+import { readFile } from "node:fs/promises";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
+
+const rootFolder = path.join(__dirname, "../../..");
+const demoFolder = path.join(rootFolder, "demo");
 
 /**
  * Generate an API from a relative path and convert it into a single line.
  */
 async function generate(file: string, opts: Opts = {}) {
-  const spec = path.join(__dirname, file);
-  const src = await generateSource(spec, opts);
+  const src = await generateSource(file, opts);
   const error = await checkForTypeErrors(src);
   expect(error).toBeUndefined();
   return src.replace(/\s+/g, " ");
@@ -20,13 +23,18 @@ async function generate(file: string, opts: Opts = {}) {
  */
 async function checkForTypeErrors(source: string) {
   const project = await createProject({
-    tsConfigFilePath: __dirname + "/../../tsconfig.json",
+    tsConfigFilePath: path.resolve(rootFolder, "./tsconfig.base.json"),
     skipAddingFilesFromTsConfig: true,
     compilerOptions: {
       noEmit: true,
       target: ScriptTarget.ESNext,
       paths: {
-        "oazapfts/lib/*": [__dirname + "/../../lib/*"],
+        "@oazapfts/runtime": [
+          path.resolve(__dirname, "../../packages/runtime/dist"),
+        ],
+        "@oazapfts/runtime/*": [
+          path.join(__dirname, "../../packages/runtime/dist/*"),
+        ],
       },
     },
   });
@@ -38,27 +46,33 @@ async function checkForTypeErrors(source: string) {
 }
 
 describe("generateSource", () => {
+  beforeAll(async () => {
+    process.env.__API_STUB_PLACEHOLDER__ = (
+      await readFile(__dirname + "/../template/ApiStub.ts")
+    ).toString();
+  });
+
   it("should generate the same api twice", async () => {
-    const spec = "/../../demo/petstore.json";
+    const spec = path.join(demoFolder, "./petstore.json");
     const src1 = await generate(spec);
     const src2 = await generate(spec);
     expect(src1).toBe(src2);
   });
 
   it("should handle enums as union types", async () => {
-    const src = await generate("/../../demo/petstore.json");
+    const src = await generate(path.join(demoFolder, "./petstore.json"));
     expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
   });
 
   it("should handle properties both inside and outside of allOf", async () => {
-    const src = await generate("/__fixtures__/allOf.json");
+    const src = await generate(__dirname + "/__fixtures__/allOf.json");
     expect(src).toContain(
       "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
     );
   });
 
   it("should support discriminator used in conjunction with allOf", async () => {
-    const src = await generate("/__fixtures__/allOf.json");
+    const src = await generate(__dirname + "/__fixtures__/allOf.json");
     expect(src).toContain("export type PetBase = { petType: string; };");
     expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
     expect(src).toContain(
@@ -70,60 +84,64 @@ describe("generateSource", () => {
   });
 
   it("should support recursive schemas", async () => {
-    const src = await generate("/__fixtures__/recursive.yaml");
+    const src = await generate(__dirname + "/__fixtures__/recursive.yaml");
     expect(src).toContain(
       "export type FolderDto = { name?: string; files?: string[]; folders?: FolderDto[]; };",
     );
   });
 
   it("should handle application/geo+json", async () => {
-    const src = await generate("/__fixtures__/geojson.json");
+    const src = await generate(__dirname + "/__fixtures__/geojson.json");
     expect(src).toContain(
       'return oazapfts.fetchJson<{ status: 200; data: FeatureCollection; }>("/geojson", { ...opts });',
     );
   });
 
   it("should generate an api using fetchBlob", async () => {
-    const src = await generate("/__fixtures__/binary.json");
+    const src = await generate(__dirname + "/__fixtures__/binary.json");
     expect(src).toContain(
       "return oazapfts.fetchBlob<{ status: 200; data: Blob; }>(`/file/${encodeURIComponent(fileId)}/download`, { ...opts });",
     );
   });
 
   it("should generate an api with literal type set to const value", async () => {
-    const src = await generate("/__fixtures__/const.json");
+    const src = await generate(__dirname + "/__fixtures__/const.json");
     expect(src).toContain(`export type Shape = "circle";`);
   });
 
   it("should generate valid identifiers", async () => {
-    const src = await generate("/__fixtures__/invalidIdentifiers.yaml");
+    const src = await generate(
+      __dirname + "/__fixtures__/invalidIdentifiers.yaml",
+    );
     expect(src).toContain("getPets($0Limit: number, { $delete }");
   });
 
   it("should not generate duplicate identifiers", async () => {
-    const src = await generate("/__fixtures__/duplicateIdentifiers.yaml");
+    const src = await generate(
+      __dirname + "/__fixtures__/duplicateIdentifiers.yaml",
+    );
     expect(src).toContain("getPetById(id: number, { idQuery }");
   });
 
   it("should generate correct array type for prefixItems", async () => {
-    const src = await generate("/__fixtures__/prefixItems.json");
+    const src = await generate(__dirname + "/__fixtures__/prefixItems.json");
     expect(src).toContain("export type Coordinates = [ number, number ];");
   });
 
   it("should generate valid identifiers for oneOf with refs", async () => {
-    const src = await generate("/__fixtures__/oneOfRef.yaml");
+    const src = await generate(__dirname + "/__fixtures__/oneOfRef.yaml");
     expect(src).toContain("PathsFilterGetParameters0SchemaOneOf0");
   });
 
   it("should merge properties within oneOf schema variations", async () => {
-    const src = await generate("/__fixtures__/oneOfMerge.yaml");
+    const src = await generate(__dirname + "/__fixtures__/oneOfMerge.yaml");
     expect(src).toContain(
       '{ param1?: { c: string; d: "enum1" | "enum2"; a?: string; } | { c?: string; d: "enum1" | "enum2"; b: string; }',
     );
   });
 
   it("should support parameters specified with content", async () => {
-    const src = await generate("/__fixtures__/contentParams.json");
+    const src = await generate(__dirname + "/__fixtures__/contentParams.json");
     expect(src).toContain(
       "export function queryFiles({ filter }: { filter?: { where?: { fileId?: number; }; }; } = {}, opts?: Oazapfts.RequestOpts)",
     );
@@ -133,7 +151,9 @@ describe("generateSource", () => {
   });
 
   it("should generate a base types and extended types with readOnly and writeOnly properties", async () => {
-    const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml");
+    const src = await generate(
+      __dirname + "/__fixtures__/readOnlyWriteOnly.yaml",
+    );
 
     // Base types + Read & Write
     expect(src).toContain(
@@ -156,9 +176,12 @@ describe("generateSource", () => {
   });
 
   it("should generate merged types with mergeReadWriteOnly", async () => {
-    const src = await generate("/__fixtures__/readOnlyWriteOnly.yaml", {
-      mergeReadWriteOnly: true,
-    });
+    const src = await generate(
+      __dirname + "/__fixtures__/readOnlyWriteOnly.yaml",
+      {
+        mergeReadWriteOnly: true,
+      },
+    );
 
     // Base types + Read & Write
     expect(src).toContain(
@@ -176,13 +199,13 @@ describe("generateSource", () => {
   });
 
   it("shouldn't filter all properties of schema when using readOnly/writeOnly", async () => {
-    const src = await generate("/__fixtures__/issue-419.json");
+    const src = await generate(__dirname + "/__fixtures__/issue-419.json");
 
     expect(src).toContain("message: string");
   });
 
   it("should handle type array with nullable fields", async () => {
-    const src = await generate("/__fixtures__/array-type.yaml");
+    const src = await generate(__dirname + "/__fixtures__/array-type.yaml");
 
     expect(src).toContain("name?: string | null; no?: number | null;");
   });
@@ -192,7 +215,9 @@ describe("useEnumType", () => {
   let src: string;
 
   beforeAll(async () => {
-    src = await generate("/../../demo/petstore.json", { useEnumType: true });
+    src = await generate(path.join(demoFolder, "./petstore.json"), {
+      useEnumType: true,
+    });
   });
 
   it("should create string enums", () => {
@@ -234,7 +259,7 @@ describe("argumentStyle", () => {
 
   describe("positional", () => {
     beforeAll(async () => {
-      src = await generate("/../../demo/petstore.json", {
+      src = await generate(path.join(demoFolder, "./petstore.json"), {
         argumentStyle: "positional",
       });
     });
@@ -260,7 +285,7 @@ describe("argumentStyle", () => {
 
   describe("object", () => {
     beforeAll(async () => {
-      src = await generate("/../../demo/petstore.json", {
+      src = await generate(path.join(demoFolder, "./petstore.json"), {
         argumentStyle: "object",
       });
     });

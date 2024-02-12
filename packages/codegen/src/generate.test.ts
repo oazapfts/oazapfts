@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getOperationName, isJsonMimeType, isMimeType } from "./generate";
 
 describe("getOperationName", () => {

@@ -1,4 +1,5 @@
-import { handle, ok, okify, optimistic } from "oazapfts/lib/index";
+import { describe, it, expect, vi } from "vitest";
+import { handle, ok, okify, optimistic } from "@oazapfts/runtime";
 import * as api from "./api";
 import * as optimisticApi from "./optimisticApi";
 import * as enumApi from "./enumApi";
@@ -338,7 +339,7 @@ describe("--optimistic", () => {
 describe("multipart", () => {
   it("is able to upload multiple files along with complex data", async () => {
     /* Test was flaky when hitting the mock server, so we're mocking the fetch */
-    const customFetch = jest.fn((url, init) => {
+    const customFetch = vi.fn((url, init) => {
       return {
         headers: new Headers({
           "content-type": "application/json",
