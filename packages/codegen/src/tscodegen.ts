@@ -1,6 +1,7 @@
-import fs from "fs";
-import ts, { factory } from "typescript";
+import ts from "typescript";
 import { toIdentifier } from "./generate";
+
+const factory = ts.factory;
 
 export const questionToken = factory.createToken(ts.SyntaxKind.QuestionToken);
 
@@ -469,16 +470,6 @@ export function addComment<T extends ts.Node>(node: T, comment?: string) {
     ts.SyntaxKind.MultiLineCommentTrivia,
     `*\n * ${comment.replace(/\n/g, "\n * ")}\n `,
     true,
-  );
-}
-
-export function parseFile(file: string) {
-  return ts.createSourceFile(
-    file,
-    fs.readFileSync(file, "utf8"),
-    ts.ScriptTarget.Latest,
-    /*setParentNodes*/ false,
-    ts.ScriptKind.TS,
   );
 }
 

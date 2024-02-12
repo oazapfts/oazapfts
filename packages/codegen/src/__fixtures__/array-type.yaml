@@ -17,6 +17,6 @@ paths:
                       - string
                       - null
                   no:
-                    type: 
+                    type:
                       - number
                       - null

@@ -1,4 +1,6 @@
-import { ApiResponse, WithHeaders } from "./runtime";
+import type { ApiResponse, WithHeaders } from "./runtime";
+
+export * from "./runtime";
 
 /**
  * Type to access a response's data property for a given status.

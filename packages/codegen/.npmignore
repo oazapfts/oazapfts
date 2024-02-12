@@ -1,0 +1,6 @@
+src/
+misc/
+vite.config.ts
+tsconfig.json
+typings.d.ts
+.*
