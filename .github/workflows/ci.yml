@@ -17,11 +17,11 @@ jobs:
       - run: npx prettier -c .
       - run: npm test
       - run: npm install semantic-release-monorepo --no-save
-      - run: |
-          packages=($(ls -d packages/*))
-          for package in "${packages[@]}"; do
-            (cd $package && pwd && npx semantic-release -e semantic-release-monorepo)
-          done
+      - run: cd packages/codegen && npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: cd packages/runtime && npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
