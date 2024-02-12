@@ -17,7 +17,9 @@ jobs:
       - run: npx prettier -c .
       - run: npm test
       - run: npm install semantic-release-monorepo --no-save
-      - run: cd packages/codegen && npx semantic-release
+      - run: |
+          cp README.md packages/codegen/README.md
+          cd packages/codegen && npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
