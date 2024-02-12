@@ -1,10 +1,11 @@
 import _ from "lodash";
-import ts, { factory } from "typescript";
-import path from "path";
+import ts from "typescript";
 import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
+
+const factory = ts.factory;
 
 export const verbs = [
   "GET",
@@ -1165,11 +1166,13 @@ export default class ApiGenerator {
   generateApi() {
     this.reset();
 
-    /* TODO(hannes.diercks): remove `lib/` from ApiStub in next major https://github.com/oazapfts/oazapfts/pull/550 */
-
     // Parse ApiStub.ts so that we don't have to generate everything manually
-    const stub = cg.parseFile(
-      path.resolve(__dirname, "../../src/codegen/ApiStub.ts"),
+    const stub = ts.createSourceFile(
+      "ApiStub.ts",
+      process.env.__API_STUB_PLACEHOLDER__!, // replaced with ApiStub.ts during build
+      ts.ScriptTarget.Latest,
+      /*setParentNodes*/ false,
+      ts.ScriptKind.TS,
     );
 
     // ApiStub contains `const servers = {}`, find it ...

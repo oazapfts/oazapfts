@@ -1,0 +1,5 @@
+src/
+template/
+build.js
+tsconfig.json
+typings.d.ts

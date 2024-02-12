@@ -1,0 +1,58 @@
+{
+  "name": "@oazapfts/runtime",
+  "version": "0.0.0-development",
+  "description": "Runtime for OpenApi TypeScript client generator",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "./query": {
+      "types": "./dist/query.d.ts",
+      "require": "./dist/query.cjs",
+      "import": "./dist/query.mjs"
+    },
+    "./util": {
+      "types": "./dist/util.d.ts",
+      "require": "./dist/util.cjs",
+      "import": "./dist/util.mjs"
+    },
+    "./headers": {
+      "types": "./dist/headers.d.ts",
+      "require": "./dist/headers.cjs",
+      "import": "./dist/headers.mjs"
+    }
+  },
+  "license": "MIT",
+  "repository": "oazapfts/oazapfts",
+  "scripts": {
+    "build": "rm -rf dist && tsc && node ./build.js"
+  },
+  "release": {
+    "extends": "semantic-release-monorepo",
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ]
+  },
+  "keywords": [
+    "openapi",
+    "typescript",
+    "runtime",
+    "http",
+    "oazapfts"
+  ]
+}

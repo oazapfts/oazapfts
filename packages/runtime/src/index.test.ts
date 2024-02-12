@@ -1,5 +1,6 @@
-import * as Oazapfts from ".";
-import { HttpError, ok } from "../";
+import { describe, beforeAll, it, expect, vi } from "vitest";
+import * as Oazapfts from "./runtime";
+import { HttpError, ok } from "./index";
 
 const oazapfts = Oazapfts.runtime({});
 
@@ -14,13 +15,13 @@ const fetchMock = () => ({
 describe("request", () => {
   let g: any;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     g = global as any;
     g.fetch = g.fetch || (() => {});
   });
 
   it("should use global fetch", async () => {
-    jest.spyOn(g, "fetch").mockImplementationOnce(fetchMock);
+    vi.spyOn(g, "fetch").mockImplementationOnce(fetchMock);
 
     await oazapfts.fetchText("bar", { baseUrl: "foo/" });
 
@@ -28,8 +29,8 @@ describe("request", () => {
   });
 
   it("should not use global fetch if local is provided", async () => {
-    jest.spyOn(g, "fetch");
-    const customFetch = jest.fn(fetchMock);
+    vi.spyOn(g, "fetch");
+    const customFetch = vi.fn(fetchMock);
 
     await oazapfts.fetchText("bar", {
       baseUrl: "foo/",

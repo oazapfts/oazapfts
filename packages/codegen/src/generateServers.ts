@@ -1,7 +1,9 @@
 import _ from "lodash";
 import * as cg from "./tscodegen";
-import ts, { factory } from "typescript";
+import ts from "typescript";
 import { OpenAPIV3 } from "openapi-types";
+
+const factory = ts.factory;
 
 function createTemplate(url: string) {
   const tokens = url.split(/{([\s\S]+?)}/g);
