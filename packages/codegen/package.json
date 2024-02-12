@@ -41,6 +41,9 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^20.11.6"
   },
+  "peerDependencies": {
+    "@oazapfts/runtime": "^1.0"
+  },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
     "lodash": "^4.17.21",
