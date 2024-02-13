@@ -9,22 +9,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./query": {
       "types": "./dist/query.d.ts",
       "require": "./dist/query.cjs",
-      "import": "./dist/query.js"
+      "default": "./dist/query.js"
     },
     "./util": {
       "types": "./dist/util.d.ts",
       "require": "./dist/util.cjs",
-      "import": "./dist/util.js"
+      "default": "./dist/util.js"
     },
     "./headers": {
       "types": "./dist/headers.d.ts",
       "require": "./dist/headers.cjs",
-      "import": "./dist/headers.js"
+      "default": "./dist/headers.js"
     }
   },
   "license": "MIT",
