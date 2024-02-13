@@ -11,7 +11,7 @@ const external = [
 export default defineConfig(({ mode }) => ({
   define: {
     __API_STUB_PLACEHOLDER__: JSON.stringify(
-      fs.readFileSync("./misc/ApiStub.ts").toString(),
+      fs.readFileSync("./template/ApiStub.ts").toString(),
     ),
   },
   build: {
