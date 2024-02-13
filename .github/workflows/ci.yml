@@ -22,9 +22,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: |
+          set -e  # Exit immediately if a command exits with a non-zero status.
           cp README.md packages/codegen/README.md
+          ./packages/codegen/misc/setRuntimeVersion.sh
           cd packages/codegen
-          ./misc/setRuntimeVersion.sh
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
