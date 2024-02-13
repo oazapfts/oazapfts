@@ -24,10 +24,6 @@ export default defineConfig(({ mode }) => ({
       formats: [mode === "esm" ? "es" : "cjs"],
     },
     rollupOptions: {
-      output: {
-        exports: "auto",
-        interop: "esModule",
-      },
       external(source) {
         return external.some(
           (dep) => source === dep || source.startsWith(`${dep}/`),
