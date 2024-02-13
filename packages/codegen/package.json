@@ -3,7 +3,11 @@
   "version": "0.0.0-development",
   "description": "OpenApi TypeScript client generator",
   "license": "MIT",
-  "repository": "oazapfts/oazapfts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oazapfts/oazapfts",
+    "directory": "packages/codegen"
+  },
   "type": "module",
   "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
