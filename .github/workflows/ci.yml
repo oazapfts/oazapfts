@@ -16,14 +16,22 @@ jobs:
       - run: npm ci
       - run: npx prettier -c .
       - run: npm test
-      - run: npm install semantic-release-monorepo --no-save
-      - run: cd packages/runtime && npx semantic-release
+      - run: |
+          set -e  # Exit immediately if a command exits with a non-zero status.
+
+          cd packages/runtime
+          npm install semantic-release-monorepo --no-save
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: |
+          set -e  # Exit immediately if a command exits with a non-zero status.
+
           cp README.md packages/codegen/README.md
-          cd packages/codegen && npx semantic-release
+          cd packages/runtime
+          npm install semantic-release-monorepo --no-save
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
