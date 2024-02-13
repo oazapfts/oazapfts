@@ -1,5 +1,6 @@
 import { UserConfig } from "vite";
 import pkg from "./package.json";
+import fs from "node:fs";
 
 const external = [
   ...Object.keys(pkg.dependencies),
@@ -8,6 +9,11 @@ const external = [
 ];
 
 export default {
+  define: {
+    __API_STUB_PLACEHOLDER__: JSON.stringify(
+      fs.readFileSync("./misc/ApiStub.ts").toString(),
+    ),
+  },
   build: {
     sourcemap: true,
     emptyOutDir: false,

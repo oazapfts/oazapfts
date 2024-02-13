@@ -1169,7 +1169,7 @@ export default class ApiGenerator {
     // Parse ApiStub.ts so that we don't have to generate everything manually
     const stub = ts.createSourceFile(
       "ApiStub.ts",
-      process.env.__API_STUB_PLACEHOLDER__!, // replaced with ApiStub.ts during build
+      __API_STUB_PLACEHOLDER__, // replaced with ApiStub.ts during build
       ts.ScriptTarget.Latest,
       /*setParentNodes*/ false,
       ts.ScriptKind.TS,
