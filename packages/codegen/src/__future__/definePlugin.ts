@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
+import {PathOrFileDescriptor} from "node:fs";
 import { type SchemaObject } from "../generate";
 import ts from "typescript";
 import { Opts } from "../index";
@@ -138,24 +139,24 @@ export type OazapftsCodegenPlugin = {
   /**
    * Runs after the TS file contents have been generated, but before writing to file.
    * Can be async
-   * @param fileName - name of the file to write to (should this be a full path object?)
+   * @param fileName - path to the file to write to
    * @param fileContents - The TS file contents as a string.
    * @param document - the full OAS document.
    */
   beforeWriteToFile?(
-    fileName: string,
+    fileName: PathOrFileDescriptor,
     fileContents: string,
     document: OpenAPIV3.Document,
   ): void | Promise<void>;
 
   /**
    * Runs after the TS file has been written to. Allows for... cleanup?
-   * @param fileName - name of the file to write to (should this be a full path object?)
+   * @param fileName - path of the file that was written to
    * @param fileContents - The TS file contents as a string.
    * @param document - the full OAS document.
    */
   afterWriteToFile?(
-    fileName: string,
+    fileName: PathOrFileDescriptor,
     fileContents: string,
     document: OpenAPIV3.Document,
   ): void | Promise<void>;
