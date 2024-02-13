@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     target: mode === "esm" ? "esnext" : "es2015",
     lib: {
-      entry: ["src/index.ts", "src/cli.ts"],
+      entry: ["src/index.ts", "src/cli.ts", "src/generate.ts"],
       formats: [mode === "esm" ? "es" : "cjs"],
     },
     rollupOptions: {
