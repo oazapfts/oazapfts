@@ -3,3 +3,4 @@ misc/
 build.js
 tsconfig.json
 typings.d.ts
+.*
