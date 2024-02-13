@@ -22,6 +22,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: |
+          sleep 5 # wait for npm cache to pick up a potentially new runtime version
           set -e  # Exit immediately if a command exits with a non-zero status.
           cp README.md packages/codegen/README.md
           ./packages/codegen/misc/setRuntimeVersion.sh
