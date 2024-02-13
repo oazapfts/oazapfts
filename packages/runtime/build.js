@@ -7,6 +7,7 @@ const commonBuild = {
     "./src/query.ts",
     "./src/util.ts",
     "./src/headers.ts",
+    "./src/runtime.ts",
   ],
   minify: true,
   sourcemap: true,
