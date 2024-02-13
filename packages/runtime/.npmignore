@@ -1,4 +1,4 @@
 src/
-build.js
+vite.config.ts
 tsconfig.json
 .*

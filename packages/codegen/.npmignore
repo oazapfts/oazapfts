@@ -1,6 +1,6 @@
 src/
 misc/
-build.js
+vite.config.ts
 tsconfig.json
 typings.d.ts
 .*
