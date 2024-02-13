@@ -12,6 +12,5 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": false
-  },
-  "exclude": ["demo", "jest.config.ts"]
+  }
 }

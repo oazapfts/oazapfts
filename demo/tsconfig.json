@@ -1,10 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    "noEmit": true,
     "paths": {
       "@oazapfts/runtime": ["../packages/runtime/dist"],
       "@oazapfts/runtime/*": ["../packages/runtime/dist/*"]
     }
-  }
+  },
+  "include": ["./*.ts"]
 }
