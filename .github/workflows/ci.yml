@@ -1,22 +1,39 @@
 name: CI
+
 on:
   push:
     branches: [main, alpha, beta]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  test-and-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: ⎔ Setup node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
-      - run: npm ci
-      - run: npx prettier -c .
-      - run: npm test
-      - run: |
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint
+        run: npm run lint
+
+      - name: 🧪 Test
+        run: npm test
+
+      - name: 📦 Release @oazapfts/runtime
+        run: |
           set -e  # Exit immediately if a command exits with a non-zero status.
 
           cd packages/runtime
@@ -25,7 +42,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: |
+
+      - name: 📦 Release oazapfts
+        run: |
           set -e  # Exit immediately if a command exits with a non-zero status.
 
           cp README.md packages/codegen/README.md

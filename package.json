@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npm run build -w oazapfts && npm run build -w @oazapfts/runtime",
     "test": "npm run test:unit -- --run && npm run test:e2e",
+    "lint": "prettier --check .",
     "test:unit": "cd packages && vitest",
     "test:e2e": "npm run generate-demo && with-server 'cd demo && vitest --run'",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
