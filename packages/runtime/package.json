@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
   "scripts": {
-    "build": "rm -rf dist && tsc && vite build"
+    "build": "rm -rf dist && tsc && vite build --mode esm && vite build --mode cjs"
   },
   "release": {
     "extends": "semantic-release-monorepo",

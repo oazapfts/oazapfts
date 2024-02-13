@@ -1,4 +1,4 @@
-import { UserConfig } from "vite";
+import { defineConfig } from "vite";
 import pkg from "./package.json";
 import fs from "node:fs";
 
@@ -8,7 +8,7 @@ const external = [
   "fs",
 ];
 
-export default {
+export default defineConfig(({ mode }) => ({
   define: {
     __API_STUB_PLACEHOLDER__: JSON.stringify(
       fs.readFileSync("./misc/ApiStub.ts").toString(),
@@ -18,9 +18,10 @@ export default {
     sourcemap: true,
     emptyOutDir: false,
     outDir: "dist",
+    target: mode === "esm" ? "esnext" : "es2015",
     lib: {
       entry: ["src/index.ts", "src/cli.ts"],
-      formats: ["es", "cjs"],
+      formats: [mode === "esm" ? "es" : "cjs"],
     },
     rollupOptions: {
       output: {
@@ -34,4 +35,4 @@ export default {
       },
     },
   },
-} satisfies UserConfig;
+}));
