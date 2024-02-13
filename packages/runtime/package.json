@@ -28,7 +28,11 @@
     }
   },
   "license": "MIT",
-  "repository": "oazapfts/oazapfts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oazapfts/oazapfts",
+    "directory": "packages/runtime"
+  },
   "scripts": {
     "build": "rm -rf dist && tsc && vite build --mode esm && vite build --mode cjs"
   },
