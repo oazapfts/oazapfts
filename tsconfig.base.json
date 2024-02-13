@@ -1,12 +1,10 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
-    "rootDir": "src",
-    "target": "es2015",
+    "target": "ESNext",
     "sourceMap": true,
     "declaration": true,
-    "lib": ["es2015", "dom"],
-    "module": "commonjs",
+    "lib": ["ESNext", "dom"],
+    "moduleResolution": "Bundler",
     "strict": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -14,6 +12,5 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": false
-  },
-  "exclude": ["demo", "lib", "src/codegen/ApiStub.ts", "jest.config.ts"]
+  }
 }
