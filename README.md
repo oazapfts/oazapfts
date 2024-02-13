@@ -23,7 +23,8 @@ npm install oazapfts
 ```
 
 > **Note**
-> With version 3.0.0 oazapfts has become a runtime dependency and the generated code does no longer include all the fetch logic.
+> With version 3.0.0 oazapfts has become a runtime dependency and the generated code does no longer include all the fetch logic.  
+> As of 6.0.0 the runtime has been moved to a separate package, `@oazapfts/runtime`.
 
 ## Usage
 
@@ -145,7 +146,7 @@ if (res.status === 404) {
 The above code can be simplified by using the `handle` helper:
 
 ```ts
-import { handle } from "oazapfts";
+import { handle } from "@oazapfts/runtime";
 
 await handle(api.getPetById(1), {
   200(pet) {
@@ -192,7 +193,7 @@ Sometimes you might want to use the optimistic mode for some of your API calls, 
 In that case, you can use the `ok`-helper function to selectively apply optimistic response handling:
 
 ```ts
-import { ok } from "oazapfts";
+import { ok } from "@oazapfts/runtime";
 
 const pet = await ok(api.getPetById(1));
 ```

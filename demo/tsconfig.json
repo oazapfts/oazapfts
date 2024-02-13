@@ -1,20 +1,10 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "sourceMap": true,
-    "declaration": true,
-    "lib": ["es2015", "dom"],
-    "module": "commonjs",
-    "strict": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "noUnusedLocals": false,
     "baseUrl": ".",
     "paths": {
-      "oazapfts/lib/*": ["../lib/*"]
+      "@oazapfts/runtime": ["../packages/runtime/dist"],
+      "@oazapfts/runtime/*": ["../packages/runtime/dist/*"]
     }
   }
 }
