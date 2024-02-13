@@ -29,7 +29,7 @@ jobs:
           set -e  # Exit immediately if a command exits with a non-zero status.
 
           cp README.md packages/codegen/README.md
-          cd packages/runtime
+          cd packages/codegen
           npm install semantic-release-monorepo --no-save
           npx semantic-release
         env:
