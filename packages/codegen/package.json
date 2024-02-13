@@ -42,7 +42,7 @@
     "@types/node": "^20.11.6"
   },
   "peerDependencies": {
-    "@oazapfts/runtime": "^1.0"
+    "@oazapfts/runtime": "0.0.0-development"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",

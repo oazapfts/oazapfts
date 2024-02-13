@@ -1,7 +1,7 @@
 import { build } from "esbuild";
 import { readFileSync } from "node:fs";
 
-const stub = readFileSync("template/ApiStub.ts", "utf-8");
+const stub = readFileSync("misc/ApiStub.ts", "utf-8");
 const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
 
 /** @type {import('esbuild').BuildOptions} */

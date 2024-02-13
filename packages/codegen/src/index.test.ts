@@ -48,7 +48,7 @@ async function checkForTypeErrors(source: string) {
 describe("generateSource", () => {
   beforeAll(async () => {
     process.env.__API_STUB_PLACEHOLDER__ = (
-      await readFile(__dirname + "/../template/ApiStub.ts")
+      await readFile(__dirname + "/../misc/ApiStub.ts")
     ).toString();
   });
 
