@@ -24,7 +24,7 @@ npm install oazapfts
 
 > **Note**
 > With version 3.0.0 oazapfts has become a runtime dependency and the generated code does no longer include all the fetch logic.  
-> As with 6.0.0 the runtime has been moved to a separate package, `@oazapfts/runtime`.
+> As of 6.0.0 the runtime has been moved to a separate package, `@oazapfts/runtime`.
 
 ## Usage
 
