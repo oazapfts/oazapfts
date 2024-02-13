@@ -4,34 +4,34 @@
   "description": "Runtime for OpenApi TypeScript client generator",
   "type": "module",
   "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.js"
     },
     "./query": {
       "types": "./dist/query.d.ts",
       "require": "./dist/query.cjs",
-      "import": "./dist/query.mjs"
+      "import": "./dist/query.js"
     },
     "./util": {
       "types": "./dist/util.d.ts",
       "require": "./dist/util.cjs",
-      "import": "./dist/util.mjs"
+      "import": "./dist/util.js"
     },
     "./headers": {
       "types": "./dist/headers.d.ts",
       "require": "./dist/headers.cjs",
-      "import": "./dist/headers.mjs"
+      "import": "./dist/headers.js"
     }
   },
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
   "scripts": {
-    "build": "rm -rf dist && tsc && node ./build.js"
+    "build": "rm -rf dist && tsc && vite build"
   },
   "release": {
     "extends": "semantic-release-monorepo",

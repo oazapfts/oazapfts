@@ -15,7 +15,7 @@
     "test:e2e": "npm run generate-demo && with-server 'cd demo && vitest --run'",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && oazapfts ./demo/petstore.json ./demo/api.ts && oazapfts ./demo/petstore.json --mergeReadWriteOnly ./demo/mergedReadWriteApi.ts && oazapfts --optimistic ./demo/petstore.json ./demo/optimisticApi.ts && oazapfts --useEnumType ./demo/petstore.json ./demo/enumApi.ts && oazapfts --argumentStyle=object ./demo/petstore.json ./demo/objectStyleArgument.ts && prettier -w demo",
-    "prepare": "npm run build && ln -sf $(pwd)/packages/codegen/dist/cli.mjs $(pwd)/node_modules/.bin/oazapfts"
+    "prepare": "npm run build && ln -sf $(pwd)/packages/codegen/dist/cli.js $(pwd)/node_modules/.bin/oazapfts"
   },
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
@@ -23,10 +23,10 @@
     "@jest/types": "^29.6.3",
     "@ts-morph/bootstrap": "^0.22.0",
     "@types/node": "^20.11.6",
-    "esbuild": "^0.20.0",
     "open-api-mocker": "^2.0.0",
     "openapi-types": "^12.1.3",
     "prettier": "^3.2.4",
+    "vite": "^5.1.1",
     "vitest": "^1.2.2",
     "with-server": "^2.1.0"
   }

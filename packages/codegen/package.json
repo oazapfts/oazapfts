@@ -6,20 +6,20 @@
   "repository": "oazapfts/oazapfts",
   "type": "module",
   "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "oazapfts": "dist/cli.mjs"
+    "oazapfts": "dist/cli.js"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc && node ./build.js && chmod +x dist/cli.mjs"
+    "build": "rm -rf dist && tsc && vite build && chmod +x dist/cli.js && chmod +x dist/cli.cjs"
   },
   "release": {
     "extends": "semantic-release-monorepo",
