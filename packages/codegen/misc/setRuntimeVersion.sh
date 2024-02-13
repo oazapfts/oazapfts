@@ -38,7 +38,6 @@ fi
 package_json_path="./packages/codegen/package.json"
 
 # Replace the version in package.json
-# Note: For GNU sed (common in Linux), you might need to remove the '' after -i
-sed -i '' "s/\"@oazapfts\/runtime\": \"[^\"]*\"/\"@oazapfts\/runtime\": \"$new_version\"/" $package_json_path
+sed -i "s/\"@oazapfts\/runtime\": \"[^\"]*\"/\"@oazapfts\/runtime\": \"$new_version\"/" $package_json_path
 
 echo "Updated @oazapfts/runtime version to $new_version in $package_json_path"
