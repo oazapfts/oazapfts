@@ -36,8 +36,10 @@ fi
 
 # Path to your package.json file
 codegen_package_json_path="./packages/codegen/package.json"
+runtime_package_json_path="./packages/runtime/package.json"
 
 # Replace the version in package.json
 sed -i "s/\"@oazapfts\/runtime\": \"[^\"]*\"/\"@oazapfts\/runtime\": \"$new_version\"/" $codegen_package_json_path
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$new_version\"/" $runtime_package_json_path
 
 echo "Updated @oazapfts/runtime version to $new_version in $codegen_package_json_path"
