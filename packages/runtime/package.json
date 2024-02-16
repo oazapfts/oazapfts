@@ -34,7 +34,8 @@
     "directory": "packages/runtime"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc && vite build --mode esm && vite build --mode cjs"
+    "build": "rm -rf dist && tsc && vite build --mode esm && vite build --mode cjs",
+    "prepack": "sed -i 's|dist/||g' package.json && mv dist/* ."
   },
   "release": {
     "extends": "semantic-release-monorepo",

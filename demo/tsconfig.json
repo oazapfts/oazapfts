@@ -3,8 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "paths": {
-      "@oazapfts/runtime": ["../packages/runtime/dist"],
-      "@oazapfts/runtime/*": ["../packages/runtime/dist/*"]
+      "@oazapfts/runtime": ["../packages/runtime/src"],
+      "@oazapfts/runtime/*": ["../packages/runtime/src/*"]
     }
   },
   "include": ["./*.ts"]

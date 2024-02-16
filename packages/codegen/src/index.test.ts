@@ -29,12 +29,8 @@ async function checkForTypeErrors(source: string) {
       noEmit: true,
       target: ScriptTarget.ESNext,
       paths: {
-        "@oazapfts/runtime": [
-          path.resolve(__dirname, "../../packages/runtime/dist"),
-        ],
-        "@oazapfts/runtime/*": [
-          path.join(__dirname, "../../packages/runtime/dist/*"),
-        ],
+        "@oazapfts/runtime": [path.resolve(__dirname, "../../runtime/src")],
+        "@oazapfts/runtime/*": [path.join(__dirname, "../../runtime/src/*")],
       },
     },
   });
