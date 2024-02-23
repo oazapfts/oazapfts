@@ -1,9 +1,19 @@
 import _ from "lodash";
 import ts from "typescript";
-import { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
-import { Opts } from ".";
+import { OazapftsContext, OnlyMode, OnlyModes, resetContext } from "./context";
+import {
+  OpenAPIDiscriminatorObject,
+  OpenAPIMediaTypeObject,
+  OpenAPIOperationObject,
+  OpenAPIParameterObject,
+  OpenAPIReferenceObject,
+  OpenAPIRequestBodyObject,
+  OpenAPIResponseObject,
+  OpenAPIResponsesObject,
+  OpenAPISchemaObject,
+} from "./openApi3-x";
 
 export * from "./tscodegen";
 export * from "./generateServers";
@@ -22,36 +32,6 @@ export const verbs = [
 ];
 
 type ContentType = "json" | "form" | "multipart";
-type OnlyMode = "readOnly" | "writeOnly";
-type OnlyModes = Record<OnlyMode, boolean>;
-
-// Use union of OAS 3.0 and 3.1 types throughout
-type OpenAPISchemaObject = OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject;
-type OpenAPIReferenceObject =
-  | OpenAPIV3.ReferenceObject
-  | OpenAPIV3_1.ReferenceObject;
-type OpenAPIParameterObject =
-  | OpenAPIV3.ParameterObject
-  | OpenAPIV3_1.ParameterObject;
-type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document;
-type OpenAPIDiscriminatorObject =
-  | OpenAPIV3.DiscriminatorObject
-  | OpenAPIV3_1.DiscriminatorObject;
-type OpenAPIResponseObject =
-  | OpenAPIV3.ResponseObject
-  | OpenAPIV3_1.ResponseObject;
-type OpenAPIResponsesObject =
-  | OpenAPIV3.ResponsesObject
-  | OpenAPIV3_1.ResponsesObject;
-type OpenAPIRequestBodyObject =
-  | OpenAPIV3.RequestBodyObject
-  | OpenAPIV3_1.RequestBodyObject;
-type OpenAPIMediaTypeObject =
-  | OpenAPIV3.MediaTypeObject
-  | OpenAPIV3_1.MediaTypeObject;
-type OpenAPIOperationObject =
-  | OpenAPIV3.OperationObject
-  | OpenAPIV3_1.OperationObject;
 
 const contentTypes: Record<string, ContentType> = {
   "*/*": "json",
@@ -317,58 +297,17 @@ function isKeyOfKeywordType(key: string): key is keyof typeof cg.keywordType {
  * Main entry point that generates TypeScript code from a given API spec.
  */
 export default class ApiGenerator {
-  constructor(
-    public readonly spec: OpenAPIDocument,
-    public readonly opts: Opts = {},
-    /** Indicates if the document was converted from an older version of the OpenAPI specification. */
-    public readonly isConverted = false,
-  ) {
-    if (this.spec.components?.schemas) {
-      this.preprocessComponents(this.spec.components.schemas);
-    }
-  }
-
-  // see `preprocessComponents` for the definition of a discriminating schema
-  discriminatingSchemas: Set<string> = new Set();
-
-  aliases: (ts.TypeAliasDeclaration | ts.InterfaceDeclaration)[] = [];
-
-  enumAliases: ts.Statement[] = [];
-  enumRefs: Record<string, { values: string; type: ts.TypeReferenceNode }> = {};
-
-  // Collect the types of all referenced schemas so we can export them later
-  // Referenced schemas can be pointing at the following versions:
-  // - "base": The regular type/interface e.g. ExampleSchema
-  // - "readOnly": The readOnly version e.g. ExampleSchemaRead
-  // - "writeOnly": The writeOnly version e.g. ExampleSchemaWrite
-  refs: Record<
-    string,
-    {
-      base: ts.TypeReferenceNode;
-      readOnly?: ts.TypeReferenceNode;
-      writeOnly?: ts.TypeReferenceNode;
-    }
-  > = {};
-
-  // Maps a referenced schema to its readOnly/writeOnly status
-  // This field should be used exclusively within the `checkSchemaOnlyMode` method
-  refsOnlyMode: Map<string, OnlyModes> = new Map();
-
-  // Keep track of already used type aliases
-  typeAliases: Record<string, number> = {};
+  constructor(public readonly ctx: OazapftsContext) {}
 
   reset() {
-    this.aliases = [];
-    this.enumAliases = [];
-    this.refs = {};
-    this.typeAliases = {};
+    resetContext(this.ctx);
   }
 
   resolve<T>(obj: T | OpenAPIReferenceObject) {
     if (!isReference(obj)) return obj;
     const ref = obj.$ref;
     const path = refPathToPropertyPath(ref);
-    const resolved = _.get(this.spec, path);
+    const resolved = _.get(this.ctx.spec, path);
     if (typeof resolved === "undefined") {
       throw new Error(`Can't find ${path}`);
     }
@@ -380,12 +319,14 @@ export default class ApiGenerator {
   }
 
   skip(tags?: string[]) {
-    const excluded = tags && tags.some((t) => this.opts?.exclude?.includes(t));
+    const excluded =
+      tags && tags.some((t) => this.ctx.opts?.exclude?.includes(t));
     if (excluded) {
       return true;
     }
-    if (this.opts?.include) {
-      const included = tags && tags.some((t) => this.opts.include?.includes(t));
+    if (this.ctx.opts?.include) {
+      const included =
+        tags && tags.some((t) => this.ctx.opts.include?.includes(t));
       return !included;
     }
     return false;
@@ -412,18 +353,18 @@ export default class ApiGenerator {
   }
 
   getUniqueAlias(name: string) {
-    let used = this.typeAliases[name] || 0;
+    let used = this.ctx.typeAliases[name] || 0;
     if (used) {
-      this.typeAliases[name] = ++used;
+      this.ctx.typeAliases[name] = ++used;
       name += used;
     }
-    this.typeAliases[name] = 1;
+    this.ctx.typeAliases[name] = 1;
     return name;
   }
 
   getEnumUniqueAlias(name: string, values: string) {
     // If enum name already exists and have the same values
-    if (this.enumRefs[name] && this.enumRefs[name].values == values) {
+    if (this.ctx.enumRefs[name] && this.ctx.enumRefs[name].values == values) {
       return name;
     }
 
@@ -445,7 +386,7 @@ export default class ApiGenerator {
       ? this.findAvailableRef(obj.$ref + "Base")
       : obj.$ref;
 
-    if (!this.refs[$ref]) {
+    if (!this.ctx.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
       if (ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
@@ -462,14 +403,14 @@ export default class ApiGenerator {
 
       const alias = this.getUniqueAlias(identifier);
 
-      this.refs[$ref] = {
+      this.ctx.refs[$ref] = {
         base: factory.createTypeReferenceNode(alias, undefined),
         readOnly: undefined,
         writeOnly: undefined,
       };
 
       const type = this.getTypeFromSchema(schema, undefined);
-      this.aliases.push(
+      this.ctx.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
           name: alias,
@@ -483,13 +424,13 @@ export default class ApiGenerator {
         const readOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "readOnly"),
         );
-        this.refs[$ref]["readOnly"] = factory.createTypeReferenceNode(
+        this.ctx.refs[$ref]["readOnly"] = factory.createTypeReferenceNode(
           readOnlyAlias,
           undefined,
         );
 
         const readOnlyType = this.getTypeFromSchema(schema, name, "readOnly");
-        this.aliases.push(
+        this.ctx.aliases.push(
           cg.createTypeAliasDeclaration({
             modifiers: [cg.modifier.export],
             name: readOnlyAlias,
@@ -502,12 +443,12 @@ export default class ApiGenerator {
         const writeOnlyAlias = this.getUniqueAlias(
           toIdentifier(name, true, "writeOnly"),
         );
-        this.refs[$ref]["writeOnly"] = factory.createTypeReferenceNode(
+        this.ctx.refs[$ref]["writeOnly"] = factory.createTypeReferenceNode(
           writeOnlyAlias,
           undefined,
         );
         const writeOnlyType = this.getTypeFromSchema(schema, name, "writeOnly");
-        this.aliases.push(
+        this.ctx.aliases.push(
           cg.createTypeAliasDeclaration({
             modifiers: [cg.modifier.export],
             name: writeOnlyAlias,
@@ -518,7 +459,7 @@ export default class ApiGenerator {
     }
 
     // If not ref fallback to the regular reference
-    return this.refs[$ref][onlyMode || "base"] ?? this.refs[$ref].base;
+    return this.ctx.refs[$ref][onlyMode || "base"] ?? this.ctx.refs[$ref].base;
   }
 
   getUnionType(
@@ -655,7 +596,7 @@ export default class ApiGenerator {
       for (const childSchema of schema.allOf) {
         if (
           isReference(childSchema) &&
-          this.discriminatingSchemas.has(childSchema.$ref)
+          this.ctx.discriminatingSchemas.has(childSchema.$ref)
         ) {
           const discriminatingSchema = this.resolve<SchemaObject>(childSchema);
           const discriminator = discriminatingSchema.discriminator!;
@@ -756,7 +697,10 @@ export default class ApiGenerator {
 
   isTrueEnum(schema: SchemaObject, name?: string): name is string {
     return Boolean(
-      schema.enum && this.opts.useEnumType && name && schema.type !== "boolean",
+      schema.enum &&
+        this.ctx.opts.useEnumType &&
+        name &&
+        schema.type !== "boolean",
     );
   }
 
@@ -805,8 +749,8 @@ export default class ApiGenerator {
 
     const name = this.getEnumUniqueAlias(proposedName, stringEnumValue);
 
-    if (this.enumRefs[proposedName] && proposedName === name) {
-      return this.enumRefs[proposedName].type;
+    if (this.ctx.enumRefs[proposedName] && proposedName === name) {
+      return this.ctx.enumRefs[proposedName].type;
     }
 
     const values = schema.enum ? schema.enum : [];
@@ -834,13 +778,13 @@ export default class ApiGenerator {
         factory.createStringLiteral(s),
       );
     });
-    this.enumAliases.push(
+    this.ctx.enumAliases.push(
       factory.createEnumDeclaration([cg.modifier.export], name, members),
     );
 
     const type = factory.createTypeReferenceNode(name, undefined);
 
-    this.enumRefs[proposedName] = {
+    this.ctx.enumRefs[proposedName] = {
       values: stringEnumValue,
       type: factory.createTypeReferenceNode(name, undefined),
     };
@@ -857,7 +801,7 @@ export default class ApiGenerator {
     schema: SchemaObject | OpenAPIReferenceObject,
     resolveRefs = true,
   ): OnlyModes {
-    if (this.opts.mergeReadWriteOnly) {
+    if (this.ctx.opts.mergeReadWriteOnly) {
       return { readOnly: false, writeOnly: false };
     }
 
@@ -873,7 +817,7 @@ export default class ApiGenerator {
           return { readOnly: false, writeOnly: false };
 
         // check if the result is cached in `this.refsOnlyMode`
-        const cached = this.refsOnlyMode.get(schema.$ref);
+        const cached = this.ctx.refsOnlyMode.get(schema.$ref);
         if (cached) return cached;
 
         history.add(schema.$ref);
@@ -881,7 +825,7 @@ export default class ApiGenerator {
         history.delete(schema.$ref);
 
         // cache the result
-        this.refsOnlyMode.set(schema.$ref, ret);
+        this.ctx.refsOnlyMode.set(schema.$ref, ret);
 
         return ret;
       }
@@ -949,7 +893,7 @@ export default class ApiGenerator {
       const schema = props[name];
       const isRequired = required && required.includes(name);
       let type = this.getTypeFromSchema(schema, name, onlyMode);
-      if (!isRequired && this.opts.unionUndefined) {
+      if (!isRequired && this.ctx.opts.unionUndefined) {
         type = factory.createUnionTypeNode([type, cg.keywordType.undefined]);
       }
 
@@ -1102,7 +1046,7 @@ export default class ApiGenerator {
   }
 
   wrapResult(ex: ts.Expression) {
-    return this.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
+    return this.ctx.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
   /**
@@ -1126,7 +1070,7 @@ export default class ApiGenerator {
       schema["x-component-ref-path"] = prefix + name;
 
       if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
-        this.discriminatingSchemas.add(prefix + name);
+        this.ctx.discriminatingSchemas.add(prefix + name);
       }
     }
 
@@ -1147,7 +1091,7 @@ export default class ApiGenerator {
       for (const childSchema of schema.allOf) {
         if (
           !isReference(childSchema) ||
-          !this.discriminatingSchemas.has(childSchema.$ref)
+          !this.ctx.discriminatingSchemas.has(childSchema.$ref)
         ) {
           continue;
         }
@@ -1169,6 +1113,10 @@ export default class ApiGenerator {
   generateApi() {
     this.reset();
 
+    if (this.ctx.spec.components?.schemas) {
+      this.preprocessComponents(this.ctx.spec.components.schemas);
+    }
+
     // Parse ApiStub.ts so that we don't have to generate everything manually
     const stub = ts.createSourceFile(
       "ApiStub.ts",
@@ -1182,7 +1130,7 @@ export default class ApiGenerator {
     const servers = cg.findFirstVariableDeclaration(stub.statements, "servers");
     // servers.initializer is readonly, this might break in a future TS version, but works fine for now.
     Object.assign(servers, {
-      initializer: generateServers(this.spec.servers || []),
+      initializer: generateServers(this.ctx.spec.servers || []),
     });
 
     const { initializer } = cg.findFirstVariableDeclaration(
@@ -1196,7 +1144,7 @@ export default class ApiGenerator {
     cg.changePropertyValue(
       initializer,
       "baseUrl",
-      defaultBaseUrl(this.spec.servers || []),
+      defaultBaseUrl(this.ctx.spec.servers || []),
     );
 
     // Collect class functions to be added...
@@ -1205,11 +1153,11 @@ export default class ApiGenerator {
     // Keep track of names to detect duplicates
     const names: Record<string, number> = {};
 
-    if (this.spec.paths) {
-      Object.keys(this.spec.paths).forEach((path) => {
-        if (!this.spec.paths) return;
+    if (this.ctx.spec.paths) {
+      Object.keys(this.ctx.spec.paths).forEach((path) => {
+        if (!this.ctx.spec.paths) return;
 
-        const item = this.spec.paths[path];
+        const item = this.ctx.spec.paths[path];
 
         if (!item) {
           return;
@@ -1255,7 +1203,7 @@ export default class ApiGenerator {
           }
 
           // expand older OpenAPI parameters into deepObject style where needed
-          const parameters = this.isConverted
+          const parameters = this.ctx.isConverted
             ? supportDeepObjects(resolvedParameters)
             : resolvedParameters;
 
@@ -1279,7 +1227,7 @@ export default class ApiGenerator {
           const methodParams: ts.ParameterDeclaration[] = [];
           let body: OpenAPIRequestBodyObject | undefined = undefined;
           let bodyVar: string | undefined = undefined;
-          switch (this.opts.argumentStyle ?? "positional") {
+          switch (this.ctx.opts.argumentStyle ?? "positional") {
             case "positional":
               // split into required/optional
               const [required, optional] = _.partition(parameters, "required");
@@ -1523,8 +1471,8 @@ export default class ApiGenerator {
     Object.assign(stub, {
       statements: cg.appendNodes(
         stub.statements,
-        ...[...this.aliases, ...functions],
-        ...this.enumAliases,
+        ...[...this.ctx.aliases, ...functions],
+        ...this.ctx.enumAliases,
       ),
     });
 
