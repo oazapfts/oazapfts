@@ -22,7 +22,21 @@
       "url": "https://petstore.swagger.io/v2"
     },
     {
-      "url": "http://petstore.swagger.io/v2"
+      "url": "{protocol}://{stage}.petstore.example.org/{version}",
+      "variables": {
+        "protocol": {
+          "enum": ["http", "https"],
+          "default": "https"
+        },
+        "stage": {
+          "enum": ["test", "staging", "production"],
+          "default": "staging"
+        },
+        "version": {
+          "enum": ["v1", "v2"],
+          "default": "v1"
+        }
+      }
     }
   ],
   "tags": [
