@@ -1,30 +1,43 @@
 import {describe, it, expect, vi, beforeEach} from "vitest";
 import {
-  defineOazapftsPlugin,
-  OazapftsPlugin,
+  __globalHooks,
+    __updateGlobalHooks,
+    defineOazapftsPlugin,
+    CliContext,
+    Hooks,
 } from "./definePlugin";
 
-vi.mock('./definePlugin',async (importOriginal)=>{
-  const module = await importOriginal<typeof import('./definePlugin')>();
-  beforeEach(()=>{
-      Object.defineProperty(module.OazapftsPlugin, '__globalHooks',{
-        value:new OazapftsPlugin.Hooks(),
-      })
-  })
-  return {
-    ...module,
-  }
-})
-
 describe("defineOazapftsPlugin", () => {
-
-  it("should call hooked methods", async () => {
+  beforeEach(()=>{
+    __updateGlobalHooks(new Hooks())
+  })
+  it("should call hooked method cliArgs", async () => {
     const mockFunction = vi.fn<unknown[], void>();
+    expect(__globalHooks.cliArgs.isUsed()).toBeFalsy();
     await defineOazapftsPlugin(async (hooks)=>{
       hooks.cliArgs.tap('mockFunction', mockFunction);
     });
+    await __globalHooks.cliArgs.promise(new CliContext());
+    expect(mockFunction).toBeCalled();
+  });
 
-    await OazapftsPlugin.__globalHooks.cliArgs.promise(new OazapftsPlugin.CliContext());
+  it("should call cliArgs again", async () => {
+    const mockFunction = vi.fn<unknown[], void>();
+    expect(__globalHooks.cliArgs.isUsed()).toBeFalsy();
+    await defineOazapftsPlugin(async (hooks)=>{
+      hooks.cliArgs.tap('mockFunction', mockFunction);
+    });
+    await __globalHooks.cliArgs.promise(new CliContext());
+    expect(mockFunction).toBeCalled();
+  });
+
+  it("should call hooked method cliValidateArgs", async () => {
+    const mockFunction = vi.fn<unknown[], void>();
+    await defineOazapftsPlugin(async (hooks)=>{
+      hooks.cliValidateArgs.tap('mockFunction', mockFunction);
+    });
+
+    await __globalHooks.cliValidateArgs.promise(new CliContext());
 
     expect(mockFunction).toBeCalled();
 
