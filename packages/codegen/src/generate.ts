@@ -5,6 +5,9 @@ import * as cg from "./tscodegen";
 import generateServers, { defaultBaseUrl } from "./generateServers";
 import { Opts } from ".";
 
+export * from "./tscodegen";
+export * from "./generateServers";
+
 const factory = ts.factory;
 
 export const verbs = [

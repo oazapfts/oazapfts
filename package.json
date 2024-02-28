@@ -22,12 +22,12 @@
   "repository": "oazapfts/oazapfts",
   "devDependencies": {
     "@ts-morph/bootstrap": "^0.22.0",
-    "@types/node": "^20.11.6",
+    "@types/node": "^20.11.20",
     "open-api-mocker": "^2.0.0",
     "openapi-types": "^12.1.3",
-    "prettier": "^3.2.4",
-    "vite": "^5.1.1",
-    "vitest": "^1.2.2",
+    "prettier": "^3.2.5",
+    "vite": "^5.1.4",
+    "vitest": "^1.3.1",
     "with-server": "^2.1.0"
   }
 }
