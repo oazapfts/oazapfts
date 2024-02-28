@@ -6,7 +6,7 @@ import {Opts} from "../index";
 import minimist from "minimist";
 import {AsyncSeriesWaterfallHook, AsyncSeriesHook} from "tapable";
 
-namespace OazapftsPlugin {
+export namespace OazapftsPlugin {
 
     export class CliContext {
         /**
@@ -213,21 +213,22 @@ namespace OazapftsPlugin {
         );
     }
 
-    export type Callback = (hooks: OazapftsPlugin.Hooks) => void;
+    export type Callback = (hooks: OazapftsPlugin.Hooks) => Promise<void>;
 
+    export const __globalHooks = new OazapftsPlugin.Hooks();
 }
 
 
 
 
-export const __globalHooks = new OazapftsPlugin.Hooks();
 
-export function defineOazapftsPlugin(
+
+export async function defineOazapftsPlugin(
     plugin: OazapftsPlugin.Callback,
-): void {
+): Promise<void> {
     // Do some checks to ensure that we have a valid plugin (if there are required params)
     if (typeof plugin !== "function" || plugin.length < 1) {
         throw new Error("Plugin must be a function and accept 1 argument");
     }
-    plugin(__globalHooks);
+    await plugin(OazapftsPlugin.__globalHooks);
 }
