@@ -18,5 +18,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [dts({ rollupTypes: true })],
+  plugins: mode === "esm" ? [dts({ rollupTypes: true })] : [],
 }));
