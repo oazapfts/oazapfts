@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import dts from "vite-plugin-dts";
 import pkg from "./package.json";
 import fs from "node:fs";
 
@@ -31,4 +32,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  plugins: [dts({ rollupTypes: true })],
 }));
