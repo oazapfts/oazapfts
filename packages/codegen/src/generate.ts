@@ -14,6 +14,9 @@ import {
   OpenAPIResponsesObject,
   OpenAPISchemaObject,
 } from "./openApi3-x";
+import { isReference } from "./__future__/helpers/isReference";
+import { getRefBasename } from "./__future__/helpers/getRefBasename";
+import { preprocessComponents } from "./__future__/generate/preprocessComponents";
 
 export * from "./tscodegen";
 export * from "./generateServers";
@@ -57,16 +60,6 @@ export function getBodyFormatter(body?: OpenAPIRequestBodyObject) {
     }
   }
 }
-
-// Augment SchemaObject type to allow slowly adopting new OAS3.1+ features
-// and support custom vendor extensions.
-export type SchemaObject = OpenAPISchemaObject & {
-  const?: unknown;
-  "x-enumNames"?: string[];
-  "x-enum-varnames"?: string[];
-  "x-component-ref-path"?: string;
-  prefixItems?: (OpenAPIReferenceObject | SchemaObject)[];
-};
 
 /**
  * Get the name of a formatter function for a given parameter.
@@ -119,15 +112,13 @@ export function getOperationName(
   return toIdentifier(`${verb} ${path}`);
 }
 
-export function isNullable(schema?: SchemaObject | OpenAPIReferenceObject) {
+export function isNullable(
+  schema?: OpenAPISchemaObject | OpenAPIReferenceObject,
+) {
   if (schema && "nullable" in schema)
     return !isReference(schema) && schema.nullable;
 
   return false;
-}
-
-export function isReference(obj: unknown): obj is OpenAPIReferenceObject {
-  return typeof obj === "object" && obj !== null && "$ref" in obj;
 }
 
 /**
@@ -143,13 +134,6 @@ export function refPathToPropertyPath(ref: string) {
     .slice(2)
     .split("/")
     .map((s) => decodeURI(s.replace(/~1/g, "/").replace(/~0/g, "~")));
-}
-
-/**
- * Get the last path component of the given ref.
- */
-function getRefBasename(ref: string) {
-  return ref.replace(/.+\//, "");
 }
 
 /**
@@ -387,7 +371,7 @@ export default class ApiGenerator {
       : obj.$ref;
 
     if (!this.ctx.refs[$ref]) {
-      let schema = this.resolve<SchemaObject>(obj);
+      let schema = this.resolve<OpenAPISchemaObject>(obj);
       if (ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
         delete schema.discriminator;
@@ -463,7 +447,7 @@ export default class ApiGenerator {
   }
 
   getUnionType(
-    variants: (OpenAPIReferenceObject | SchemaObject)[],
+    variants: (OpenAPIReferenceObject | OpenAPISchemaObject)[],
     discriminator?: OpenAPIDiscriminatorObject,
     onlyMode?: OnlyMode,
   ) {
@@ -536,7 +520,7 @@ export default class ApiGenerator {
    * optionally adds a union with null.
    */
   getTypeFromSchema(
-    schema?: SchemaObject | OpenAPIReferenceObject,
+    schema?: OpenAPISchemaObject | OpenAPIReferenceObject,
     name?: string,
     onlyMode?: OnlyMode,
   ) {
@@ -551,7 +535,7 @@ export default class ApiGenerator {
    * schema and returns the appropriate type.
    */
   getBaseTypeFromSchema(
-    schema?: SchemaObject | OpenAPIReferenceObject,
+    schema?: OpenAPISchemaObject | OpenAPIReferenceObject,
     name?: string,
     onlyMode?: OnlyMode,
   ): ts.TypeNode {
@@ -598,7 +582,8 @@ export default class ApiGenerator {
           isReference(childSchema) &&
           this.ctx.discriminatingSchemas.has(childSchema.$ref)
         ) {
-          const discriminatingSchema = this.resolve<SchemaObject>(childSchema);
+          const discriminatingSchema =
+            this.resolve<OpenAPISchemaObject>(childSchema);
           const discriminator = discriminatingSchema.discriminator!;
           const matched = Object.entries(discriminator.mapping || {}).find(
             ([, ref]) => ref === schema["x-component-ref-path"],
@@ -695,7 +680,7 @@ export default class ApiGenerator {
     return cg.keywordType.any;
   }
 
-  isTrueEnum(schema: SchemaObject, name?: string): name is string {
+  isTrueEnum(schema: OpenAPISchemaObject, name?: string): name is string {
     return Boolean(
       schema.enum &&
         this.ctx.opts.useEnumType &&
@@ -735,7 +720,7 @@ export default class ApiGenerator {
     Creates a enum "ref" if not used, reuse existing if values and name matches or creates a new one
     with a new name adding a number
   */
-  getTrueEnum(schema: SchemaObject, propName: string) {
+  getTrueEnum(schema: OpenAPISchemaObject, propName: string) {
     const baseName = schema.title || _.upperFirst(propName);
     // TODO: use _.camelCase in future major version
     // (currently we allow _ and $ for backwards compatibility)
@@ -798,7 +783,7 @@ export default class ApiGenerator {
    * one is about writeOnly.
    */
   checkSchemaOnlyMode(
-    schema: SchemaObject | OpenAPIReferenceObject,
+    schema: OpenAPISchemaObject | OpenAPIReferenceObject,
     resolveRefs = true,
   ): OnlyModes {
     if (this.ctx.opts.mergeReadWriteOnly) {
@@ -806,7 +791,7 @@ export default class ApiGenerator {
     }
 
     const check = (
-      schema: SchemaObject | OpenAPIReferenceObject,
+      schema: OpenAPISchemaObject | OpenAPIReferenceObject,
       history: Set<string>,
     ): OnlyModes => {
       if (isReference(schema)) {
@@ -833,7 +818,7 @@ export default class ApiGenerator {
       let readOnly = schema.readOnly ?? false;
       let writeOnly = schema.writeOnly ?? false;
 
-      const subSchemas: (OpenAPIReferenceObject | SchemaObject)[] = [];
+      const subSchemas: (OpenAPIReferenceObject | OpenAPISchemaObject)[] = [];
       if ("items" in schema && schema.items) {
         subSchemas.push(schema.items);
       } else {
@@ -864,7 +849,7 @@ export default class ApiGenerator {
    */
   getTypeFromProperties(
     props: {
-      [prop: string]: SchemaObject | OpenAPIReferenceObject;
+      [prop: string]: OpenAPISchemaObject | OpenAPIReferenceObject;
     },
     required?: string[],
     additionalProperties?:
@@ -1049,73 +1034,10 @@ export default class ApiGenerator {
     return this.ctx.opts?.optimistic ? callOazapftsFunction("ok", [ex]) : ex;
   }
 
-  /**
-   * Does three things:
-   * 1. Add a `x-component-ref-path` property.
-   * 2. Record discriminating schemas in `this.discriminatingSchemas`. A discriminating schema
-   *    refers to a schema that has a `discriminator` property which is neither used in conjunction
-   *    with `oneOf` nor `anyOf`.
-   * 3. Make all mappings of discriminating schemas explicit to generate types immediately.
-   */
-  preprocessComponents(schemas: {
-    [key: string]: OpenAPIReferenceObject | SchemaObject;
-  }) {
-    const prefix = "#/components/schemas/";
-
-    // First scan: Add `x-component-ref-path` property and record discriminating schemas
-    for (const name of Object.keys(schemas)) {
-      const schema = schemas[name];
-      if (isReference(schema)) continue;
-
-      schema["x-component-ref-path"] = prefix + name;
-
-      if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
-        this.ctx.discriminatingSchemas.add(prefix + name);
-      }
-    }
-
-    const isExplicit = (
-      discriminator: OpenAPIDiscriminatorObject,
-      ref: string,
-    ) => {
-      const refs = Object.values(discriminator.mapping || {});
-      return refs.includes(ref);
-    };
-
-    // Second scan: Make all mappings of discriminating schemas explicit
-    for (const name of Object.keys(schemas)) {
-      const schema = schemas[name];
-
-      if (isReference(schema) || !schema.allOf) continue;
-
-      for (const childSchema of schema.allOf) {
-        if (
-          !isReference(childSchema) ||
-          !this.ctx.discriminatingSchemas.has(childSchema.$ref)
-        ) {
-          continue;
-        }
-
-        const discriminatingSchema = schemas[
-          getRefBasename(childSchema.$ref)
-        ] as SchemaObject;
-        const discriminator = discriminatingSchema.discriminator!;
-
-        if (isExplicit(discriminator, prefix + name)) continue;
-        if (!discriminator.mapping) {
-          discriminator.mapping = {};
-        }
-        discriminator.mapping[name] = prefix + name;
-      }
-    }
-  }
-
   generateApi() {
     this.reset();
 
-    if (this.ctx.spec.components?.schemas) {
-      this.preprocessComponents(this.ctx.spec.components.schemas);
-    }
+    preprocessComponents(this.ctx);
 
     // Parse ApiStub.ts so that we don't have to generate everything manually
     const stub = ts.createSourceFile(

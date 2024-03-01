@@ -5,7 +5,7 @@ import type {
   TypeReferenceNode,
 } from "typescript";
 import type { Opts } from ".";
-import { OpenAPIDocument } from "./openApi3-x";
+import { OpenAPIDocument, OpenAPISchemaObject } from "./openApi3-x";
 import _ from "lodash";
 
 export type OnlyMode = "readOnly" | "writeOnly";

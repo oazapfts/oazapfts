@@ -1,9 +1,13 @@
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 // Use union of OAS 3.0 and 3.1 types throughout
-export type OpenAPISchemaObject =
-  | OpenAPIV3.SchemaObject
-  | OpenAPIV3_1.SchemaObject;
+export type OpenAPISchemaObject = {
+  const?: unknown;
+  "x-enumNames"?: string[];
+  "x-enum-varnames"?: string[];
+  "x-component-ref-path"?: string;
+  prefixItems?: (OpenAPIReferenceObject | OpenAPISchemaObject)[];
+} & (OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject);
 
 export type OpenAPIReferenceObject =
   | OpenAPIV3.ReferenceObject
