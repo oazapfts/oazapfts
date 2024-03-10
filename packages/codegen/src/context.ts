@@ -5,15 +5,19 @@ import type {
   TypeReferenceNode,
 } from "typescript";
 import type { Opts } from ".";
-import { Document, SchemaObject } from "./openApi3-x";
+import { Document } from "./openApi3-x";
 import _ from "lodash";
 
 export type OnlyMode = "readOnly" | "writeOnly";
 export type OnlyModes = Record<OnlyMode, boolean>;
 
+export type ReadonlyDeep<T> = {
+  readonly [P in keyof T]: ReadonlyDeep<T[P]>;
+};
+
 export type OazapftsContext = {
-  readonly inputSpec: Document;
-  readonly opts: Opts;
+  readonly inputSpec: ReadonlyDeep<Document>;
+  readonly opts: ReadonlyDeep<Opts>;
   readonly isConverted: boolean;
 
   spec: Document;
