@@ -69,7 +69,7 @@ function defaultUrl(server?: OpenAPIV3.ServerObject) {
 }
 
 export function defaultBaseUrl(servers: OpenAPIV3.ServerObject[]) {
-  return factory.createStringLiteral(defaultUrl(servers[0]));
+  return defaultUrl(servers[0]);
 }
 
 function serverName(server: OpenAPIV3.ServerObject, index: number) {

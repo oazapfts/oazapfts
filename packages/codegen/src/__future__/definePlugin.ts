@@ -1,10 +1,9 @@
 import { OpenAPIV3 } from "openapi-types";
 import { PathOrFileDescriptor } from "node:fs";
-import { type SchemaObject } from "../generate";
 import ts from "typescript";
-import { Opts } from "../index";
 import minimist from "minimist";
 import { AsyncSeriesWaterfallHook, AsyncSeriesHook } from "tapable";
+import { SchemaObject } from "../openApi3-x";
 
 export class CliContext {
   /**
