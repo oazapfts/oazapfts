@@ -20,3 +20,5 @@ export * from "./mimeTypes";
 export * from "./isReference";
 export * from "./isNullable";
 export * from "./getRefBasename";
+export * from "./isHttpMethod";
+export * from "./dedupeMethodNames";

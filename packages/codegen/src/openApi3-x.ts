@@ -1,4 +1,4 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import type { OpenAPIV3_1, OpenAPIV3 } from "openapi-types";
 
 // Use union of OAS 3.0 and 3.1 types throughout
 export type SchemaObject = {
@@ -42,3 +42,9 @@ export type MediaTypeObject =
 export type OperationObject =
   | OpenAPIV3.OperationObject
   | OpenAPIV3_1.OperationObject;
+
+export type PathsObject = OpenAPIV3.PathsObject | OpenAPIV3_1.PathsObject;
+
+export type PathItemObject =
+  | OpenAPIV3.PathItemObject
+  | OpenAPIV3_1.PathItemObject;

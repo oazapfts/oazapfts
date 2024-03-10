@@ -262,6 +262,7 @@ describe("argumentStyle", () => {
 
     it("should generate positional argument", () => {
       // for path parameter and requestBody
+      console.log(src);
       expect(src).toContain(
         `function updatePetWithForm(petId: number, body?: { /** Updated name of the pet */ name?: string; /** Updated status of the pet */ status?: string; }, opts?: Oazapfts.RequestOpts) { return oazapfts.fetchText(\`/pet/\${encodeURIComponent(petId)}\`, oazapfts.form({ ...opts, method: "POST", body })); }`,
       );
