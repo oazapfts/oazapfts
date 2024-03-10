@@ -53,16 +53,10 @@ export function createContext(
   opts: OazapftsContext["opts"],
   isConverted: OazapftsContext["isConverted"] = false,
 ): OazapftsContext {
-  return resetContext({ inputSpec: spec, opts, isConverted });
-}
-
-type ReadonlyContextAttrs = "inputSpec" | "opts" | "isConverted";
-type ResettableContext = Pick<OazapftsContext, ReadonlyContextAttrs> &
-  Partial<Omit<OazapftsContext, ReadonlyContextAttrs>>;
-
-export function resetContext(ctx: ResettableContext): OazapftsContext {
   return {
-    ...ctx,
+    inputSpec: spec,
+    opts,
+    isConverted,
     discriminatingSchemas: new Set(),
     aliases: [],
     enumAliases: [],
@@ -70,6 +64,6 @@ export function resetContext(ctx: ResettableContext): OazapftsContext {
     refs: {},
     refsOnlyMode: new Map(),
     typeAliases: {},
-    spec: _.cloneDeep(ctx.inputSpec),
+    spec: _.cloneDeep(spec),
   };
 }

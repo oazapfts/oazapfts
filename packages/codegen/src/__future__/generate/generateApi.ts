@@ -1,6 +1,6 @@
 import ts from "typescript";
 import _ from "lodash";
-import { OazapftsContext, resetContext } from "../../context";
+import { OazapftsContext } from "../../context";
 import generateServers, { defaultBaseUrl } from "../../generateServers";
 import * as OpenApi from "../../openApi3-x";
 import * as cg from "../../tscodegen";
@@ -23,8 +23,6 @@ export const verbs = [
 ];
 
 export function generateApi(ctx: OazapftsContext) {
-  resetContext(ctx);
-
   h.preprocessComponents(ctx);
 
   // Parse ApiStub.ts so that we don't have to generate everything manually
