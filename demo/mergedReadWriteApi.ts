@@ -155,6 +155,19 @@ export function addPet(pet: Pet, opts?: Oazapfts.RequestOpts) {
   );
 }
 /**
+ * This is a duplicate of the updatePet operation with the same operationId
+ */
+export function updatePet2(body: boolean, opts?: Oazapfts.RequestOpts) {
+  return oazapfts.fetchText(
+    "/pet-duplicate",
+    oazapfts.json({
+      ...opts,
+      method: "PUT",
+      body,
+    }),
+  );
+}
+/**
  * Finds Pets by status
  */
 export function findPetsByStatus(
