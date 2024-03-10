@@ -161,6 +161,30 @@
         ]
       }
     },
+    "/pet-duplicate": {
+      "put": {
+        "tags": ["pet"],
+        "summary": "This is a duplicate of the updatePet operation with the same operationId",
+        "operationId": "updatePet",
+        "requestBody": {
+          "description": "Pet object that needs to be added to the store",
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "type": "boolean"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Pet updated",
+            "content": {}
+          }
+        }
+      }
+    },
     "/pet/findByStatus": {
       "get": {
         "tags": ["pet"],
