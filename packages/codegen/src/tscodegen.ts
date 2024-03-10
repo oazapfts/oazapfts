@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { toIdentifier } from "./generate";
+import { toIdentifier } from "./__future__/helpers/toIdentifier";
 
 const factory = ts.factory;
 

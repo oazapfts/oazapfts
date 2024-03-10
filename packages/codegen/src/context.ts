@@ -5,18 +5,18 @@ import type {
   TypeReferenceNode,
 } from "typescript";
 import type { Opts } from ".";
-import { OpenAPIDocument, OpenAPISchemaObject } from "./openApi3-x";
+import { Document, SchemaObject } from "./openApi3-x";
 import _ from "lodash";
 
 export type OnlyMode = "readOnly" | "writeOnly";
 export type OnlyModes = Record<OnlyMode, boolean>;
 
 export type OazapftsContext = {
-  readonly inputSpec: OpenAPIDocument;
+  readonly inputSpec: Document;
   readonly opts: Opts;
   readonly isConverted: boolean;
 
-  spec: OpenAPIDocument;
+  spec: Document;
 
   // see `preprocessComponents` for the definition of a discriminating schema
   discriminatingSchemas: Set<string>;

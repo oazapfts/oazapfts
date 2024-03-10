@@ -1,10 +1,10 @@
 import * as cg from "./tscodegen";
-import ApiGenerator from "./generate";
 import ts from "typescript";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import converter from "swagger2openapi";
 import { OpenAPI, OpenAPIV3 } from "openapi-types";
 import { createContext } from "./context";
+import { generateApi } from "./__future__/generate/generateApi";
 
 export { cg };
 
@@ -24,7 +24,7 @@ export function generateAst(
   opts: Opts,
   isConverted: boolean,
 ) {
-  return new ApiGenerator(createContext(doc, opts, isConverted)).generateApi();
+  return generateApi(createContext(doc, opts, isConverted));
 }
 
 export function printAst(ast: ts.SourceFile) {

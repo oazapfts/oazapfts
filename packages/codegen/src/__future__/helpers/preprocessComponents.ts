@@ -1,11 +1,7 @@
 import { OazapftsContext } from "../../context";
-import {
-  OpenAPIDiscriminatorObject,
-  OpenAPIReferenceObject,
-  OpenAPISchemaObject,
-} from "../../openApi3-x";
-import { getRefBasename } from "../helpers/getRefBasename";
-import { isReference } from "../helpers/isReference";
+import * as OpenApi from "../../openApi3-x";
+import { getRefBasename } from "./getRefBasename";
+import { isReference } from "./isReference";
 
 /**
  * In order to support discriminated unions.
@@ -28,8 +24,10 @@ export function preprocessComponents({
   }
 
   const prefix = "#/components/schemas/";
-  const schemas: Record<string, OpenAPISchemaObject | OpenAPIReferenceObject> =
-    spec.components.schemas;
+  const schemas: Record<
+    string,
+    OpenApi.SchemaObject | OpenApi.ReferenceObject
+  > = spec.components.schemas;
 
   // First scan: Add `x-component-ref-path` property and record discriminating schemas
   for (const name of Object.keys(schemas)) {
@@ -44,7 +42,7 @@ export function preprocessComponents({
   }
 
   const isExplicit = (
-    discriminator: OpenAPIDiscriminatorObject,
+    discriminator: OpenApi.DiscriminatorObject,
     ref: string,
   ) => {
     const refs = Object.values(discriminator.mapping || {});
