@@ -26,7 +26,11 @@ type OnlyMode = "readOnly" | "writeOnly";
 type OnlyModes = Record<OnlyMode, boolean>;
 
 // Use union of OAS 3.0 and 3.1 types throughout
-type OpenAPISchemaObject = OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject;
+// openapi-types does not define boolean json schemas (https://json-schema.org/draft/2020-12/json-schema-core#section-4.3.2)
+type OpenAPISchemaObject =
+  | OpenAPIV3.SchemaObject
+  | OpenAPIV3_1.SchemaObject
+  | boolean;
 type OpenAPIReferenceObject =
   | OpenAPIV3.ReferenceObject
   | OpenAPIV3_1.ReferenceObject;
@@ -88,6 +92,10 @@ export type SchemaObject = OpenAPISchemaObject & {
   prefixItems?: (OpenAPIReferenceObject | SchemaObject)[];
 };
 
+export type DiscriminatingSchemaObject = Exclude<SchemaObject, boolean> & {
+  discriminator: NonNullable<Exclude<SchemaObject, boolean>["discriminator"]>;
+};
+
 /**
  * Get the name of a formatter function for a given parameter.
  */
@@ -140,6 +148,8 @@ export function getOperationName(
 }
 
 export function isNullable(schema?: SchemaObject | OpenAPIReferenceObject) {
+  if (typeof schema === "boolean") return schema;
+
   if (schema && "nullable" in schema)
     return !isReference(schema) && schema.nullable;
 
@@ -447,11 +457,12 @@ export default class ApiGenerator {
 
     if (!this.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
-      if (ignoreDiscriminator) {
+      if (typeof schema !== "boolean" && ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
         delete schema.discriminator;
       }
-      const name = schema.title || getRefName($ref);
+      const name =
+        (typeof schema !== "boolean" && schema.title) || getRefName($ref);
       const identifier = toIdentifier(name, true);
 
       // When this is a true enum we can reference it directly,
@@ -614,9 +625,17 @@ export default class ApiGenerator {
     name?: string,
     onlyMode?: OnlyMode,
   ): ts.TypeNode {
-    if (!schema) return cg.keywordType.any;
+    if (!schema && typeof schema !== "boolean") return cg.keywordType.any;
     if (isReference(schema)) {
       return this.getRefAlias(schema, onlyMode) as ts.TypeReferenceNode;
+    }
+
+    if (schema === true) {
+      return cg.keywordType.any;
+    }
+
+    if (schema === false) {
+      return cg.keywordType.never;
     }
 
     if (schema.oneOf) {
@@ -657,8 +676,9 @@ export default class ApiGenerator {
           isReference(childSchema) &&
           this.discriminatingSchemas.has(childSchema.$ref)
         ) {
-          const discriminatingSchema = this.resolve<SchemaObject>(childSchema);
-          const discriminator = discriminatingSchema.discriminator!;
+          const discriminatingSchema =
+            this.resolve<DiscriminatingSchemaObject>(childSchema);
+          const discriminator = discriminatingSchema.discriminator;
           const matched = Object.entries(discriminator.mapping || {}).find(
             ([, ref]) => ref === schema["x-component-ref-path"],
           );
@@ -756,7 +776,11 @@ export default class ApiGenerator {
 
   isTrueEnum(schema: SchemaObject, name?: string): name is string {
     return Boolean(
-      schema.enum && this.opts.useEnumType && name && schema.type !== "boolean",
+      typeof schema !== "boolean" &&
+        schema.enum &&
+        this.opts.useEnumType &&
+        name &&
+        schema.type !== "boolean",
     );
   }
 
@@ -792,6 +816,13 @@ export default class ApiGenerator {
     with a new name adding a number
   */
   getTrueEnum(schema: SchemaObject, propName: string) {
+    if (typeof schema == "boolean") {
+      // HACK: this should never be thrown, since the only `getTrueEnum` call is
+      // behind an `isTrueEnum` check, which returns false for boolean schemas.
+      throw new Error(
+        "cannot get enum from boolean schema. schema must be an object",
+      );
+    }
     const baseName = schema.title || _.upperFirst(propName);
     // TODO: use _.camelCase in future major version
     // (currently we allow _ and $ for backwards compatibility)
@@ -886,6 +917,10 @@ export default class ApiGenerator {
         return ret;
       }
 
+      if (typeof schema === "boolean") {
+        return { readOnly: false, writeOnly: false };
+      }
+
       let readOnly = schema.readOnly ?? false;
       let writeOnly = schema.writeOnly ?? false;
 
@@ -959,7 +994,11 @@ export default class ApiGenerator {
         type,
       });
 
-      if ("description" in schema && schema.description) {
+      if (
+        typeof schema !== "boolean" &&
+        "description" in schema &&
+        schema.description
+      ) {
         // Escape any JSDoc comment closing tags in description
         const description = schema.description.replace("*/", "*\\/");
 
@@ -1125,7 +1164,12 @@ export default class ApiGenerator {
 
       schema["x-component-ref-path"] = prefix + name;
 
-      if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
+      if (
+        typeof schema !== "boolean" &&
+        schema.discriminator &&
+        !schema.oneOf &&
+        !schema.anyOf
+      ) {
         this.discriminatingSchemas.add(prefix + name);
       }
     }
@@ -1142,7 +1186,9 @@ export default class ApiGenerator {
     for (const name of Object.keys(schemas)) {
       const schema = schemas[name];
 
-      if (isReference(schema) || !schema.allOf) continue;
+      if (isReference(schema) || typeof schema === "boolean" || !schema.allOf) {
+        continue;
+      }
 
       for (const childSchema of schema.allOf) {
         if (
@@ -1154,7 +1200,7 @@ export default class ApiGenerator {
 
         const discriminatingSchema = schemas[
           getRefBasename(childSchema.$ref)
-        ] as SchemaObject;
+        ] as DiscriminatingSchemaObject;
         const discriminator = discriminatingSchema.discriminator!;
 
         if (isExplicit(discriminator, prefix + name)) continue;
