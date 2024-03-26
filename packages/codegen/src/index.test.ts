@@ -86,6 +86,15 @@ describe("generateSource", () => {
     );
   });
 
+  it("should support boolean schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/booleanSchema.json");
+    console.log(src);
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: any | null; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: never; };");
+  });
+
   it("should handle application/geo+json", async () => {
     const src = await generate(__dirname + "/__fixtures__/geojson.json");
     expect(src).toContain(
