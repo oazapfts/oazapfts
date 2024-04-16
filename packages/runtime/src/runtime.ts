@@ -150,7 +150,7 @@ export function runtime(defaults: RequestOpts = {}) {
         FormData)();
 
       const append = (name: string, value: unknown) => {
-        if (typeof value === "string" || value instanceof Blob) {
+        if (typeof value === "string" || typeof value === "number" || value instanceof Blob) {
           data.append(name, value);
         } else {
           data.append(
