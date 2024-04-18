@@ -40,7 +40,11 @@ export function createLiteral(v: string | boolean | number) {
     case "boolean":
       return v ? factory.createTrue() : factory.createFalse();
     case "number":
-      return factory.createNumericLiteral(String(v));
+      return String(v).charAt(0) === "-" ?
+        factory.createPrefixUnaryExpression(
+          ts.SyntaxKind.MinusToken,
+          factory.createNumericLiteral(String(-v))
+        ) : factory.createNumericLiteral(String(v))
   }
 }
 
