@@ -152,6 +152,8 @@ export function runtime(defaults: RequestOpts = {}) {
       const append = (name: string, value: unknown) => {
         if (typeof value === "string" || value instanceof Blob) {
           data.append(name, value);
+        } else if (typeof value === "number") {
+          data.append(name, String(value));
         } else {
           data.append(
             name,
