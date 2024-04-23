@@ -1,0 +1,115 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Swagger types example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/circle/{circle_id}": {
+      "get": {
+        "tags": ["circle"],
+        "summary": "Find circle by ID",
+        "description": "Returns a single circle",
+        "operationId": "getCircleById",
+        "parameters": [
+          {
+            "name": "circle_id",
+            "in": "path",
+            "description": "ID of circle to return",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Circle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/triangle/{triangle_id}": {
+      "get": {
+        "tags": ["triangle"],
+        "summary": "Find triangle by ID",
+        "description": "Returns a single triangle",
+        "operationId": "getTriangleById",
+        "parameters": [
+          {
+            "name": "triangle_id",
+            "in": "path",
+            "description": "ID of triangle to return",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Triangle"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Circle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "shape": {
+            "enum": [1, 2],
+            "type": "integer",
+            "x-enumNames": [
+              "round",
+              "oval"
+            ],
+            "x-ts-type": "CircleType"
+          }
+        }
+      },
+      "Triangle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "shape": {
+            "enum": [1, 2, 3],
+            "type": "integer",
+            "x-enumNames": [
+              "equilateral",
+              "isosceles",
+              "scalene"
+            ],
+            "x-ts-type": "TriangleType"
+          }
+        }
+      }
+    }
+  }
+}

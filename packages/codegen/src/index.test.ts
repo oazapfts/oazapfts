@@ -248,6 +248,14 @@ describe("useEnumType", () => {
       `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`,
     );
   });
+
+  it("should handle x-ts-type", async () => {
+    const src = await generate(__dirname + "/__fixtures__/types.json", { useEnumType: true });
+
+    expect(src).toContain("export enum TriangleType");
+
+    expect(src).toContain("export enum CircleType");
+  });
 });
 
 describe("argumentStyle", () => {
