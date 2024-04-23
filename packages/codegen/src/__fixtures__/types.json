@@ -88,7 +88,7 @@
               "round",
               "oval"
             ],
-            "title": "CircleType"
+            "x-ts-type": "CircleType"
           }
         }
       },

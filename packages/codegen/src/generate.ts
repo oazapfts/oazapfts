@@ -85,6 +85,7 @@ type SchemaObject = OpenAPISchemaObject & {
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
   "x-component-ref-path"?: string;
+  "x-ts-type"?: string;
   prefixItems?: (OpenAPIReferenceObject | SchemaObject)[];
 };
 
@@ -795,7 +796,7 @@ export default class ApiGenerator {
     const baseName = schema.title || _.upperFirst(propName);
     // TODO: use _.camelCase in future major version
     // (currently we allow _ and $ for backwards compatibility)
-    const proposedName = baseName
+    const proposedName = schema["x-ts-type"] ?? baseName
         .split(/[^A-Za-z0-9$_]/g)
         .map((n) => _.upperFirst(n))
         .join("");
