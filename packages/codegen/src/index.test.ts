@@ -249,7 +249,7 @@ describe("useEnumType", () => {
     );
   });
 
-  it("should handle x-ts-type", async () => {
+  it("enums should handle title", async () => {
     const src = await generate(__dirname + "/__fixtures__/types.json", { useEnumType: true });
 
     expect(src).toContain("export enum TriangleType");

@@ -88,7 +88,7 @@
               "round",
               "oval"
             ],
-            "x-ts-type": "CircleType"
+            "title": "CircleType"
           }
         }
       },
@@ -106,7 +106,7 @@
               "isosceles",
               "scalene"
             ],
-            "x-ts-type": "TriangleType"
+            "title": "TriangleType"
           }
         }
       }
