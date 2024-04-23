@@ -792,10 +792,6 @@ export default class ApiGenerator {
     with a new name adding a number
   */
   getTrueEnum(schema: SchemaObject, propName: string) {
-    const stringEnumValue = this.getEnumValuesString(
-      schema.enum ? schema.enum : [],
-    );
-
     const baseName = schema.title || _.upperFirst(propName);
     // TODO: use _.camelCase in future major version
     // (currently we allow _ and $ for backwards compatibility)
@@ -803,6 +799,9 @@ export default class ApiGenerator {
         .split(/[^A-Za-z0-9$_]/g)
         .map((n) => _.upperFirst(n))
         .join("");
+    const stringEnumValue = this.getEnumValuesString(
+        schema.enum ? schema.enum : [],
+    );
 
     const name = this.getEnumUniqueAlias(proposedName, stringEnumValue);
 
