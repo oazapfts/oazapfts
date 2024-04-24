@@ -98,7 +98,12 @@ describe("generateSource", () => {
     const src = await generate(
       __dirname + "/__fixtures__/booleanSchemaRefs.json",
     );
-    assert.fail("not implemented");
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: AlwaysAccept; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: NeverAccept; };");
+    expect(src).toContain("export type AlwaysAccept = any | null;");
+    expect(src).toContain("export type NeverAccept = never;");
   });
 
   it("should handle application/geo+json", async () => {
