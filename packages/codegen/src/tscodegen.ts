@@ -19,6 +19,7 @@ export const keywordType = {
   boolean: factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
   undefined: factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
   void: factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
+  never: factory.createKeywordTypeNode(ts.SyntaxKind.NeverKeyword),
   null: factory.createLiteralTypeNode(factory.createNull()),
 };
 

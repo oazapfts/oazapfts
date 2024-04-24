@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, assert } from "vitest";
 import * as path from "node:path";
 import { Opts, generateSource } from "./index";
 import { readFile } from "node:fs/promises";
@@ -84,6 +84,26 @@ describe("generateSource", () => {
     expect(src).toContain(
       "export type FolderDto = { name?: string; files?: string[]; folders?: FolderDto[]; };",
     );
+  });
+
+  it("should support boolean schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/booleanSchema.json");
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: any | null; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: never; };");
+  });
+
+  it("should support referenced boolean schemas", async () => {
+    const src = await generate(
+      __dirname + "/__fixtures__/booleanSchemaRefs.json",
+    );
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: AlwaysAccept; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: NeverAccept; };");
+    expect(src).toContain("export type AlwaysAccept = any | null;");
+    expect(src).toContain("export type NeverAccept = never;");
   });
 
   it("should handle application/geo+json", async () => {
