@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, assert } from "vitest";
 import * as path from "node:path";
 import { Opts, generateSource } from "./index";
 import { readFile } from "node:fs/promises";
@@ -92,6 +92,13 @@ describe("generateSource", () => {
       "export type BlogEntry = { id: number; title: string; content: any | null; };",
     );
     expect(src).toContain("export type Paradox = { foo: never; };");
+  });
+
+  it("should support referenced boolean schemas", async () => {
+    const src = await generate(
+      __dirname + "/__fixtures__/booleanSchemaRefs.json",
+    );
+    assert.fail("not implemented");
   });
 
   it("should handle application/geo+json", async () => {

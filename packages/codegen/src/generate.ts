@@ -820,8 +820,8 @@ export default class ApiGenerator {
     with a new name adding a number
   */
   getTrueEnum(schema: SchemaObject, propName: string) {
-    if (typeof schema == "boolean") {
-      // HACK: this should never be thrown, since the only `getTrueEnum` call is
+    if (typeof schema === "boolean") {
+      // this should never be thrown, since the only `getTrueEnum` call is
       // behind an `isTrueEnum` check, which returns false for boolean schemas.
       throw new Error(
         "cannot get enum from boolean schema. schema must be an object",
@@ -1164,7 +1164,7 @@ export default class ApiGenerator {
     // First scan: Add `x-component-ref-path` property and record discriminating schemas
     for (const name of Object.keys(schemas)) {
       const schema = schemas[name];
-      if (isReference(schema)) continue;
+      if (isReference(schema) || typeof schema === "boolean") continue;
 
       schema["x-component-ref-path"] = prefix + name;
 
