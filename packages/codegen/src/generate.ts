@@ -477,7 +477,7 @@ export default class ApiGenerator {
             type,
           }),
         );
-        return this.refs[$ref].base;
+        return typeReferenceNode.base;
       }
 
       if (ignoreDiscriminator) {
