@@ -457,12 +457,16 @@ export default class ApiGenerator {
 
     if (!this.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
-      if (typeof schema !== "boolean" && ignoreDiscriminator) {
+
+      if (typeof schema === "boolean") {
+        return this.refs[$ref].base;
+      }
+
+      if (ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
         delete schema.discriminator;
       }
-      const name =
-        (typeof schema !== "boolean" && schema.title) || getRefName($ref);
+      const name = schema.title || getRefName($ref);
       const identifier = toIdentifier(name, true);
 
       // When this is a true enum we can reference it directly,
