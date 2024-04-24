@@ -458,33 +458,12 @@ export default class ApiGenerator {
     if (!this.refs[$ref]) {
       let schema = this.resolve<SchemaObject>(obj);
 
-      if (typeof schema === "boolean") {
-        const name = getRefName($ref);
-        const identifier = toIdentifier(name, true);
-        const alias = this.getUniqueAlias(identifier);
-        const type = this.getTypeFromSchema(schema, undefined);
-        const typeReferenceNode = {
-          base: factory.createTypeReferenceNode(alias, undefined),
-          // `readOnly` and `writeOnly` are not applicable to boolean schemas
-          readOnly: undefined,
-          writeOnly: undefined,
-        };
-        this.refs[$ref] = typeReferenceNode;
-        this.aliases.push(
-          cg.createTypeAliasDeclaration({
-            modifiers: [cg.modifier.export],
-            name: alias,
-            type,
-          }),
-        );
-        return typeReferenceNode.base;
-      }
-
-      if (ignoreDiscriminator) {
+      if (typeof schema !== "boolean" && ignoreDiscriminator) {
         schema = _.cloneDeep(schema);
         delete schema.discriminator;
       }
-      const name = schema.title || getRefName($ref);
+      const name =
+        (typeof schema !== "boolean" && schema.title) || getRefName($ref);
       const identifier = toIdentifier(name, true);
 
       // When this is a true enum we can reference it directly,
