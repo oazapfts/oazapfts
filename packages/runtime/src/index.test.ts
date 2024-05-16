@@ -125,11 +125,17 @@ describe("request", () => {
   
   it("casts numbers and booleans to strings while forming multipart/form-data", () => {
     const multipartRequest = oazapfts.multipart({
-      body: { booleanValue: true },
+      body: { 
+        numberValue: 42,
+        booleanValue: true 
+      },
     });
 
     expect(multipartRequest.body.get('booleanValue')).toBe(
       'true'
+    );
+    expect(multipartRequest.body.get('numberValue')).toBe(
+      '42'
     );
   });
 
