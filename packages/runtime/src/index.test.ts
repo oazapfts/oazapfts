@@ -122,6 +122,17 @@ describe("request", () => {
         .headers.has("Content-Type"),
     ).toBe(false);
   });
+  
+  it("casts numbers and booleans to strings while forming multipart/form-data", () => {
+    const multipartRequest = oazapfts.multipart({
+      body: { booleanValue: true },
+    });
+
+    expect(multipartRequest.body.get('booleanValue')).toBe(
+      'true'
+    );
+  });
+
 
   it("allows multiple headers with the same name", () => {
     const headers = new Headers();
