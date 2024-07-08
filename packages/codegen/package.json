@@ -48,7 +48,7 @@
   "devDependencies": {
     "@types/lodash": "^4.17.0",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^20.12.7",
+    "@types/node": "^20.14.10",
     "@types/tapable": "^2.2.7"
   },
   "peerDependencies": {
