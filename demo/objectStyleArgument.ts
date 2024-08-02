@@ -39,6 +39,7 @@ export type Pet = {
   tags?: Tag[];
   /** pet status in the store */
   status?: "available" | "pending" | "sold" | "private" | "10percent";
+  activities?: ("running" | "playing" | "laying" | "begging")[];
   /** Always true for a pet */
   animal?: true;
   /** Size scale for pets */

@@ -1540,6 +1540,14 @@
             "description": "pet status in the store",
             "enum": ["available", "pending", "sold", "private", "10percent"]
           },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "pet activities enum",
+              "enum": ["running", "playing", "laying", "begging"]
+            }
+          },
           "animal": {
             "description": "Always true for a pet",
             "enum": [true],

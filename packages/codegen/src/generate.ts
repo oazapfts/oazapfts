@@ -733,6 +733,17 @@ export default class ApiGenerator {
       return factory.createIntersectionTypeNode(types);
     }
     if ("items" in schema) {
+      const schemaItems = schema.items as OpenAPIV3.BaseSchemaObject;
+
+      // items -> array of enums or unions
+      if (schemaItems.enum) {
+        const enumType = this.isTrueEnum(schemaItems, name)
+          ? this.getTrueEnum(schemaItems, name)
+          : cg.createEnumTypeNode(schemaItems.enum);
+          
+        return factory.createArrayTypeNode(enumType);
+      }
+
       // items -> array
       return factory.createArrayTypeNode(
         this.getTypeFromSchema(schema.items, undefined, onlyMode),
