@@ -39,6 +39,7 @@ export type Pet = {
   tags?: Tag[];
   /** pet status in the store */
   status?: Status;
+  activities?: Activities[];
   /** Always true for a pet */
   animal?: true;
   /** Size scale for pets */
@@ -747,6 +748,12 @@ export enum Status {
   Sold = "sold",
   Private = "private",
   $10Percent = "10percent",
+}
+export enum Activities {
+  Running = "running",
+  Playing = "playing",
+  Laying = "laying",
+  Begging = "begging",
 }
 export enum Size {
   P = "P",

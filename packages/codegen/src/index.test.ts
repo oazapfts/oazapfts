@@ -242,6 +242,16 @@ describe("useEnumType", () => {
     );
   });
 
+  it("should create array of enums", () => {
+    expect(src).toContain(
+      `export enum Activities { Running = "running", Playing = "playing", Laying = "laying", Begging = "begging" }`,
+    );
+    
+    expect(src).toContain(
+      `: Activities[]`,
+    );
+  });
+
   it("should create number enums", () => {
     expect(src).toContain(
       `export enum Size { P = "P", M = "M", G = "G", $0 = "0" }`,
