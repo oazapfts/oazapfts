@@ -37,7 +37,7 @@ type OpenAPIReferenceObject =
 type OpenAPIParameterObject =
   | OpenAPIV3.ParameterObject
   | OpenAPIV3_1.ParameterObject;
-type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document;
+export type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document;
 type OpenAPIDiscriminatorObject =
   | OpenAPIV3.DiscriminatorObject
   | OpenAPIV3_1.DiscriminatorObject;
@@ -571,10 +571,21 @@ export default class ApiGenerator {
                 }
                 return !mappedValues.has(getRefBasename(variant.$ref));
               })
-              .map((schema) => [
-                getRefBasename((schema as OpenAPIReferenceObject).$ref),
-                schema,
-              ]),
+              .map((schema) => {
+                const schemaBaseName = getRefBasename(
+                  (schema as OpenAPIV3.ReferenceObject).$ref,
+                );
+                const resolvedSchema = this.resolve(
+                  schema,
+                ) as OpenAPIV3.SchemaObject;
+                const discriminatorProperty =
+                  resolvedSchema.properties?.[discriminator.propertyName];
+                const variantName =
+                  discriminatorProperty && "enum" in discriminatorProperty
+                    ? discriminatorProperty?.enum?.[0]
+                    : "";
+                return [variantName || schemaBaseName, schema];
+              }),
           ] as [string, OpenAPIReferenceObject][]
         ).map(([discriminatorValue, variant]) =>
           // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
