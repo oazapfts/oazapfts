@@ -660,9 +660,9 @@ export default class ApiGenerator {
       // anyOf -> union
       return this.getUnionType(schema.anyOf, undefined, onlyMode);
     }
-    if (schema.discriminator) {
+    if (schema.discriminator?.mapping) {
       // discriminating schema -> union
-      const mapping = schema.discriminator.mapping || {};
+      const mapping = schema.discriminator.mapping;
       return this.getUnionType(
         Object.values(mapping).map((ref) => ({ $ref: ref })),
         undefined,
