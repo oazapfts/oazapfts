@@ -1523,7 +1523,7 @@
           },
           "typeId": {
             "description": "integer test case for #349",
-            "enum": [1, 2, 3, 4, 6, 8],
+            "enum": [1, 2, 3, 4, 6, 8, -1],
             "type": "integer",
             "x-enumNames": [
               "dog",
@@ -1531,7 +1531,8 @@
               "tiger",
               "mouse",
               "house",
-              "3-headed-monkey"
+              "3-headed-monkey",
+              "unicorn"
             ]
           }
         },
