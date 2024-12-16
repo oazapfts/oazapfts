@@ -44,7 +44,7 @@ export type Pet = {
   /** Size scale for pets */
   size?: "P" | "M" | "G" | "0";
   /** integer test case for #349 */
-  typeId?: 1 | 2 | 3 | 4 | 6 | 8;
+  typeId?: 1 | 2 | 3 | 4 | 6 | 8 | -1;
 };
 export type ApiResponse = {
   code?: number;

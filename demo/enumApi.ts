@@ -761,6 +761,7 @@ export enum TypeId {
   Mouse = 4,
   House = 6,
   $3HeadedMonkey = 8,
+  Unicorn = -1,
 }
 export enum Status2 {
   Placed = "placed",

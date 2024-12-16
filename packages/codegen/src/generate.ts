@@ -869,12 +869,12 @@ export default class ApiGenerator {
         const name = names ? names[index] : String(s);
         return factory.createEnumMember(
           factory.createIdentifier(toIdentifier(name, true)),
-          factory.createNumericLiteral(s),
+          cg.createLiteral(s),
         );
       }
       return factory.createEnumMember(
         factory.createIdentifier(toIdentifier(s, true)),
-        factory.createStringLiteral(s),
+        cg.createLiteral(s),
       );
     });
     this.enumAliases.push(
