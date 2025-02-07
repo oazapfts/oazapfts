@@ -122,23 +122,18 @@ describe("request", () => {
         .headers.has("Content-Type"),
     ).toBe(false);
   });
-  
+
   it("casts numbers and booleans to strings while forming multipart/form-data", () => {
     const multipartRequest = oazapfts.multipart({
-      body: { 
+      body: {
         numberValue: 42,
-        booleanValue: true 
+        booleanValue: true,
       },
     });
 
-    expect(multipartRequest.body.get('booleanValue')).toBe(
-      'true'
-    );
-    expect(multipartRequest.body.get('numberValue')).toBe(
-      '42'
-    );
+    expect(multipartRequest.body?.get("booleanValue")).toBe("true");
+    expect(multipartRequest.body?.get("numberValue")).toBe("42");
   });
-
 
   it("allows multiple headers with the same name", () => {
     const headers = new Headers();
