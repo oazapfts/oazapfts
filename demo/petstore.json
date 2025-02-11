@@ -1282,6 +1282,35 @@
           }
         }
       }
+    },
+    "/issue-672": {
+      "post": {
+        "operationId": "UndefinedDiscriminatorMapping",
+        "parameters": [],
+        "requestBody": {
+          "description": "Pet object that needs to be added to the store",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Issue672"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1581,6 +1610,12 @@
             "type": "string"
           }
         }
+      },
+      "Issue672": {
+        "required": ["@type"],
+        "type": "object",
+        "properties": {},
+        "discriminator": { "propertyName": "@type" }
       }
     },
     "securitySchemes": {
