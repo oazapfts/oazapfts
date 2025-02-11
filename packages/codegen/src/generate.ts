@@ -757,7 +757,7 @@ export default class ApiGenerator {
         const enumType = this.isTrueEnum(schemaItems, name)
           ? this.getTrueEnum(schemaItems, name)
           : cg.createEnumTypeNode(schemaItems.enum);
-          
+
         return factory.createArrayTypeNode(enumType);
       }
 

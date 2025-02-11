@@ -246,10 +246,8 @@ describe("useEnumType", () => {
     expect(src).toContain(
       `export enum Activities { Running = "running", Playing = "playing", Laying = "laying", Begging = "begging" }`,
     );
-    
-    expect(src).toContain(
-      `: Activities[]`,
-    );
+
+    expect(src).toContain(`: Activities[]`);
   });
 
   it("should create number enums", () => {
