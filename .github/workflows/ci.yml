@@ -32,6 +32,9 @@ jobs:
       - name: 🧪 Test
         run: npm test
 
+      - name: 🚔 Ensure generated code is up to date
+        run: npm run test:e2e:clean
+
       - name: 📦 Release @oazapfts/runtime
         run: |
           set -e  # Exit immediately if a command exits with a non-zero status.
