@@ -14,6 +14,7 @@ export function createQuestionToken(token?: boolean | ts.QuestionToken) {
 export const keywordType = {
   any: factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
   number: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+  integer: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
   object: factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword),
   string: factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
   boolean: factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),

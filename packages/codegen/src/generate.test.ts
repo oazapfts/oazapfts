@@ -42,6 +42,32 @@ describe("content types", () => {
   });
 });
 
+describe("union types defined by type: array", () => {
+  it("should generate a union type", () => {
+    const generator = new ApiGenerator({} as unknown as OpenAPIV3.Document);
+    const node = generator.getBaseTypeFromSchema(
+      {
+        type: "object",
+        properties: {
+          instances: {
+            type: ["array", "null"],
+            items: {
+              type: "string",
+            },
+          },
+        },
+      },
+      "LoadBalancerLatestTelemetryController",
+    );
+
+    expect(printNode(node)).toMatchInlineSnapshot(`
+      "{
+          instances?: string[] | null;
+      }"
+    `);
+  });
+});
+
 describe("getUnionType", () => {
   describe("discriminator with propertyName", () => {
     describe("propertyName doesn’t exists", () => {
@@ -73,11 +99,13 @@ describe("getUnionType", () => {
         const discriminator = { propertyName: "response_type" };
         const unionTypeNode = generator.getUnionType(variants, discriminator);
         const result = printNode(unionTypeNode);
-        expect(result).toBe(`({
-    response_type: "LoginSuccess";
-} & LoginSuccess) | ({
-    response_type: "LoginRedirect";
-} & LoginRedirect)`);
+        expect(result).toMatchInlineSnapshot(`
+          "({
+              response_type: "LoginSuccess";
+          } & LoginSuccess) | ({
+              response_type: "LoginRedirect";
+          } & LoginRedirect)"
+        `);
       });
     });
 
@@ -120,11 +148,13 @@ describe("getUnionType", () => {
         const discriminator = { propertyName: "response_type" };
         const unionTypeNode = generator.getUnionType(variants, discriminator);
         const result = printNode(unionTypeNode);
-        expect(result).toBe(`({
-    response_type: "success";
-} & LoginSuccess) | ({
-    response_type: "redirect";
-} & LoginRedirect)`);
+        expect(result).toMatchInlineSnapshot(`
+          "({
+              response_type: "success";
+          } & LoginSuccess) | ({
+              response_type: "redirect";
+          } & LoginRedirect)"
+        `);
       });
     });
   });

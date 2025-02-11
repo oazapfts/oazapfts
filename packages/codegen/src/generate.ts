@@ -732,6 +732,23 @@ export default class ApiGenerator {
       }
       return factory.createIntersectionTypeNode(types);
     }
+    // Union types defined by an array in schema.type
+    if (Array.isArray(schema.type)) {
+      return factory.createUnionTypeNode(
+        schema.type.map((type) => {
+          const subSchema = { ...schema, type } as SchemaObject;
+          // Remove items if the type isn't array since it's not relevant
+          if ("items" in subSchema && type !== "array") {
+            delete subSchema.items;
+          }
+          if ("properties" in subSchema && type !== "object") {
+            delete subSchema.properties;
+          }
+
+          return this.getBaseTypeFromSchema(subSchema, name, onlyMode);
+        }),
+      );
+    }
     if ("items" in schema) {
       const schemaItems = schema.items as OpenAPIV3.BaseSchemaObject;
 
@@ -776,20 +793,8 @@ export default class ApiGenerator {
     if (schema.const) {
       return this.getTypeFromEnum([schema.const]);
     }
-    if (schema.type) {
-      // string, boolean, null, number, array
-      if (Array.isArray(schema.type)) {
-        return factory.createUnionTypeNode(
-          schema.type.map((type) => {
-            if (type === "null") return cg.keywordType.null;
-            if (type === "integer") return cg.keywordType.number;
-            if (isKeyOfKeywordType(type)) return cg.keywordType[type];
-
-            return cg.keywordType.any;
-          }),
-        );
-      }
-      if (schema.type === "integer") return cg.keywordType.number;
+    if (schema.type !== undefined) {
+      if (schema.type === null) return cg.keywordType.null;
       if (isKeyOfKeywordType(schema.type)) return cg.keywordType[schema.type];
       return cg.keywordType.any;
     }
