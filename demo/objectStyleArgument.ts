@@ -129,6 +129,7 @@ export type Issue542 = {
   "media-protocol"?: "hls" | "mss" | "dash";
   "dashed-property"?: string;
 };
+export type Issue672 = {};
 /**
  * Update an existing pet
  */
@@ -880,6 +881,26 @@ export function dashInSchema(
       ...opts,
       method: "POST",
       body: issue542,
+    }),
+  );
+}
+export function undefinedDiscriminatorMapping(
+  {
+    issue672,
+  }: {
+    issue672: Issue672;
+  },
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: Pet;
+  }>(
+    "/issue-672",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body: issue672,
     }),
   );
 }
