@@ -715,7 +715,16 @@ export default class ApiGenerator {
             ),
           );
         } else {
-          types.push(this.getTypeFromSchema(childSchema, undefined, onlyMode));
+          types.push(
+            this.getTypeFromSchema(
+              {
+                required: schema.required,
+                ...childSchema,
+              },
+              undefined,
+              onlyMode
+            )
+          );
         }
       }
 
