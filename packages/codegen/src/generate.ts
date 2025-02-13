@@ -722,8 +722,8 @@ export default class ApiGenerator {
                 ...childSchema,
               },
               undefined,
-              onlyMode
-            )
+              onlyMode,
+            ),
           );
         }
       }

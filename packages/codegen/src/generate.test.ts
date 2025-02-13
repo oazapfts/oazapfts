@@ -63,7 +63,7 @@ describe("getBaseTypeFromSchema", () => {
         ],
         required: ["firstName"],
       },
-      "Person"
+      "Person",
     );
 
     expect(printNode(node)).toMatchInlineSnapshot(`
