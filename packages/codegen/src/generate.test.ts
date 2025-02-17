@@ -42,6 +42,39 @@ describe("content types", () => {
   });
 });
 
+describe("getBaseTypeFromSchema", () => {
+  it("should generate type with required properties when extending a schema with the 'allOf' operator", () => {
+    const generator = new ApiGenerator({} as unknown as OpenAPIV3.Document);
+    const node = generator.getBaseTypeFromSchema(
+      {
+        type: "object",
+        allOf: [
+          {
+            type: "object",
+            properties: {
+              firstName: {
+                type: "string",
+              },
+              secondName: {
+                type: "string",
+              },
+            },
+          },
+        ],
+        required: ["firstName"],
+      },
+      "Person",
+    );
+
+    expect(printNode(node)).toMatchInlineSnapshot(`
+      "{
+          firstName: string;
+          secondName?: string;
+      }"
+    `);
+  });
+});
+
 describe("union types defined by type: array", () => {
   it("should generate a union type", () => {
     const generator = new ApiGenerator({} as unknown as OpenAPIV3.Document);
