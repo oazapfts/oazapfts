@@ -15,7 +15,7 @@
     "lint": "prettier --check .",
     "test:unit": "cd packages && vitest",
     "test:e2e": "npm run generate-demo && with-server 'cd demo && vitest --run'",
-    "test:e2e:clean": "if [ -n \"$(git status --porcelain)\" ]; then echo \"Error: Generated code has changes. Please run 'npm run generate-demo' and commit the changes.\" && exit 1; fi",
+    "test:e2e:clean": "if [ -n \"$(git status --porcelain -- demo)\" ]; then echo \"Error: Generated code has changes. Please run 'npm run generate-demo' and commit the changes.\" && exit 1; fi",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && oazapfts ./demo/petstore.json ./demo/api.ts && oazapfts ./demo/petstore.json --mergeReadWriteOnly ./demo/mergedReadWriteApi.ts && oazapfts --optimistic ./demo/petstore.json ./demo/optimisticApi.ts && oazapfts --useEnumType ./demo/petstore.json ./demo/enumApi.ts && oazapfts --argumentStyle=object ./demo/petstore.json ./demo/objectStyleArgument.ts && prettier -w demo",
     "prepare": "npm run build && ln -sf $(pwd)/packages/codegen/dist/cli.js $(pwd)/node_modules/.bin/oazapfts"
