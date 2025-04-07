@@ -94,6 +94,15 @@ describe("generateSource", () => {
     expect(src).toContain("export type Paradox = { foo: never; };");
   });
 
+  it("should support unknown for boolean schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/booleanSchema.json", {
+      useUnknown: true,
+    });
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: unknown | null; };",
+    );
+  });
+
   it("should support referenced boolean schemas", async () => {
     const src = await generate(
       __dirname + "/__fixtures__/booleanSchemaRefs.json",

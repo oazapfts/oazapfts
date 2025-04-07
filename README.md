@@ -36,6 +36,7 @@ Options:
 --include, -i tag to include
 --optimistic
 --useEnumType
+--useUnknown
 --mergeReadWriteOnly
 --argumentStyle=<positional | object> (default: positional)
 ```
@@ -47,6 +48,8 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 - `--optimistic` generate a client in [optimistic mode](#optimistic-mode)
 
 - `--useEnumType` generate enums instead of union types
+
+- `--useUnknown` generate `unknown` instead of `any` for empty schemas
 
 - `--mergeReadWriteOnly` by default oazapfs will generate separate types for read-only and write-only properties. This option will merge them into one type.
 
