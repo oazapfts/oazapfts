@@ -10,7 +10,7 @@ const argv = minimist(process.argv.slice(2), {
     i: "include",
     e: "exclude",
   },
-  boolean: ["optimistic", "useEnumType", "mergeReadWriteOnly"],
+  boolean: ["optimistic", "useEnumType", "mergeReadWriteOnly", "useUnknown"],
   string: ["argumentStyle"],
 });
 
@@ -26,6 +26,7 @@ const {
   optimistic,
   useEnumType,
   mergeReadWriteOnly,
+  useUnknown,
   argumentStyle,
 } = argv;
 const [spec, dest] = argv._;
@@ -39,6 +40,7 @@ if (!spec) {
     --include, -i <tag to include>
     --optimistic
     --useEnumType
+    --useUnknown
     --mergeReadWriteOnly
     --argumentStyle=<${optsArgumentStyles.join(" | ")}> (default: positional)
 `);
@@ -62,6 +64,7 @@ generate(spec, dest, {
   exclude,
   optimistic,
   useEnumType,
+  useUnknown,
   mergeReadWriteOnly,
   argumentStyle,
 });

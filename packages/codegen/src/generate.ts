@@ -628,6 +628,10 @@ export default class ApiGenerator {
       : type;
   }
 
+  getEmptySchemaType() {
+    return this.opts.useUnknown ? cg.keywordType.unknown : cg.keywordType.any;
+  }
+
   /**
    * This is the very core of the OpenAPI to TS conversion - it takes a
    * schema and returns the appropriate type.
@@ -637,13 +641,14 @@ export default class ApiGenerator {
     name?: string,
     onlyMode?: OnlyMode,
   ): ts.TypeNode {
-    if (!schema && typeof schema !== "boolean") return cg.keywordType.any;
+    if (!schema && typeof schema !== "boolean")
+      return this.getEmptySchemaType();
     if (isReference(schema)) {
       return this.getRefAlias(schema, onlyMode) as ts.TypeReferenceNode;
     }
 
     if (schema === true) {
-      return cg.keywordType.any;
+      return this.getEmptySchemaType();
     }
 
     if (schema === false) {
@@ -805,10 +810,9 @@ export default class ApiGenerator {
     if (schema.type !== undefined) {
       if (schema.type === null) return cg.keywordType.null;
       if (isKeyOfKeywordType(schema.type)) return cg.keywordType[schema.type];
-      return cg.keywordType.any;
     }
 
-    return cg.keywordType.any;
+    return this.getEmptySchemaType();
   }
 
   isTrueEnum(schema: SchemaObject, name?: string): name is string {
@@ -1053,7 +1057,7 @@ export default class ApiGenerator {
     if (additionalProperties) {
       const type =
         additionalProperties === true
-          ? cg.keywordType.any
+          ? this.getEmptySchemaType()
           : this.getTypeFromSchema(additionalProperties, undefined, onlyMode);
 
       members.push(cg.createIndexSignature(type));

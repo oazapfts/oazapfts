@@ -22,6 +22,7 @@ export const keywordType = {
   void: factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
   never: factory.createKeywordTypeNode(ts.SyntaxKind.NeverKeyword),
   null: factory.createLiteralTypeNode(factory.createNull()),
+  unknown: factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
 };
 
 type KeywordTypeName = keyof typeof keywordType;
