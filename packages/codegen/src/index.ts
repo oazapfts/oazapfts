@@ -32,7 +32,7 @@ export function printAst(ast: ts.SourceFile) {
 }
 
 export async function generateSource(spec: string, opts: Opts = {}) {
-  var { doc, isConverted } = await parseSpec(spec);
+  const { doc, isConverted } = await parseSpec(spec);
   const ast = generateAst(doc, opts, isConverted);
   const { title, version } = doc.info;
   const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
