@@ -687,7 +687,7 @@ export default class ApiGenerator {
     }
     if (schema.allOf) {
       // allOf -> intersection
-      const types = [];
+      const types: Array<ts.TypeNode> = [];
       for (const childSchema of schema.allOf) {
         if (
           isReference(childSchema) &&
@@ -696,7 +696,7 @@ export default class ApiGenerator {
           const discriminatingSchema =
             this.resolve<DiscriminatingSchemaObject>(childSchema);
           const discriminator = discriminatingSchema.discriminator;
-          const matched = Object.entries(discriminator.mapping || {}).find(
+          const matched = Object.entries(discriminator.mapping ?? {}).find(
             ([, ref]) => ref === schema["x-component-ref-path"],
           );
           if (matched) {
