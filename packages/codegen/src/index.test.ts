@@ -72,7 +72,10 @@ describe("generateSource", () => {
     expect(src).toContain("export type PetBase = { petType: string; };");
     expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
     expect(src).toContain(
-      'export type Dog = { petType: "dog"; } & PetBase & { bark?: string; };',
+      'export type Cat = { petType: "cat"; } & PetBase & { name?: string; };',
+    );
+    expect(src).toContain(
+      'export type Dog = { petType: "dog" | "poodle"; } & PetBase & { bark?: string; };',
     );
     expect(src).toContain(
       'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
