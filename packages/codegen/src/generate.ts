@@ -605,8 +605,10 @@ export default class ApiGenerator {
     } else {
       // oneOf -> untagged union
       return factory.createUnionTypeNode(
-        variants.map((schema) =>
-          this.getTypeFromSchema(schema, undefined, onlyMode),
+        _.uniq(
+          variants.map((schema) =>
+            this.getTypeFromSchema(schema, undefined, onlyMode),
+          ),
         ),
       );
     }
