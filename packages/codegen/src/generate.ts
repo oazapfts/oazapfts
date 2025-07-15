@@ -696,18 +696,15 @@ export default class ApiGenerator {
           const discriminatingSchema =
             this.resolve<DiscriminatingSchemaObject>(childSchema);
           const discriminator = discriminatingSchema.discriminator;
-          const matched = Object.entries(discriminator.mapping ?? {}).find(
-            ([, ref]) => ref === schema["x-component-ref-path"],
-          );
-          if (matched) {
-            const [discriminatorValue] = matched;
+          const matches = Object.entries(discriminator.mapping ?? {})
+            .filter(([, ref]) => ref === schema["x-component-ref-path"])
+            .map(([discriminatorValue]) => discriminatorValue);
+          if (matches.length > 0) {
             types.push(
               factory.createTypeLiteralNode([
                 cg.createPropertySignature({
                   name: discriminator.propertyName,
-                  type: factory.createLiteralTypeNode(
-                    factory.createStringLiteral(discriminatorValue),
-                  ),
+                  type: this.getTypeFromEnum(matches),
                 }),
               ]),
             );
