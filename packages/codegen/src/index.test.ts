@@ -11,7 +11,7 @@ const demoFolder = path.join(rootFolder, "demo");
 /**
  * Generate an API from a relative path and convert it into a single line.
  */
-async function generate(file: string, opts: Opts = {}): Promise<string> {
+async function generate(file: string, opts: Opts = {}) {
   const src = await generateSource(file, opts);
   const error = await checkForTypeErrors(src);
   expect(error).toBeUndefined();
