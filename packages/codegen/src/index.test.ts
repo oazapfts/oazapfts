@@ -60,8 +60,12 @@ describe("generateSource", () => {
     expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
   });
 
-  it(async () => {
-    const src = await generate(__dirname + "/__fixtures__/allOf.json");
+  describe("discriminator mappings with allOf", () => {
+    let src: string;
+
+    beforeAll(async () => {
+      src = await generate(__dirname + "/__fixtures__/allOf.json");
+    });
 
     it("should handle properties both inside and outside of allOf", async () => {
       expect(src).toContain(
