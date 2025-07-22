@@ -605,8 +605,10 @@ export default class ApiGenerator {
     } else {
       // oneOf -> untagged union
       return factory.createUnionTypeNode(
-        variants.map((schema) =>
-          this.getTypeFromSchema(schema, undefined, onlyMode),
+        _.uniq(
+          variants.map((schema) =>
+            this.getTypeFromSchema(schema, undefined, onlyMode),
+          ),
         ),
       );
     }
@@ -687,7 +689,7 @@ export default class ApiGenerator {
     }
     if (schema.allOf) {
       // allOf -> intersection
-      const types = [];
+      const types: Array<ts.TypeNode> = [];
       for (const childSchema of schema.allOf) {
         if (
           isReference(childSchema) &&
@@ -696,18 +698,15 @@ export default class ApiGenerator {
           const discriminatingSchema =
             this.resolve<DiscriminatingSchemaObject>(childSchema);
           const discriminator = discriminatingSchema.discriminator;
-          const matched = Object.entries(discriminator.mapping || {}).find(
-            ([, ref]) => ref === schema["x-component-ref-path"],
-          );
-          if (matched) {
-            const [discriminatorValue] = matched;
+          const matches = Object.entries(discriminator.mapping ?? {})
+            .filter(([, ref]) => ref === schema["x-component-ref-path"])
+            .map(([discriminatorValue]) => discriminatorValue);
+          if (matches.length > 0) {
             types.push(
               factory.createTypeLiteralNode([
                 cg.createPropertySignature({
                   name: discriminator.propertyName,
-                  type: factory.createLiteralTypeNode(
-                    factory.createStringLiteral(discriminatorValue),
-                  ),
+                  type: this.getTypeFromEnum(matches),
                 }),
               ]),
             );

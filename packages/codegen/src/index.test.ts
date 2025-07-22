@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, assert } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as path from "node:path";
-import { Opts, generateSource } from "./index";
+import { generateSource, Opts } from "./index";
 import { readFile } from "node:fs/promises";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
@@ -60,23 +60,32 @@ describe("generateSource", () => {
     expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
   });
 
-  it("should handle properties both inside and outside of allOf", async () => {
-    const src = await generate(__dirname + "/__fixtures__/allOf.json");
-    expect(src).toContain(
-      "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
-    );
-  });
+  describe("discriminator mappings with allOf", () => {
+    let src: string;
 
-  it("should support discriminator used in conjunction with allOf", async () => {
-    const src = await generate(__dirname + "/__fixtures__/allOf.json");
-    expect(src).toContain("export type PetBase = { petType: string; };");
-    expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
-    expect(src).toContain(
-      'export type Dog = { petType: "dog"; } & PetBase & { bark?: string; };',
-    );
-    expect(src).toContain(
-      'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
-    );
+    beforeAll(async () => {
+      src = await generate(__dirname + "/__fixtures__/allOf.json");
+    });
+
+    it("should handle properties both inside and outside of allOf", async () => {
+      expect(src).toContain(
+        "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
+      );
+    });
+
+    it("should support discriminator used in conjunction with allOf", async () => {
+      expect(src).toContain("export type PetBase = { petType: string; };");
+      expect(src).toContain(
+        'export type Cat = { petType: "cat"; } & PetBase & { name?: string; };',
+      );
+      expect(src).toContain(
+        'export type Dog = { petType: "dog" | "poodle"; } & PetBase & { bark?: string; };',
+      );
+      expect(src).toContain(
+        'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
+      );
+      expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
+    });
   });
 
   it("should support recursive schemas", async () => {
