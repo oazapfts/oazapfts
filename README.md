@@ -209,8 +209,8 @@ The generated file exports a `defaults` constant that can be used to override th
 import * as api from "./api.ts";
 import nodeFetch from "node-fetch";
 
-// Override the spec's basePath
-api.defaults.basePath = "https://example.com/api";
+// Override the spec's baseUrl
+api.defaults.baseUrl = "https://example.com/api";
 
 // Send this header with each request
 api.defaults.headers = {
