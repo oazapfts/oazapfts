@@ -23,7 +23,7 @@
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
   "devDependencies": {
-    "@ts-morph/bootstrap": "^0.27.0",
+    "@ts-morph/bootstrap": "^0.28.0",
     "@types/node": "^24.1.0",
     "open-api-mocker": "^2.0.0",
     "openapi-types": "^12.1.3",
