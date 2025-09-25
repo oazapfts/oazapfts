@@ -1571,6 +1571,12 @@
               "3-headed-monkey",
               "unicorn"
             ]
+          },
+          "channel": {
+            "description": "string test case for #766",
+            "enum": ["P", "M", "G"],
+            "type": "string",
+            "x-enumNames": ["pending", "margin", "gap"]
           }
         },
         "xml": {

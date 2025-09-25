@@ -46,6 +46,8 @@ export type Pet = {
   size?: Size;
   /** integer test case for #349 */
   typeId?: TypeId;
+  /** string test case for #766 */
+  channel?: Channel;
 };
 export type ApiResponse = {
   code?: number;
@@ -786,6 +788,11 @@ export enum TypeId {
   House = 6,
   $3HeadedMonkey = 8,
   Unicorn = -1,
+}
+export enum Channel {
+  Pending = "P",
+  Margin = "M",
+  Gap = "G",
 }
 export enum Status2 {
   Placed = "placed",

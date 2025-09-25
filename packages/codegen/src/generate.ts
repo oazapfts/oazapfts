@@ -893,7 +893,7 @@ export default class ApiGenerator {
     }
 
     const members = values.map((s, index) => {
-      if (schema.type === "number" || schema.type === "integer") {
+      if (schema.type === "number" || schema.type === "integer" || schema.type === "string") {
         const name = names ? names[index] : String(s);
         return factory.createEnumMember(
           factory.createIdentifier(toIdentifier(name, true)),
