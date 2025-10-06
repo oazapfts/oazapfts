@@ -49,7 +49,7 @@
     "@types/lodash": "^4.17.20",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.1.0",
-    "@types/tapable": "^2.2.7"
+    "@types/tapable": "^2.3.0"
   },
   "peerDependencies": {
     "@oazapfts/runtime": "*"
@@ -59,7 +59,7 @@
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "swagger2openapi": "^7.0.8",
-    "tapable": "^2.2.2",
+    "tapable": "^2.3.0",
     "typescript": "^5.8.3"
   },
   "keywords": [
