@@ -55,7 +55,7 @@
     "@oazapfts/runtime": "*"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^12.0.0",
+    "@apidevtools/swagger-parser": "^12.1.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "swagger2openapi": "^7.0.8",
