@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import * as path from "node:path";
+import * as fs from "node:fs";
 import { generateSource, Opts } from "./index";
 import { readFile } from "node:fs/promises";
 import { createProject, ts } from "@ts-morph/bootstrap";
@@ -85,6 +86,55 @@ describe("generateSource", () => {
         'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
       );
       expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
+    });
+  });
+
+  describe("discriminator with useEnumType", () => {
+    let src: string;
+
+    beforeAll(async () => {
+      // Create a modified allOf fixture with enum discriminator
+      const allOfFixture = JSON.parse(
+        fs.readFileSync(__dirname + "/__fixtures__/allOf.json", "utf8")
+      );
+      
+      // Modify the Pet schema to have an enum discriminator
+      allOfFixture.components.schemas.Pet.properties.petType = {
+        type: "string",
+        enum: ["dog", "Cat", "Lizard"]
+      };
+      
+      // Update the discriminator mapping to include all enum values
+      allOfFixture.components.schemas.Pet.discriminator.mapping = {
+        "dog": "#/components/schemas/Dog",
+        "Cat": "#/components/schemas/Cat", 
+        "Lizard": "#/components/schemas/Lizard"
+      };
+      
+      src = await generate(allOfFixture, {
+        useEnumType: true,
+      });
+    });
+
+    it("should use enum member references in discriminator types when useEnumType is true", () => {
+      // Should create the enum
+      expect(src).toContain("export enum PetType");
+      expect(src).toContain('Dog = "dog"');
+      expect(src).toContain('Cat = "Cat"');
+      expect(src).toContain('Lizard = "Lizard"');
+      
+      // Should use enum member references instead of literal strings in discriminator types
+      expect(src).toContain("petType: PetType.Dog");
+      expect(src).toContain("petType: PetType.Cat");
+      expect(src).toContain("petType: PetType.Lizard");
+      
+      // Should not contain literal string types for discriminator properties in the generated types
+      expect(src).not.toContain('petType: "dog"');
+      expect(src).not.toContain('petType: "Cat"');
+      expect(src).not.toContain('petType: "Lizard"');
+      
+      // Base should use the enum type
+      expect(src).toContain("export type PetBase = { petType: PetType; };");
     });
   });
 

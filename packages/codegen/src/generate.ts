@@ -587,20 +587,57 @@ export default class ApiGenerator {
                 return [variantName || schemaBaseName, schema];
               }),
           ] as [string, OpenAPIReferenceObject][]
-        ).map(([discriminatorValue, variant]) =>
+        ).map(([discriminatorValue, variant]) => {
           // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
-          factory.createIntersectionTypeNode([
+          // Check if we should use enum member reference instead of literal string
+          let discriminatorValueType: ts.TypeNode;
+          
+          // Try to find the discriminator property schema from a parent discriminating schema
+          // to check if it should generate enum member references
+          const resolvedVariant = this.resolve(variant) as OpenAPIV3.SchemaObject;
+          let discriminatorPropertySchema: SchemaObject | undefined;
+          
+          // Look for discriminator property in the variant itself or its allOf parents
+          if (resolvedVariant.properties?.[discriminator.propertyName]) {
+            discriminatorPropertySchema = resolvedVariant.properties[discriminator.propertyName] as SchemaObject;
+          } else if (resolvedVariant.allOf) {
+            // Look in allOf parents for the discriminator property
+            for (const allOfSchema of resolvedVariant.allOf) {
+              if (isReference(allOfSchema)) {
+                const resolvedAllOf = this.resolve(allOfSchema) as OpenAPIV3.SchemaObject;
+                if (resolvedAllOf.properties?.[discriminator.propertyName]) {
+                  discriminatorPropertySchema = resolvedAllOf.properties[discriminator.propertyName] as SchemaObject;
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (discriminatorPropertySchema) {
+            const enumMemberType = this.getDiscriminatorEnumMemberType(
+              discriminatorPropertySchema,
+              discriminator.propertyName,
+              [discriminatorValue]
+            );
+            discriminatorValueType = enumMemberType || factory.createLiteralTypeNode(
+              factory.createStringLiteral(discriminatorValue),
+            );
+          } else {
+            discriminatorValueType = factory.createLiteralTypeNode(
+              factory.createStringLiteral(discriminatorValue),
+            );
+          }
+          
+          return factory.createIntersectionTypeNode([
             factory.createTypeLiteralNode([
               cg.createPropertySignature({
                 name: discriminator.propertyName,
-                type: factory.createLiteralTypeNode(
-                  factory.createStringLiteral(discriminatorValue),
-                ),
+                type: discriminatorValueType,
               }),
             ]),
             this.getTypeFromSchema(variant, undefined, onlyMode),
-          ]),
-        ),
+          ]);
+        }),
       );
     } else {
       // oneOf -> untagged union
@@ -702,11 +739,27 @@ export default class ApiGenerator {
             .filter(([, ref]) => ref === schema["x-component-ref-path"])
             .map(([discriminatorValue]) => discriminatorValue);
           if (matches.length > 0) {
+            // Get the discriminator property schema to check if it should use enum types
+            const discriminatorPropertySchema = discriminatingSchema.properties?.[discriminator.propertyName] as SchemaObject;
+            
+            let discriminatorType: ts.TypeNode;
+            if (discriminatorPropertySchema) {
+              // Try to get enum member type first
+              const enumMemberType = this.getDiscriminatorEnumMemberType(
+                discriminatorPropertySchema,
+                discriminator.propertyName,
+                matches
+              );
+              discriminatorType = enumMemberType || this.getTypeFromEnum(matches);
+            } else {
+              discriminatorType = this.getTypeFromEnum(matches);
+            }
+            
             types.push(
               factory.createTypeLiteralNode([
                 cg.createPropertySignature({
                   name: discriminator.propertyName,
-                  type: this.getTypeFromEnum(matches),
+                  type: discriminatorType,
                 }),
               ]),
             );
@@ -822,6 +875,43 @@ export default class ApiGenerator {
         name &&
         schema.type !== "boolean",
     );
+  }
+
+  /**
+   * Get enum member reference type for discriminator values when useEnumType is enabled
+   */
+  getDiscriminatorEnumMemberType(
+    discriminatorPropertySchema: SchemaObject,
+    discriminatorPropertyName: string,
+    values: string[]
+  ): ts.TypeNode | null {
+    if (!this.opts.useEnumType || !this.isTrueEnum(discriminatorPropertySchema, discriminatorPropertyName)) {
+      return null;
+    }
+
+    // Get the enum type reference
+    const enumTypeRef = this.getTrueEnum(discriminatorPropertySchema, discriminatorPropertyName);
+    
+    if (values.length === 1) {
+      // Single value: return EnumName.MemberName as a type reference
+      const enumMemberName = factory.createIdentifier(toIdentifier(values[0], true));
+      const enumName = (enumTypeRef as ts.TypeReferenceNode).typeName as ts.Identifier;
+      return factory.createTypeReferenceNode(
+        factory.createQualifiedName(enumName, enumMemberName),
+        undefined
+      );
+    } else {
+      // Multiple values: return union of EnumName.MemberName1 | EnumName.MemberName2
+      const enumName = (enumTypeRef as ts.TypeReferenceNode).typeName as ts.Identifier;
+      const memberTypes = values.map(value => {
+        const enumMemberName = factory.createIdentifier(toIdentifier(value, true));
+        return factory.createTypeReferenceNode(
+          factory.createQualifiedName(enumName, enumMemberName),
+          undefined
+        );
+      });
+      return factory.createUnionTypeNode(memberTypes);
+    }
   }
 
   /**
