@@ -95,7 +95,7 @@ describe("generateSource", () => {
     beforeAll(async () => {
       // Create a modified allOf fixture with enum discriminator
       const allOfFixture = JSON.parse(
-        fs.readFileSync(__dirname + "/__fixtures__/allOf.json", "utf8")
+        fs.readFileSync(path.join(__dirname, "__fixtures__", "allOf.json"), "utf8")
       );
       
       // Modify the Pet schema to have an enum discriminator
