@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-and-release:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout repo
@@ -35,6 +35,30 @@ jobs:
       - name: 🚔 Ensure generated code is up to date
         run: npm run test:e2e:clean
 
+  publish:
+    environment: npm-publish
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: ⎔ Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          check-latest: true
+
+      - name: 📥 Install dependencies
+        run: |
+          npm i npm@latest -g
+          npm ci
+
       - name: 📦 Release @oazapfts/runtime
         run: |
           set -e  # Exit immediately if a command exits with a non-zero status.
@@ -44,9 +68,9 @@ jobs:
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 📦 Release oazapfts
+
         run: |
           set -e  # Exit immediately if a command exits with a non-zero status.
 
@@ -56,4 +80,3 @@ jobs:
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
