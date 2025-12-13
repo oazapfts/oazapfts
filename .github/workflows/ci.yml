@@ -45,9 +45,11 @@ jobs:
       - name: 🔍 Check if release is needed
         id: check-release
         run: |
-          git fetch --tags
+          git fetch --unshallow --tags 2>/dev/null || git fetch --tags
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+          echo "LAST_TAG: $LAST_TAG"
           COMMITS=$(git log ${LAST_TAG}..HEAD --format="%s%n%b")
+          echo "COMMITS: $COMMITS"
           if echo "$COMMITS" | grep -qE "^(feat|fix|perf)(\(|:)|BREAKING CHANGE"; then
             echo "has-release=true" >> $GITHUB_OUTPUT
           else
