@@ -9,14 +9,41 @@ import { ScriptTarget } from "typescript";
 const rootFolder = path.join(__dirname, "../../..");
 const demoFolder = path.join(rootFolder, "demo");
 
+function findCodeSection(
+  src: string,
+  opts: {
+    matching: RegExp | string;
+    before?: number;
+    after?: number;
+  },
+) {
+  const lines = src.split("\n");
+  const lineIndex = lines.findIndex((line) => line.match(opts.matching));
+  if (lineIndex === -1) {
+    const pattern =
+      opts.matching instanceof RegExp
+        ? opts.matching.toString()
+        : JSON.stringify(opts.matching);
+    throw new Error(
+      `Pattern ${pattern} not found in source code. Cannot extract code section.`,
+    );
+  }
+  return lines
+    .slice(lineIndex - (opts.before || 0), lineIndex + (opts.after || 0) + 1)
+    .join("\n");
+}
+
 /**
  * Generate an API from a relative path and convert it into a single line.
  */
-async function generate(file: string, opts: Opts = {}) {
+async function generate(
+  file: string,
+  opts: Opts & { minify?: boolean } = { minify: true },
+) {
   const src = await generateSource(file, opts);
   const error = await checkForTypeErrors(src);
   expect(error).toBeUndefined();
-  return src.replace(/\s+/g, " ");
+  return opts.minify !== false ? src.replace(/\s+/g, " ") : src;
 }
 
 /**
@@ -90,51 +117,93 @@ describe("generateSource", () => {
   });
 
   describe("discriminator with useEnumType", () => {
-    let src: string;
-
-    beforeAll(async () => {
+    it("should use enum member references in discriminator types when useEnumType is true", async () => {
       // Create a modified allOf fixture with enum discriminator
       const allOfFixture = JSON.parse(
-        fs.readFileSync(path.join(__dirname, "__fixtures__", "allOf.json"), "utf8")
+        fs.readFileSync(
+          path.join(__dirname, "__fixtures__", "allOf.json"),
+          "utf8",
+        ),
       );
-      
+
       // Modify the Pet schema to have an enum discriminator
       allOfFixture.components.schemas.Pet.properties.petType = {
         type: "string",
-        enum: ["dog", "Cat", "Lizard"]
+        enum: ["dog", "Cat", "Lizard"],
       };
-      
+
       // Update the discriminator mapping to include all enum values
       allOfFixture.components.schemas.Pet.discriminator.mapping = {
-        "dog": "#/components/schemas/Dog",
-        "Cat": "#/components/schemas/Cat", 
-        "Lizard": "#/components/schemas/Lizard"
+        dog: "#/components/schemas/Dog",
+        Cat: "#/components/schemas/Cat",
+        Lizard: "#/components/schemas/Lizard",
       };
-      
-      src = await generate(allOfFixture, {
-        useEnumType: true,
-      });
-    });
 
-    it("should use enum member references in discriminator types when useEnumType is true", () => {
+      const src = await generate(allOfFixture, {
+        useEnumType: true,
+        minify: false,
+      });
+
       // Should create the enum
       expect(src).toContain("export enum PetType");
       expect(src).toContain('Dog = "dog"');
       expect(src).toContain('Cat = "Cat"');
       expect(src).toContain('Lizard = "Lizard"');
-      
+
       // Should use enum member references instead of literal strings in discriminator types
-      expect(src).toContain("petType: PetType.Dog");
-      expect(src).toContain("petType: PetType.Cat");
-      expect(src).toContain("petType: PetType.Lizard");
-      
+      expect(
+        findCodeSection(src, {
+          matching: "export type Dog =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Dog = {
+            petType: PetType.Dog;
+        } & PetBase & {
+            bark?: string;
+        };"
+      `);
+      expect(
+        findCodeSection(src, {
+          matching: "export type Cat =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Cat = {
+            petType: PetType.Cat;
+        } & PetBase & {
+            name?: string;
+        };"
+      `);
+      expect(
+        findCodeSection(src, {
+          matching: "export type Lizard =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Lizard = {
+            petType: PetType.Lizard;
+        } & PetBase & {
+            lovesRocks?: boolean;
+        };"
+      `);
+
       // Should not contain literal string types for discriminator properties in the generated types
       expect(src).not.toContain('petType: "dog"');
       expect(src).not.toContain('petType: "Cat"');
       expect(src).not.toContain('petType: "Lizard"');
-      
+
       // Base should use the enum type
-      expect(src).toContain("export type PetBase = { petType: PetType; };");
+      expect(
+        findCodeSection(src, {
+          matching: "export type PetBase =",
+          after: 2,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type PetBase = {
+            petType: PetType;
+        };"
+      `);
     });
   });
 
