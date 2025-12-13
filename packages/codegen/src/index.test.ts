@@ -260,6 +260,12 @@ describe("useEnumType", () => {
     );
   });
 
+  it("should create string enums with enumNames", () => {
+    expect(src).toContain(
+      `export enum Channel { Pending = "P", Margin = "M", Gap = "G" }`,
+    );
+  });
+
   it("should create array of enums", () => {
     expect(src).toContain(
       `export enum Activities { Running = "running", Playing = "playing", Laying = "laying", Begging = "begging" }`,
