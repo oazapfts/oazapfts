@@ -4,6 +4,7 @@ import { ReferenceObject, SchemaObject } from "../openApi3-x";
 import * as cg from "../tscodegen";
 import { checkSchemaOnlyMode } from "../helpers";
 import { getTypeFromSchema } from "./getTypeForSchema";
+import { getEmptySchemaType } from "../helpers/emptySchemaType";
 
 /**
  * Recursively creates a type literal with the given props.
@@ -47,7 +48,11 @@ export function getTypeFromProperties(
       type,
     });
 
-    if ("description" in schema && schema.description) {
+    if (
+      typeof schema !== "boolean" &&
+      "description" in schema &&
+      schema.description
+    ) {
       // Escape any JSDoc comment closing tags in description
       const description = schema.description.replace("*/", "*\\/");
 
@@ -65,7 +70,7 @@ export function getTypeFromProperties(
   if (additionalProperties) {
     const type =
       additionalProperties === true
-        ? cg.keywordType.any
+        ? getEmptySchemaType(ctx)
         : getTypeFromSchema(ctx, additionalProperties, undefined, onlyMode);
 
     members.push(cg.createIndexSignature(type));

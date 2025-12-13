@@ -31,12 +31,13 @@ export type Pet = {
   tags?: Tag[];
   /** pet status in the store */
   status?: "available" | "pending" | "sold" | "private" | "10percent";
+  activities?: ("running" | "playing" | "laying" | "begging")[];
   /** Always true for a pet */
   animal?: true;
   /** Size scale for pets */
   size?: "P" | "M" | "G" | "0";
   /** integer test case for #349 */
-  typeId?: 1 | 2 | 3 | 4 | 6 | 8;
+  typeId?: 1 | 2 | 3 | 4 | 6 | 8 | -1;
 };
 export type ApiResponse = {
   code?: number;
@@ -94,6 +95,7 @@ export type Issue542 = {
   "media-protocol"?: "hls" | "mss" | "dash";
   "dashed-property"?: string;
 };
+export type Issue672 = {};
 /**
  * Update an existing pet
  */
@@ -705,6 +707,22 @@ export function dashInSchema(issue542?: Issue542, opts?: Oazapfts.RequestOpts) {
       ...opts,
       method: "POST",
       body: issue542,
+    }),
+  );
+}
+export function undefinedDiscriminatorMapping(
+  issue672: Issue672,
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: Pet;
+  }>(
+    "/issue-672",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body: issue672,
     }),
   );
 }

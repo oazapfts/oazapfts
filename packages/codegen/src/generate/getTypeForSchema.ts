@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts, { factory } from "typescript";
 import _ from "lodash";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../openApi3-x";
@@ -9,6 +9,8 @@ import { getUnionType } from "./getUnionType";
 import { getTypeFromProperties } from "./getTypeFromProperties";
 import { getTrueEnum } from "./getTrueEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
+import { getEmptySchemaType } from "../helpers/emptySchemaType";
+import { OpenAPIV3 } from "openapi-types";
 
 /**
  * Creates a type node from a given schema.
@@ -37,9 +39,17 @@ function getBaseTypeFromSchema(
   name?: string,
   onlyMode?: OnlyMode,
 ): ts.TypeNode {
-  if (!schema) return cg.keywordType.any;
+  if (schema === undefined) return getEmptySchemaType(ctx);
   if (h.isReference(schema)) {
     return getRefAlias(schema, ctx, onlyMode) as ts.TypeReferenceNode;
+  }
+
+  if (schema === true) {
+    return getEmptySchemaType(ctx);
+  }
+
+  if (schema === false) {
+    return cg.keywordType.never;
   }
 
   if (schema.oneOf) {
@@ -64,9 +74,9 @@ function getBaseTypeFromSchema(
     // anyOf -> union
     return getUnionType(schema.anyOf, ctx, undefined, onlyMode);
   }
-  if (schema.discriminator) {
+  if (schema.discriminator?.mapping) {
     // discriminating schema -> union
-    const mapping = schema.discriminator.mapping || {};
+    const mapping = schema.discriminator.mapping;
     return getUnionType(
       Object.values(mapping).map((ref) => ({ $ref: ref })),
       ctx,
@@ -82,23 +92,18 @@ function getBaseTypeFromSchema(
         h.isReference(childSchema) &&
         ctx.discriminatingSchemas.has(childSchema.$ref)
       ) {
-        const discriminatingSchema = h.resolve<OpenApi.SchemaObject>(
-          childSchema,
-          ctx,
-        );
-        const discriminator = discriminatingSchema.discriminator!;
-        const matched = Object.entries(discriminator.mapping || {}).find(
-          ([, ref]) => ref === schema["x-component-ref-path"],
-        );
-        if (matched) {
-          const [discriminatorValue] = matched;
+        const discriminatingSchema =
+          h.resolve<OpenApi.DiscriminatingSchemaObject>(childSchema, ctx);
+        const discriminator = discriminatingSchema.discriminator;
+        const matches = Object.entries(discriminator.mapping ?? {})
+          .filter(([, ref]) => ref === schema["x-component-ref-path"])
+          .map(([discriminatorValue]) => discriminatorValue);
+        if (matches.length > 0) {
           types.push(
             ts.factory.createTypeLiteralNode([
               cg.createPropertySignature({
                 name: discriminator.propertyName,
-                type: ts.factory.createLiteralTypeNode(
-                  ts.factory.createStringLiteral(discriminatorValue),
-                ),
+                type: getTypeFromEnum(matches),
               }),
             ]),
           );
@@ -112,7 +117,17 @@ function getBaseTypeFromSchema(
           ),
         );
       } else {
-        types.push(getTypeFromSchema(ctx, childSchema, undefined, onlyMode));
+        types.push(
+          getTypeFromSchema(
+            ctx,
+            {
+              required: schema.required,
+              ...childSchema,
+            },
+            undefined,
+            onlyMode,
+          ),
+        );
       }
     }
 
@@ -130,7 +145,38 @@ function getBaseTypeFromSchema(
     }
     return ts.factory.createIntersectionTypeNode(types);
   }
+  // Union types defined by an array in schema.type
+  if (Array.isArray(schema.type)) {
+    return factory.createUnionTypeNode(
+      schema.type.map((type) => {
+        const subSchema = { ...schema, type } as Exclude<
+          OpenApi.SchemaObject,
+          boolean
+        >;
+        // Remove items if the type isn't array since it's not relevant
+        if ("items" in subSchema && type !== "array") {
+          delete subSchema.items;
+        }
+        if ("properties" in subSchema && type !== "object") {
+          delete subSchema.properties;
+        }
+
+        return getBaseTypeFromSchema(ctx, subSchema, name, onlyMode);
+      }),
+    );
+  }
   if ("items" in schema) {
+    const schemaItems = schema.items;
+
+    // items -> array of enums or unions
+    if (schemaItems && !h.isReference(schemaItems) && schemaItems.enum) {
+      const enumType = h.isTrueEnum(schemaItems, ctx, name)
+        ? getTrueEnum(schemaItems, name, ctx)
+        : cg.createEnumTypeNode(schemaItems.enum);
+
+      return factory.createArrayTypeNode(enumType);
+    }
+
     // items -> array
     return ts.factory.createArrayTypeNode(
       getTypeFromSchema(ctx, schema.items, undefined, onlyMode),
@@ -152,6 +198,7 @@ function getBaseTypeFromSchema(
       onlyMode,
     );
   }
+
   if (schema.enum) {
     // enum -> enum or union
     return h.isTrueEnum(schema, ctx, name)
@@ -164,25 +211,12 @@ function getBaseTypeFromSchema(
   if (schema.const) {
     return getTypeFromEnum([schema.const]);
   }
-  if (schema.type) {
-    // string, boolean, null, number, array
-    if (Array.isArray(schema.type)) {
-      return ts.factory.createUnionTypeNode(
-        schema.type.map((type) => {
-          if (type === "null") return cg.keywordType.null;
-          if (type === "integer") return cg.keywordType.number;
-          if (isKeyOfKeywordType(type)) return cg.keywordType[type];
-
-          return cg.keywordType.any;
-        }),
-      );
-    }
-    if (schema.type === "integer") return cg.keywordType.number;
+  if (schema.type !== undefined) {
+    if (schema.type === null) return cg.keywordType.null;
     if (isKeyOfKeywordType(schema.type)) return cg.keywordType[schema.type];
-    return cg.keywordType.any;
   }
 
-  return cg.keywordType.any;
+  return getEmptySchemaType(ctx);
 }
 
 function isKeyOfKeywordType(key: string): key is keyof typeof cg.keywordType {

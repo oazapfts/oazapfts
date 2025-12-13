@@ -14,12 +14,15 @@ export function createQuestionToken(token?: boolean | ts.QuestionToken) {
 export const keywordType = {
   any: factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
   number: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+  integer: factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
   object: factory.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword),
   string: factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
   boolean: factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
   undefined: factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
   void: factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
+  never: factory.createKeywordTypeNode(ts.SyntaxKind.NeverKeyword),
   null: factory.createLiteralTypeNode(factory.createNull()),
+  unknown: factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
 };
 
 type KeywordTypeName = keyof typeof keywordType;
@@ -40,7 +43,12 @@ export function createLiteral(v: string | boolean | number) {
     case "boolean":
       return v ? factory.createTrue() : factory.createFalse();
     case "number":
-      return factory.createNumericLiteral(String(v));
+      return String(v).charAt(0) === "-"
+        ? factory.createPrefixUnaryExpression(
+            ts.SyntaxKind.MinusToken,
+            factory.createNumericLiteral(String(-v)),
+          )
+        : factory.createNumericLiteral(String(v));
   }
 }
 

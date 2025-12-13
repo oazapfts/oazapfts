@@ -42,6 +42,10 @@ checkSchemaOnlyMode(
       return ret;
     }
 
+    if (typeof schema === "boolean") {
+      return { readOnly: false, writeOnly: false };
+    }
+
     let readOnly = schema.readOnly ?? false;
     let writeOnly = schema.writeOnly ?? false;
 

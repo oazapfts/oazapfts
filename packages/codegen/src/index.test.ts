@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as path from "node:path";
 import { Opts, generateSource } from "./index";
 import { createProject, ts } from "@ts-morph/bootstrap";
@@ -53,23 +53,32 @@ describe("generateSource", () => {
     expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
   });
 
-  it("should handle properties both inside and outside of allOf", async () => {
-    const src = await generate(__dirname + "/__fixtures__/allOf.json");
-    expect(src).toContain(
-      "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
-    );
-  });
+  describe("discriminator mappings with allOf", () => {
+    let src: string;
 
-  it("should support discriminator used in conjunction with allOf", async () => {
-    const src = await generate(__dirname + "/__fixtures__/allOf.json");
-    expect(src).toContain("export type PetBase = { petType: string; };");
-    expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
-    expect(src).toContain(
-      'export type Dog = { petType: "dog"; } & PetBase & { bark?: string; };',
-    );
-    expect(src).toContain(
-      'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
-    );
+    beforeAll(async () => {
+      src = await generate(__dirname + "/__fixtures__/allOf.json");
+    });
+
+    it("should handle properties both inside and outside of allOf", async () => {
+      expect(src).toContain(
+        "export type Circle = Shape & { radius?: number; } & { circumference?: number; };",
+      );
+    });
+
+    it("should support discriminator used in conjunction with allOf", async () => {
+      expect(src).toContain("export type PetBase = { petType: string; };");
+      expect(src).toContain(
+        'export type Cat = { petType: "cat"; } & PetBase & { name?: string; };',
+      );
+      expect(src).toContain(
+        'export type Dog = { petType: "dog" | "poodle"; } & PetBase & { bark?: string; };',
+      );
+      expect(src).toContain(
+        'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
+      );
+      expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
+    });
   });
 
   it("should support recursive schemas", async () => {
@@ -77,6 +86,35 @@ describe("generateSource", () => {
     expect(src).toContain(
       "export type FolderDto = { name?: string; files?: string[]; folders?: FolderDto[]; };",
     );
+  });
+
+  it("should support boolean schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/booleanSchema.json");
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: any | null; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: never; };");
+  });
+
+  it("should support unknown for boolean schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/booleanSchema.json", {
+      useUnknown: true,
+    });
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: unknown | null; };",
+    );
+  });
+
+  it("should support referenced boolean schemas", async () => {
+    const src = await generate(
+      __dirname + "/__fixtures__/booleanSchemaRefs.json",
+    );
+    expect(src).toContain(
+      "export type BlogEntry = { id: number; title: string; content: AlwaysAccept; };",
+    );
+    expect(src).toContain("export type Paradox = { foo: NeverAccept; };");
+    expect(src).toContain("export type AlwaysAccept = any | null;");
+    expect(src).toContain("export type NeverAccept = never;");
   });
 
   it("should handle application/geo+json", async () => {
@@ -213,6 +251,14 @@ describe("useEnumType", () => {
     expect(src).toContain(
       `export enum Status { Available = "available", Pending = "pending", Sold = "sold", Private = "private", $10Percent = "10percent" }`,
     );
+  });
+
+  it("should create array of enums", () => {
+    expect(src).toContain(
+      `export enum Activities { Running = "running", Playing = "playing", Laying = "laying", Begging = "begging" }`,
+    );
+
+    expect(src).toContain(`: Activities[]`);
   });
 
   it("should create number enums", () => {

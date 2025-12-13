@@ -31,6 +31,7 @@ export type Pet = {
   tags?: Tag[];
   /** pet status in the store */
   status?: Status;
+  activities?: Activities[];
   /** Always true for a pet */
   animal?: true;
   /** Size scale for pets */
@@ -120,6 +121,7 @@ export type Issue542 = {
   "media-protocol"?: MediaProtocol;
   "dashed-property"?: string;
 };
+export type Issue672 = {};
 /**
  * Update an existing pet
  */
@@ -733,12 +735,34 @@ export function dashInSchema(issue542?: Issue542, opts?: Oazapfts.RequestOpts) {
     }),
   );
 }
+export function undefinedDiscriminatorMapping(
+  issue672: Issue672,
+  opts?: Oazapfts.RequestOpts,
+) {
+  return oazapfts.fetchJson<{
+    status: 200;
+    data: Pet;
+  }>(
+    "/issue-672",
+    oazapfts.json({
+      ...opts,
+      method: "POST",
+      body: issue672,
+    }),
+  );
+}
 export enum Status {
   Available = "available",
   Pending = "pending",
   Sold = "sold",
   Private = "private",
   $10Percent = "10percent",
+}
+export enum Activities {
+  Running = "running",
+  Playing = "playing",
+  Laying = "laying",
+  Begging = "begging",
 }
 export enum Size {
   P = "P",
@@ -753,6 +777,7 @@ export enum TypeId {
   Mouse = 4,
   House = 6,
   $3HeadedMonkey = 8,
+  Unicorn = -1,
 }
 export enum Status2 {
   Placed = "placed",

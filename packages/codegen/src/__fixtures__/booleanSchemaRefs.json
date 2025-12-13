@@ -1,0 +1,92 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Boolean schema example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/blog/{id}": {
+      "get": {
+        "tags": ["blog"],
+        "summary": "Get blog entry by ID",
+        "description": "Returns a single blog entry",
+        "operationId": "getBlogEntryById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of blog entry",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explode": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paradox"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BlogEntry": {
+        "type": "object",
+        "required": ["id", "title", "content"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/AlwaysAccept"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Paradox": {
+        "type": "object",
+        "required": ["foo"],
+        "properties": {
+          "foo": {
+            "$ref": "#/components/schemas/NeverAccept"
+          }
+        }
+      },
+      "AlwaysAccept": true,
+      "NeverAccept": false
+    }
+  }
+}

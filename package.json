@@ -11,9 +11,11 @@
   "scripts": {
     "build": "npm run build -w oazapfts && npm run build -w @oazapfts/runtime",
     "test": "npm run test:unit -- --run && npm run test:e2e",
+    "validate": "npm run lint && npm test && npm run test:e2e:clean",
     "lint": "prettier --check .",
     "test:unit": "cd packages && vitest",
     "test:e2e": "npm run generate-demo && with-server 'cd demo && vitest --run'",
+    "test:e2e:clean": "if [ -n \"$(git status --porcelain -- demo)\" ]; then echo \"Error: Generated code has changes. Please run 'npm run generate-demo' and commit the changes.\" && exit 1; fi",
     "start": "open-api-mocker -p $PORT -s demo/petstore.json",
     "generate-demo": "npm run prepare && oazapfts ./demo/petstore.json ./demo/api.ts && oazapfts ./demo/petstore.json --mergeReadWriteOnly ./demo/mergedReadWriteApi.ts && oazapfts --optimistic ./demo/petstore.json ./demo/optimisticApi.ts && oazapfts --useEnumType ./demo/petstore.json ./demo/enumApi.ts && oazapfts --argumentStyle=object ./demo/petstore.json ./demo/objectStyleArgument.ts && prettier -w demo",
     "prepare": "npm run build && ln -sf $(pwd)/packages/codegen/dist/cli.js $(pwd)/node_modules/.bin/oazapfts"
@@ -21,14 +23,14 @@
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
   "devDependencies": {
-    "@ts-morph/bootstrap": "^0.22.0",
-    "@types/node": "^20.11.24",
+    "@ts-morph/bootstrap": "^0.27.0",
+    "@types/node": "^24.1.0",
     "open-api-mocker": "^2.0.0",
     "openapi-types": "^12.1.3",
-    "prettier": "^3.2.5",
-    "vite": "^5.1.4",
-    "vite-plugin-dts": "^3.7.3",
-    "vitest": "^1.3.1",
+    "prettier": "^3.6.2",
+    "vite": "^7.0.6",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4",
     "with-server": "^2.1.0"
   }
 }

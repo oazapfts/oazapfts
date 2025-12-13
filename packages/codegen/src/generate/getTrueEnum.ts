@@ -5,15 +5,22 @@ import { SchemaObject } from "../openApi3-x";
 import * as cg from "../tscodegen";
 import * as h from "../helpers";
 
-/*
-    Creates a enum "ref" if not used, reuse existing if values and name matches or creates a new one
-    with a new name adding a number
-  */
+/**
+ * Creates a enum "ref" if not used, reuse existing if values and name matches or creates a new one
+ * with a new name adding a number
+ */
 export function getTrueEnum(
   schema: SchemaObject,
   propName: string,
   ctx: OazapftsContext,
 ) {
+  if (typeof schema === "boolean") {
+    // this should never be thrown, since the only `getTrueEnum` call is
+    // behind an `isTrueEnum` check, which returns false for boolean schemas.
+    throw new Error(
+      "cannot get enum from boolean schema. schema must be an object",
+    );
+  }
   const baseName = schema.title || _.upperFirst(propName);
   // TODO: use _.camelCase in future major version
   // (currently we allow _ and $ for backwards compatibility)
@@ -46,12 +53,12 @@ export function getTrueEnum(
       const name = names ? names[index] : String(s);
       return ts.factory.createEnumMember(
         ts.factory.createIdentifier(h.toIdentifier(name, true)),
-        ts.factory.createNumericLiteral(s),
+        cg.createLiteral(s),
       );
     }
     return ts.factory.createEnumMember(
       ts.factory.createIdentifier(h.toIdentifier(s, true)),
-      ts.factory.createStringLiteral(s),
+      cg.createLiteral(s),
     );
   });
   ctx.enumAliases.push(

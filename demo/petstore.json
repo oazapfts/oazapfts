@@ -1282,6 +1282,35 @@
           }
         }
       }
+    },
+    "/issue-672": {
+      "post": {
+        "operationId": "UndefinedDiscriminatorMapping",
+        "parameters": [],
+        "requestBody": {
+          "description": "Pet object that needs to be added to the store",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Issue672"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1511,6 +1540,14 @@
             "description": "pet status in the store",
             "enum": ["available", "pending", "sold", "private", "10percent"]
           },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "pet activities enum",
+              "enum": ["running", "playing", "laying", "begging"]
+            }
+          },
           "animal": {
             "description": "Always true for a pet",
             "enum": [true],
@@ -1523,7 +1560,7 @@
           },
           "typeId": {
             "description": "integer test case for #349",
-            "enum": [1, 2, 3, 4, 6, 8],
+            "enum": [1, 2, 3, 4, 6, 8, -1],
             "type": "integer",
             "x-enumNames": [
               "dog",
@@ -1531,7 +1568,8 @@
               "tiger",
               "mouse",
               "house",
-              "3-headed-monkey"
+              "3-headed-monkey",
+              "unicorn"
             ]
           }
         },
@@ -1581,6 +1619,12 @@
             "type": "string"
           }
         }
+      },
+      "Issue672": {
+        "required": ["@type"],
+        "type": "object",
+        "properties": {},
+        "discriminator": { "propertyName": "@type" }
       }
     },
     "securitySchemes": {

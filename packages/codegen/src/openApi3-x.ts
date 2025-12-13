@@ -1,13 +1,21 @@
 import type { OpenAPIV3_1, OpenAPIV3 } from "openapi-types";
 
-// Use union of OAS 3.0 and 3.1 types throughout
-export type SchemaObject = {
+export type XSchemaExtensions = {
   const?: unknown;
   "x-enumNames"?: string[];
   "x-enum-varnames"?: string[];
   "x-component-ref-path"?: string;
   prefixItems?: (ReferenceObject | SchemaObject)[];
-} & (OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject);
+};
+
+// Use union of OAS 3.0 and 3.1 types throughout
+export type SchemaObject =
+  | ((OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject) & XSchemaExtensions)
+  | boolean;
+
+export type DiscriminatingSchemaObject = Exclude<SchemaObject, boolean> & {
+  discriminator: NonNullable<Exclude<SchemaObject, boolean>["discriminator"]>;
+};
 
 export type ReferenceObject =
   | OpenAPIV3.ReferenceObject

@@ -24,11 +24,12 @@ export function getRefAlias(
 
   if (!ctx.refs[$ref]) {
     let schema = h.resolve<OpenApi.SchemaObject>(obj, ctx);
-    if (ignoreDiscriminator) {
+    if (typeof schema !== "boolean" && ignoreDiscriminator) {
       schema = _.cloneDeep(schema);
       delete schema.discriminator;
     }
-    const name = schema.title || h.getRefName($ref);
+    const name =
+      (typeof schema !== "boolean" && schema.title) || h.getRefName($ref);
     const identifier = h.toIdentifier(name, true);
 
     // When this is a true enum we can reference it directly,

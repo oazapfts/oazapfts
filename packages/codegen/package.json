@@ -46,21 +46,21 @@
     ]
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.202",
+    "@types/lodash": "^4.17.20",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^20.11.24",
+    "@types/node": "^24.1.0",
     "@types/tapable": "^2.2.7"
   },
   "peerDependencies": {
     "@oazapfts/runtime": "*"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^10.1.0",
+    "@apidevtools/swagger-parser": "^12.0.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "swagger2openapi": "^7.0.8",
-    "tapable": "^2.2.1",
-    "typescript": "^5.3.3"
+    "tapable": "^2.2.2",
+    "typescript": "^5.8.3"
   },
   "keywords": [
     "openapi",

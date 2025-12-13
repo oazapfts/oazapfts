@@ -32,7 +32,7 @@ export function preprocessComponents({
   // First scan: Add `x-component-ref-path` property and record discriminating schemas
   for (const name of Object.keys(schemas)) {
     const schema = schemas[name];
-    if (isReference(schema)) continue;
+    if (isReference(schema) || typeof schema === "boolean") continue;
 
     schema["x-component-ref-path"] = prefix + name;
 
@@ -53,7 +53,9 @@ export function preprocessComponents({
   for (const name of Object.keys(schemas)) {
     const schema = schemas[name];
 
-    if (isReference(schema) || !schema.allOf) continue;
+    if (isReference(schema) || typeof schema === "boolean" || !schema.allOf) {
+      continue;
+    }
 
     for (const childSchema of schema.allOf) {
       if (
@@ -63,7 +65,9 @@ export function preprocessComponents({
         continue;
       }
 
-      const discriminatingSchema = schemas[getRefBasename(childSchema.$ref)];
+      const discriminatingSchema = schemas[
+        getRefBasename(childSchema.$ref)
+      ] as OpenApi.DiscriminatingSchemaObject;
       if (isReference(discriminatingSchema)) {
         throw new Error("Unexpected nested reference");
       }

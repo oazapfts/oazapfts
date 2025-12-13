@@ -1,7 +1,8 @@
 import ts from "typescript";
+import _ from "lodash";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../openApi3-x";
-import { isReference, getRefBasename } from "../helpers";
+import { isReference, getRefBasename, resolve } from "../helpers";
 import { createPropertySignature } from "../tscodegen";
 import { getTypeFromSchema } from "./getTypeForSchema";
 
@@ -44,10 +45,23 @@ export function getUnionType(
               }
               return !mappedValues.has(getRefBasename(variant.$ref));
             })
-            .map((schema) => [
-              getRefBasename((schema as OpenApi.ReferenceObject).$ref),
-              schema,
-            ]),
+            .map((schema) => {
+              const schemaBaseName = getRefBasename(
+                (schema as OpenApi.ReferenceObject).$ref,
+              );
+              // TODO: handle boolean
+              const resolvedSchema = resolve(schema, ctx) as Exclude<
+                OpenApi.SchemaObject,
+                boolean
+              >;
+              const discriminatorProperty =
+                resolvedSchema.properties?.[discriminator.propertyName];
+              const variantName =
+                discriminatorProperty && "enum" in discriminatorProperty
+                  ? discriminatorProperty?.enum?.[0]
+                  : "";
+              return [variantName || schemaBaseName, schema];
+            }),
         ] as [string, OpenApi.ReferenceObject][]
       ).map(([discriminatorValue, variant]) =>
         // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
@@ -67,8 +81,10 @@ export function getUnionType(
   } else {
     // oneOf -> untagged union
     return ts.factory.createUnionTypeNode(
-      variants.map((schema) =>
-        getTypeFromSchema(ctx, schema, undefined, onlyMode),
+      _.uniq(
+        variants.map((schema) =>
+          getTypeFromSchema(ctx, schema, undefined, onlyMode),
+        ),
       ),
     );
   }

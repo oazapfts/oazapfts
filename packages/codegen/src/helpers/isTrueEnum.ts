@@ -7,6 +7,10 @@ export function isTrueEnum(
   name?: string,
 ): name is string {
   return Boolean(
-    schema.enum && ctx.opts.useEnumType && name && schema.type !== "boolean",
+    typeof schema !== "boolean" &&
+      schema.enum &&
+      ctx.opts.useEnumType &&
+      name &&
+      schema.type !== "boolean",
   );
 }

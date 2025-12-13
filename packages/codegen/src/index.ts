@@ -25,6 +25,7 @@ export type Opts = {
   unionUndefined?: boolean;
   useEnumType?: boolean;
   mergeReadWriteOnly?: boolean;
+  useUnknown?: boolean;
   argumentStyle?: (typeof optsArgumentStyles)[number];
   /**
    * Plugins to apply during code generation.

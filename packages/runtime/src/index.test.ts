@@ -1,4 +1,12 @@
-import { describe, beforeAll, it, expect, vi } from "vitest";
+import {
+  describe,
+  beforeAll,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import * as Oazapfts from "./runtime";
 import { HttpError, ok } from "./index";
 
@@ -14,22 +22,29 @@ const fetchMock = () => ({
 
 describe("request", () => {
   let g: any;
+  let fetchSpy: any;
 
   beforeAll(async () => {
     g = global as any;
     g.fetch = g.fetch || (() => {});
   });
 
-  it("should use global fetch", async () => {
-    vi.spyOn(g, "fetch").mockImplementationOnce(fetchMock);
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(g, "fetch").mockImplementation(fetchMock);
+  });
 
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  it("should use global fetch", async () => {
     await oazapfts.fetchText("bar", { baseUrl: "foo/" });
 
-    expect(g.fetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(fetchSpy).toHaveBeenCalledWith("foo/bar", expect.any(Object));
   });
 
   it("should not use global fetch if local is provided", async () => {
-    vi.spyOn(g, "fetch");
     const customFetch = vi.fn(fetchMock);
 
     await oazapfts.fetchText("bar", {
@@ -38,7 +53,7 @@ describe("request", () => {
     });
 
     expect(customFetch).toHaveBeenCalledWith("foo/bar", expect.any(Object));
-    expect(g.fetch).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("should throw error with headers", async () => {
@@ -121,6 +136,18 @@ describe("request", () => {
         })
         .headers.has("Content-Type"),
     ).toBe(false);
+  });
+
+  it("casts numbers and booleans to strings while forming multipart/form-data", () => {
+    const multipartRequest = oazapfts.multipart({
+      body: {
+        numberValue: 42,
+        booleanValue: true,
+      },
+    });
+
+    expect(multipartRequest.body?.get("booleanValue")).toBe("true");
+    expect(multipartRequest.body?.get("numberValue")).toBe("42");
   });
 
   it("allows multiple headers with the same name", () => {

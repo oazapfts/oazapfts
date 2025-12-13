@@ -3,3 +3,5 @@
 - [ ] refactor folder structure to match hooks flow
 - [ ] refactor cg usage to unified system
 - [ ] read-only spec
+- [ ] remove custom x-extends from schemas
+- [ ] remove DiscriminatingSchemaObject in favor of checking presence of discriminator property
