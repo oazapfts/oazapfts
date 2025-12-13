@@ -30,6 +30,8 @@ jobs:
         run: |
           npm i -g npm@>=11.5.1
           npm ci
+        env:
+          PREPARE: false
 
       - name: 🔍 Lint
         run: npm run lint
@@ -79,6 +81,8 @@ jobs:
         run: |
           npm i -g npm@>=11.5.1
           npm ci
+        env:
+          PREPARE: false
 
       - name: 📦 Release @oazapfts/runtime
         run: |
