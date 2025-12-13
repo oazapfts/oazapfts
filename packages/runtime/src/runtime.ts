@@ -8,7 +8,9 @@ export { type CustomHeaders };
 export type RequestOpts = {
   baseUrl?: string;
   fetch?: typeof fetch;
+  /** @deprecated Use RequestOpts.FormData instead */
   formDataConstructor?: new () => FormData;
+  FormData?: new () => FormData;
   headers?: HeadersInit | CustomHeaders;
 } & Omit<RequestInit, "body" | "headers">;
 
@@ -145,9 +147,13 @@ export function runtime(defaults: RequestOpts = {}) {
       if (body == null)
         return { ...req, body, headers: normalizeHeaders(headers) };
 
-      const data = new (defaults.formDataConstructor ||
+      const data = new (
+        req.FormData ||
         req.formDataConstructor ||
-        FormData)();
+        defaults.FormData ||
+        defaults.formDataConstructor ||
+        FormData
+      )();
 
       const append = (name: string, value: unknown) => {
         if (typeof value === "string" || value instanceof Blob) {
