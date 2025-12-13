@@ -22,9 +22,12 @@ jobs:
         with:
           node-version: 24
           check-latest: true
+          cache: npm
 
       - name: 📥 Install dependencies
-        run: npm ci
+        run: |
+          npm i -g npm@>=11.5.1
+          npm ci
 
       - name: 🔍 Lint
         run: npm run lint
@@ -53,10 +56,11 @@ jobs:
         with:
           node-version: 24
           check-latest: true
+          cache: npm
 
       - name: 📥 Install dependencies
         run: |
-          npm i npm@latest -g
+          npm i -g npm@>=11.5.1
           npm ci
 
       - name: 📦 Release @oazapfts/runtime
@@ -64,7 +68,6 @@ jobs:
           set -e  # Exit immediately if a command exits with a non-zero status.
 
           cd packages/runtime
-          npm install semantic-release-monorepo --no-save
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +79,6 @@ jobs:
 
           cp README.md packages/codegen/README.md
           cd packages/codegen
-          npm install semantic-release-monorepo --no-save
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
