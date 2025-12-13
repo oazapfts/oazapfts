@@ -12,6 +12,8 @@ concurrency:
 
 jobs:
   test:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     outputs:
       has-release: ${{ steps.check-release.outputs.has-release }}
