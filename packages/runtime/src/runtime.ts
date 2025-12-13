@@ -145,8 +145,8 @@ export function runtime(defaults: RequestOpts = {}) {
       if (body == null)
         return { ...req, body, headers: normalizeHeaders(headers) };
 
-      const data = new (defaults.formDataConstructor ||
-        req.formDataConstructor ||
+      const data = new (req.formDataConstructor ||
+        defaults.formDataConstructor ||
         FormData)();
 
       const append = (name: string, value: unknown) => {
