@@ -39,7 +39,6 @@ jobs:
         run: npm run test:e2e:clean
 
   publish:
-    environment: npm-publish
     permissions:
       id-token: write
       contents: write
