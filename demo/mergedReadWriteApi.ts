@@ -13,15 +13,7 @@ export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
 const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {
   server1: "https://petstore.swagger.io/v2",
-  server2: ({
-    protocol = "https",
-    stage = "staging",
-    version = "v1",
-  }: {
-    protocol: "http" | "https";
-    stage: "test" | "staging" | "production";
-    version: "v1" | "v2";
-  }) => `${protocol}://${stage}.petstore.example.org/${version}`,
+  server2: "{protocol}://{stage}.petstore.example.org/{version}",
 };
 export type Category = {
   id?: number;

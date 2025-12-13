@@ -1,0 +1,5 @@
+- [ ] remove swagger2openapi support
+- [ ] add hooks for enum generation etc
+- [ ] refactor folder structure to match hooks flow
+- [ ] refactor cg usage to unified system
+- [ ] read-only spec

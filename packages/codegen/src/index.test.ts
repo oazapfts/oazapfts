@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import * as path from "node:path";
 import { Opts, generateSource } from "./index";
-import { readFile } from "node:fs/promises";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
 
@@ -42,12 +41,6 @@ async function checkForTypeErrors(source: string) {
 }
 
 describe("generateSource", () => {
-  beforeAll(async () => {
-    global.__API_STUB_PLACEHOLDER__ = (
-      await readFile(__dirname + "/../template/ApiStub.ts")
-    ).toString();
-  });
-
   it("should generate the same api twice", async () => {
     const spec = path.join(demoFolder, "./petstore.json");
     const src1 = await generate(spec);

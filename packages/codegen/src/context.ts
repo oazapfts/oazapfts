@@ -1,12 +1,44 @@
-import type {
+import ts, {
   InterfaceDeclaration,
   Statement,
   TypeAliasDeclaration,
   TypeReferenceNode,
 } from "typescript";
-import type { Opts } from ".";
-import { Document } from "./openApi3-x";
+import type { Opts } from "./";
+import type { Document } from "./openApi3-x";
+import { defaultBaseUrl } from "./generateServers";
 import _ from "lodash";
+import { CustomHeaders } from "@oazapfts/runtime";
+
+// ─── Data types for template parts ──────────────────────────────────────────
+
+export type ServerDefinition = {
+  url: string;
+  description?: string;
+};
+
+export type ImportSpecifier = {
+  name: string;
+  as?: string;
+};
+export type DefaultImport = [string, { from: string }];
+export type NamespaceImport = [{ namespace: string }, { from: string }];
+export type ImportsWithoutDefault = [
+  (ImportSpecifier | string)[],
+  { from: string },
+];
+export type ImportWithDefault = [
+  string,
+  (ImportSpecifier | string)[],
+  { from: string },
+];
+
+export type Import =
+  | string
+  | ImportsWithoutDefault
+  | DefaultImport
+  | ImportWithDefault
+  | NamespaceImport;
 
 export type OnlyMode = "readOnly" | "writeOnly";
 export type OnlyModes = Record<OnlyMode, boolean>;
@@ -15,12 +47,29 @@ export type ReadonlyDeep<T> = {
   readonly [P in keyof T]: ReadonlyDeep<T[P]>;
 };
 
+export type Defaults = {
+  baseUrl?: string;
+  headers?: CustomHeaders;
+  FormData?: ts.ClassExpression | ts.Identifier;
+  fetch?: ts.FunctionExpression | ts.ArrowFunction | ts.Identifier;
+};
+
 export type OazapftsContext = {
   readonly inputSpec: ReadonlyDeep<Document>;
   readonly opts: ReadonlyDeep<Opts>;
   readonly isConverted: boolean;
+  readonly spec: Document;
 
-  spec: Document;
+  /** Banner comment at the top of the file (the text content, not including comment markers) */
+  banner: string;
+  /** Import declarations (AST nodes) */
+  imports: Import[];
+  /** Runtime defaults (baseUrl, etc.) - will be generated as `export const defaults = { ... }` */
+  defaults: Defaults;
+  /** Server definitions - will be generated as `export const servers = { ... }` */
+  servers: ServerDefinition[];
+  /** Initialization statements (e.g., `const oazapfts = Oazapfts.runtime(defaults)`) */
+  init: Statement[];
 
   // see `preprocessComponents` for the definition of a discriminating schema
   discriminatingSchemas: Set<string>;
@@ -53,14 +102,33 @@ export type OazapftsContext = {
 };
 
 export function createContext(
-  spec: OazapftsContext["spec"],
+  spec: Document,
   opts: OazapftsContext["opts"],
   isConverted: OazapftsContext["isConverted"] = false,
 ): OazapftsContext {
+  const specServers = spec.servers || [];
+
   return {
     inputSpec: spec,
     opts,
     isConverted,
+    spec: _.cloneDeep(spec),
+
+    // Template parts
+    banner: `DO NOT MODIFY - This file has been generated using oazapfts.
+See https://www.npmjs.com/package/oazapfts`,
+    imports: [
+      [{ namespace: "Oazapfts" }, { from: "@oazapfts/runtime" }],
+      [{ namespace: "QS" }, { from: "@oazapfts/runtime/query" }],
+    ],
+    defaults: { baseUrl: defaultBaseUrl(specServers), headers: {} },
+    servers: specServers.map((s) => ({
+      url: s.url,
+      description: s.description,
+    })),
+    init: createInit(),
+
+    // Internal state
     discriminatingSchemas: new Set(),
     aliases: [],
     enumAliases: [],
@@ -68,6 +136,34 @@ export function createContext(
     refs: {},
     refsOnlyMode: new Map(),
     typeAliases: {},
-    spec: _.cloneDeep(spec),
   };
+}
+
+// ─── Template part factories ─────────────────────────────────────────────────
+
+/** Creates: const oazapfts = Oazapfts.runtime(defaults); */
+function createInit(): Statement[] {
+  return [
+    ts.factory.createVariableStatement(
+      undefined,
+      ts.factory.createVariableDeclarationList(
+        [
+          ts.factory.createVariableDeclaration(
+            "oazapfts",
+            undefined,
+            undefined,
+            ts.factory.createCallExpression(
+              ts.factory.createPropertyAccessExpression(
+                ts.factory.createIdentifier("Oazapfts"),
+                "runtime",
+              ),
+              undefined,
+              [ts.factory.createIdentifier("defaults")],
+            ),
+          ),
+        ],
+        ts.NodeFlags.Const,
+      ),
+    ),
+  ];
 }

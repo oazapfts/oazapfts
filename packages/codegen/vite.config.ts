@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
 import pkg from "./package.json";
-import fs from "node:fs";
 
 const external = [
   ...Object.keys(pkg.dependencies),
@@ -10,11 +9,6 @@ const external = [
 ];
 
 export default defineConfig(({ mode }) => ({
-  define: {
-    __API_STUB_PLACEHOLDER__: JSON.stringify(
-      fs.readFileSync("./template/ApiStub.ts").toString(),
-    ),
-  },
   build: {
     sourcemap: true,
     emptyOutDir: false,
