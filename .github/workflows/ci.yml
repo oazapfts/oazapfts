@@ -47,8 +47,10 @@ jobs:
           # Check if either package would release
           if (cd packages/runtime && npx semantic-release --dry-run 2>&1 | grep -q "The next release version is") || \
              (cd packages/codegen && npx semantic-release --dry-run 2>&1 | grep -q "The next release version is"); then
+            echo "✓ Release would be created"
             echo "has-release=true" >> $GITHUB_OUTPUT
           else
+            echo "✗ No release needed"
             echo "has-release=false" >> $GITHUB_OUTPUT
           fi
 
