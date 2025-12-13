@@ -46,15 +46,26 @@ jobs:
         id: check-release
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/alpha' || github.ref == 'refs/heads/beta')
         run: |
-          # Check if either package would release
-          if (cd packages/runtime && npx semantic-release --dry-run 2>&1 | grep -q "The next release version is") || \
-             (cd packages/codegen && npx semantic-release --dry-run 2>&1 | grep -q "The next release version is"); then
+          echo "Checking @oazapfts/runtime..."
+          RUNTIME_OUTPUT=$(cd packages/runtime && npx semantic-release --dry-run 2>&1)
+          echo "$RUNTIME_OUTPUT"
+          RUNTIME_HAS_RELEASE=$(echo "$RUNTIME_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
+
+          echo "Checking oazapfts..."
+          CODEGEN_OUTPUT=$(cd packages/codegen && npx semantic-release --dry-run 2>&1)
+          echo "$CODEGEN_OUTPUT"
+          CODEGEN_HAS_RELEASE=$(echo "$CODEGEN_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
+
+          # Set output if either package would release
+          if [ "$RUNTIME_HAS_RELEASE" = "true" ] || [ "$CODEGEN_HAS_RELEASE" = "true" ]; then
             echo "✓ Release would be created"
             echo "has-release=true" >> $GITHUB_OUTPUT
           else
             echo "✗ No release needed"
             echo "has-release=false" >> $GITHUB_OUTPUT
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     permissions:
