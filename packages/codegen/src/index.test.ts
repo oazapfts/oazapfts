@@ -260,7 +260,7 @@ describe("useEnumType", () => {
     );
   });
 
-    it("should create string enums with enumNames", () => {
+  it("should create string enums with enumNames", () => {
     expect(src).toContain(
       `export enum Channel { Pending = "P", Margin = "M", Gap = "G" }`,
     );
