@@ -47,12 +47,12 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/alpha' || github.ref == 'refs/heads/beta')
         run: |
           echo "Checking @oazapfts/runtime..."
-          RUNTIME_OUTPUT=$(cd packages/runtime && npx semantic-release --dry-run 2>&1)
+          RUNTIME_OUTPUT=$(cd packages/runtime && npx semantic-release --dry-run 2>&1 || true)
           echo "$RUNTIME_OUTPUT"
           RUNTIME_HAS_RELEASE=$(echo "$RUNTIME_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
 
           echo "Checking oazapfts..."
-          CODEGEN_OUTPUT=$(cd packages/codegen && npx semantic-release --dry-run 2>&1)
+          CODEGEN_OUTPUT=$(cd packages/codegen && npx semantic-release --dry-run 2>&1 || true)
           echo "$CODEGEN_OUTPUT"
           CODEGEN_HAS_RELEASE=$(echo "$CODEGEN_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
 
