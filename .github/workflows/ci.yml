@@ -56,6 +56,7 @@ jobs:
           node-version: 24
           check-latest: true
           cache: npm
+          registry-url: "https://registry.npmjs.org"
 
       - name: 📥 Install dependencies
         run: |
