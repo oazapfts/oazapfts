@@ -10,12 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  id-token: write
-  contents: write
-  issues: write
-  pull-requests: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -48,32 +42,24 @@ jobs:
       - name: 🚔 Ensure generated code is up to date
         run: npm run test:e2e:clean
 
-      - name: 🔍 Check if release is needed (dry-run)
+      - name: 🔍 Check if release is needed
         id: check-release
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/alpha' || github.ref == 'refs/heads/beta')
         run: |
-          echo "Checking @oazapfts/runtime..."
-          RUNTIME_OUTPUT=$(cd packages/runtime && npx semantic-release --dry-run 2>&1 || true)
-          echo "$RUNTIME_OUTPUT"
-          RUNTIME_HAS_RELEASE=$(echo "$RUNTIME_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
-
-          echo "Checking oazapfts..."
-          CODEGEN_OUTPUT=$(cd packages/codegen && npx semantic-release --dry-run 2>&1 || true)
-          echo "$CODEGEN_OUTPUT"
-          CODEGEN_HAS_RELEASE=$(echo "$CODEGEN_OUTPUT" | grep -q "The next release version is" && echo "true" || echo "false")
-
-          # Set output if either package would release
-          if [ "$RUNTIME_HAS_RELEASE" = "true" ] || [ "$CODEGEN_HAS_RELEASE" = "true" ]; then
-            echo "✓ Release would be created"
+          git fetch --tags
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+          COMMITS=$(git log ${LAST_TAG}..HEAD --format="%s%n%b")
+          if echo "$COMMITS" | grep -qE "^(feat|fix|perf)(\(|:)|BREAKING CHANGE"; then
             echo "has-release=true" >> $GITHUB_OUTPUT
           else
-            echo "✗ No release needed"
             echo "has-release=false" >> $GITHUB_OUTPUT
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
     environment: npm-publish
     runs-on: ubuntu-latest
     needs: test
