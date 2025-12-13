@@ -134,8 +134,10 @@ export class Hooks {
    */
   public convertSchemaBefore = new AsyncSeriesHook<
     [
-      /** @description the current OAS Schema about to be converted */
-      SchemaObject | OpenAPIV3.ReferenceObject,
+      (
+        /** @description the current OAS Schema about to be converted */
+        SchemaObject | OpenAPIV3.ReferenceObject
+      ),
       /** @description the full AST tree */
       ts.SourceFile,
       /** @description the full OAS document */
@@ -152,8 +154,10 @@ export class Hooks {
     [
       /** @description the AST Type Definition */
       ts.TypeNode,
-      /** the current OAS Schema that was converted */
-      SchemaObject | OpenAPIV3.ReferenceObject,
+      (
+        /** the current OAS Schema that was converted */
+        SchemaObject | OpenAPIV3.ReferenceObject
+      ),
       /** @description the full AST tree */
       ts.SourceFile,
       /** @description the full OAS document */

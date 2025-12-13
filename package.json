@@ -23,14 +23,16 @@
   "license": "MIT",
   "repository": "oazapfts/oazapfts",
   "devDependencies": {
-    "@ts-morph/bootstrap": "^0.27.0",
-    "@types/node": "^24.1.0",
+    "@ts-morph/bootstrap": "^0.28.1",
+    "@types/node": "^24.10.3",
     "open-api-mocker": "^2.0.0",
     "openapi-types": "^12.1.3",
-    "prettier": "^3.6.2",
-    "vite": "^7.0.6",
+    "prettier": "^3.7.4",
+    "semantic-release": "^25.0.2",
+    "semantic-release-monorepo": "^8.0.2",
+    "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.15",
     "with-server": "^2.1.0"
   }
 }

@@ -817,10 +817,10 @@ export default class ApiGenerator {
   isTrueEnum(schema: SchemaObject, name?: string): name is string {
     return Boolean(
       typeof schema !== "boolean" &&
-        schema.enum &&
-        this.opts.useEnumType &&
-        name &&
-        schema.type !== "boolean",
+      schema.enum &&
+      this.opts.useEnumType &&
+      name &&
+      schema.type !== "boolean",
     );
   }
 
