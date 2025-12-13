@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import * as path from "node:path";
+import * as fs from "node:fs";
 import { generateSource, Opts } from "./index";
 import { readFile } from "node:fs/promises";
 import { createProject, ts } from "@ts-morph/bootstrap";
@@ -8,14 +9,41 @@ import { ScriptTarget } from "typescript";
 const rootFolder = path.join(__dirname, "../../..");
 const demoFolder = path.join(rootFolder, "demo");
 
+function findCodeSection(
+  src: string,
+  opts: {
+    matching: RegExp | string;
+    before?: number;
+    after?: number;
+  },
+) {
+  const lines = src.split("\n");
+  const lineIndex = lines.findIndex((line) => line.match(opts.matching));
+  if (lineIndex === -1) {
+    const pattern =
+      opts.matching instanceof RegExp
+        ? opts.matching.toString()
+        : JSON.stringify(opts.matching);
+    throw new Error(
+      `Pattern ${pattern} not found in source code. Cannot extract code section.`,
+    );
+  }
+  return lines
+    .slice(lineIndex - (opts.before || 0), lineIndex + (opts.after || 0) + 1)
+    .join("\n");
+}
+
 /**
  * Generate an API from a relative path and convert it into a single line.
  */
-async function generate(file: string, opts: Opts = {}) {
+async function generate(
+  file: string,
+  opts: Opts & { minify?: boolean } = { minify: true },
+) {
   const src = await generateSource(file, opts);
   const error = await checkForTypeErrors(src);
   expect(error).toBeUndefined();
-  return src.replace(/\s+/g, " ");
+  return opts.minify !== false ? src.replace(/\s+/g, " ") : src;
 }
 
 /**
@@ -85,6 +113,209 @@ describe("generateSource", () => {
         'export type Lizard = { petType: "Lizard"; } & PetBase & { lovesRocks?: boolean; };',
       );
       expect(src).toContain("export type Pet = Dog | Cat | Lizard;");
+    });
+  });
+
+  describe("discriminator with useEnumType", () => {
+    it("should use enum member references in discriminator types when useEnumType is true", async () => {
+      // Create a modified allOf fixture with enum discriminator
+      const allOfFixture = JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, "__fixtures__", "allOf.json"),
+          "utf8",
+        ),
+      );
+
+      // Modify the Pet schema to have an enum discriminator
+      allOfFixture.components.schemas.Pet.properties.petType = {
+        type: "string",
+        enum: ["dog", "Cat", "Lizard"],
+      };
+
+      // Update the discriminator mapping to include all enum values
+      allOfFixture.components.schemas.Pet.discriminator.mapping = {
+        dog: "#/components/schemas/Dog",
+        Cat: "#/components/schemas/Cat",
+        Lizard: "#/components/schemas/Lizard",
+      };
+
+      const src = await generate(allOfFixture, {
+        useEnumType: true,
+        minify: false,
+      });
+
+      // Should create the enum
+      expect(
+        findCodeSection(src, {
+          matching: "export enum PetType",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export enum PetType {
+            Dog = "dog",
+            Cat = "Cat",
+            Lizard = "Lizard"
+        }"
+      `);
+
+      // Should use enum member references instead of literal strings in discriminator types
+      expect(
+        findCodeSection(src, {
+          matching: "export type Dog =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Dog = {
+            petType: PetType.Dog;
+        } & PetBase & {
+            bark?: string;
+        };"
+      `);
+      expect(
+        findCodeSection(src, {
+          matching: "export type Cat =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Cat = {
+            petType: PetType.Cat;
+        } & PetBase & {
+            name?: string;
+        };"
+      `);
+      expect(
+        findCodeSection(src, {
+          matching: "export type Lizard =",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Lizard = {
+            petType: PetType.Lizard;
+        } & PetBase & {
+            lovesRocks?: boolean;
+        };"
+      `);
+
+      // Should not contain literal string types for discriminator properties in the generated types
+      expect(src).not.toContain('petType: "dog"');
+      expect(src).not.toContain('petType: "Cat"');
+      expect(src).not.toContain('petType: "Lizard"');
+
+      // Base should use the enum type
+      expect(
+        findCodeSection(src, {
+          matching: "export type PetBase =",
+          after: 2,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type PetBase = {
+            petType: PetType;
+        };"
+      `);
+    });
+
+    it("should use enum member references in oneOf discriminator types when useEnumType is true", async () => {
+      const src = await generate(
+        path.join(__dirname, "__fixtures__", "oneOfDiscriminator.json"),
+        {
+          useEnumType: true,
+          minify: false,
+        },
+      );
+
+      // Should create enums for each variant's petType
+      expect(
+        findCodeSection(src, {
+          matching: "export enum PetType",
+          after: 2,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export enum PetType {
+            Dog = "dog"
+        }"
+      `);
+      expect(
+        findCodeSection(src, {
+          matching: "export enum PetType2",
+          after: 2,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export enum PetType2 {
+            Cat = "cat"
+        }"
+      `);
+
+      // The Pet union type should use enum member references
+      expect(
+        findCodeSection(src, {
+          matching: /^export type Pet =/,
+          after: 3,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Pet = ({
+            petType: PetType.Dog;
+        } & Dog) | ({
+            petType: PetType2.Cat;"
+      `);
+    });
+
+    it("should use enum member union for multiple discriminator matches when useEnumType is true", async () => {
+      // Create a modified allOf fixture with multiple discriminator values mapping to same schema
+      const allOfFixture = JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, "__fixtures__", "allOf.json"),
+          "utf8",
+        ),
+      );
+
+      // Modify the Pet schema to have an enum discriminator
+      allOfFixture.components.schemas.Pet.properties.petType = {
+        type: "string",
+        enum: ["dog", "poodle", "cat"],
+      };
+
+      // Keep the original mapping where both "dog" and "poodle" map to Dog
+      allOfFixture.components.schemas.Pet.discriminator.mapping = {
+        dog: "#/components/schemas/Dog",
+        poodle: "#/components/schemas/Dog",
+        cat: "#/components/schemas/Cat",
+      };
+
+      // Remove Lizard schema since it's not in our test enum
+      delete allOfFixture.components.schemas.Lizard;
+
+      const src = await generate(allOfFixture, {
+        useEnumType: true,
+        minify: false,
+      });
+
+      // Dog should have union of enum members for multiple matches
+      expect(
+        findCodeSection(src, {
+          matching: "export type Dog",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Dog = {
+            petType: PetType.Dog | PetType.Poodle;
+        } & PetBase & {
+            bark?: string;
+        };"
+      `);
+
+      // Cat should have single enum member
+      expect(
+        findCodeSection(src, {
+          matching: "export type Cat",
+          after: 4,
+        }),
+      ).toMatchInlineSnapshot(`
+        "export type Cat = {
+            petType: PetType.Cat;
+        } & PetBase & {
+            name?: string;
+        };"
+      `);
     });
   });
 

@@ -593,8 +593,10 @@ export default class ApiGenerator {
             factory.createTypeLiteralNode([
               cg.createPropertySignature({
                 name: discriminator.propertyName,
-                type: factory.createLiteralTypeNode(
-                  factory.createStringLiteral(discriminatorValue),
+                type: this.getDiscriminatorType(
+                  variant,
+                  discriminator.propertyName,
+                  [discriminatorValue],
                 ),
               }),
             ]),
@@ -706,7 +708,11 @@ export default class ApiGenerator {
               factory.createTypeLiteralNode([
                 cg.createPropertySignature({
                   name: discriminator.propertyName,
-                  type: this.getTypeFromEnum(matches),
+                  type: this.getDiscriminatorType(
+                    discriminatingSchema,
+                    discriminator.propertyName,
+                    matches,
+                  ),
                 }),
               ]),
             );
@@ -822,6 +828,82 @@ export default class ApiGenerator {
       name &&
       schema.type !== "boolean",
     );
+  }
+
+  /**
+   * Get enum member reference type for discriminator values when useEnumType is enabled
+   */
+  getDiscriminatorType(
+    discriminatingSchemaRef:
+      | Exclude<SchemaObject, boolean>
+      | OpenAPIReferenceObject,
+    propertyName: string,
+    matches: string[],
+  ): ts.TypeNode {
+    if (!this.opts.useEnumType) {
+      return this.getTypeFromEnum(matches);
+    }
+
+    const discriminatingSchema = this.resolve(discriminatingSchemaRef);
+    // Get the discriminator property schema to check if it should use enum types
+    // Check the schema's own properties first, then search in allOf parents
+    let discriminatorPropertySchema = this.resolve(
+      discriminatingSchema.properties?.[propertyName],
+    );
+
+    if (!discriminatorPropertySchema && discriminatingSchema.allOf) {
+      // Search in allOf parents
+      for (const allOfSchema of discriminatingSchema.allOf) {
+        const resolvedAllOf = this.resolve(allOfSchema);
+        if (resolvedAllOf.properties?.[propertyName]) {
+          discriminatorPropertySchema = this.resolve(
+            resolvedAllOf.properties[propertyName],
+          );
+          break;
+        }
+      }
+    }
+
+    if (
+      !discriminatorPropertySchema ||
+      !this.isTrueEnum(discriminatorPropertySchema, propertyName)
+    ) {
+      return this.getTypeFromEnum(matches);
+    }
+
+    // Get the enum type reference
+    const enumTypeRef = this.getTrueEnum(
+      discriminatorPropertySchema,
+      propertyName,
+    );
+
+    if (matches.length === 1) {
+      // Single value: return EnumName.MemberName as a type reference
+      const enumMemberName = factory.createIdentifier(
+        toIdentifier(matches[0], true),
+      );
+      const enumName = (enumTypeRef as ts.TypeReferenceNode)
+        .typeName as ts.Identifier;
+      return factory.createTypeReferenceNode(
+        factory.createQualifiedName(enumName, enumMemberName),
+        undefined,
+      );
+    } else {
+      // Multiple matches: return union of EnumName.MemberName1 | EnumName.MemberName2
+      const enumName = (enumTypeRef as ts.TypeReferenceNode)
+        .typeName as ts.Identifier;
+      const memberTypes = matches.map((value) => {
+        const enumMemberName = factory.createIdentifier(
+          toIdentifier(value, true),
+        );
+        return factory.createTypeReferenceNode(
+          factory.createQualifiedName(enumName, enumMemberName),
+          undefined,
+        );
+      });
+
+      return factory.createUnionTypeNode(memberTypes);
+    }
   }
 
   /**
