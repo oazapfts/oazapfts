@@ -587,9 +587,9 @@ export default class ApiGenerator {
                 return [variantName || schemaBaseName, schema];
               }),
           ] as [string, OpenAPIReferenceObject][]
-        ).map(([discriminatorValue, variant]) => {
+        ).map(([discriminatorValue, variant]) =>
           // Yields: { [discriminator.propertyName]: discriminatorValue } & variant
-          return factory.createIntersectionTypeNode([
+          factory.createIntersectionTypeNode([
             factory.createTypeLiteralNode([
               cg.createPropertySignature({
                 name: discriminator.propertyName,
@@ -601,8 +601,8 @@ export default class ApiGenerator {
               }),
             ]),
             this.getTypeFromSchema(variant, undefined, onlyMode),
-          ]);
-        }),
+          ]),
+        ),
       );
     } else {
       // oneOf -> untagged union
