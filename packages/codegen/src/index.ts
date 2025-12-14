@@ -5,17 +5,18 @@ import converter from "swagger2openapi";
 import { OpenAPI, OpenAPIV3 } from "openapi-types";
 import { createContext } from "./context";
 import { generateApi } from "./generate/generateApi";
-import {
-  type OazapftsPlugin,
-  type Hooks,
-  createHooks,
-  applyPlugins,
-} from "./plugins";
+import { type OazapftsPlugin, createHooks, applyPlugins } from "./plugins";
 
 export { cg };
 
 // Re-export plugin system for library consumers
-export { type OazapftsPlugin, type Hooks, createHooks } from "./plugins";
+export {
+  type OazapftsPlugin as UNSTABLE_OazapftsPlugin,
+  type OazapftsPluginHooks as UNSTABLE_OazapftsPluginHooks,
+  type OazapftsPluginFn as UNSTABLE_OazapftsPluginFn,
+  type OazapftsPluginOptions as UNSTABLE_OazapftsPluginOptions,
+  createPlugin as UNSTABLE_createPlugin,
+} from "./plugins";
 
 export const optsArgumentStyles = ["positional", "object"];
 export type Opts = {
@@ -31,7 +32,7 @@ export type Opts = {
    * Plugins to apply during code generation.
    * Each plugin receives hooks and can tap into generation steps.
    */
-  plugins?: OazapftsPlugin[];
+  UNSTABLE_plugins?: OazapftsPlugin[];
 };
 
 export async function generateAst(
@@ -47,8 +48,8 @@ export async function generateAst(
 
   // Create hooks and apply user plugins
   const hooks = createHooks();
-  if (opts.plugins) {
-    await applyPlugins(hooks, opts.plugins);
+  if (opts.UNSTABLE_plugins) {
+    await applyPlugins(hooks, opts.UNSTABLE_plugins);
   }
 
   return generateApi(ctx, hooks);

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import ts from "typescript";
-import { generateAst, printAst, type OazapftsPlugin } from "./index";
+import { generateAst, printAst } from "./index";
 import type { OpenAPIV3 } from "openapi-types";
+import { OazapftsPlugin, sortPlugins } from "./plugins";
 
 // Minimal spec for testing
 function createMinimalSpec(
@@ -20,11 +21,37 @@ async function generate(
   spec: OpenAPIV3.Document,
   opts: { plugins?: OazapftsPlugin[] } = {},
 ): Promise<string> {
-  const ast = await generateAst(spec, opts, false);
+  const ast = await generateAst(
+    spec,
+    { UNSTABLE_plugins: opts.plugins },
+    false,
+  );
   return printAst(ast);
 }
 
 describe("Plugin System", () => {
+  describe("sortPlugins", () => {
+    it("should sort plugins in order", () => {
+      expect(
+        sortPlugins([
+          { name: "plugin1", precedence: "late" },
+          { name: "plugin2", precedence: "default" },
+          { name: "plugin3", precedence: "early" },
+          { name: "plugin4", precedence: "early" },
+          { name: "plugin5", precedence: "default" },
+          { name: "plugin6", precedence: "late" },
+        ]).map(({ name }) => name),
+      ).toEqual([
+        "plugin3",
+        "plugin4",
+        "plugin2",
+        "plugin5",
+        "plugin1",
+        "plugin6",
+      ]);
+    });
+  });
+
   describe("Hooks lifecycle", () => {
     it("should call prepare hook with context including template parts", async () => {
       const prepareMock = vi.fn();

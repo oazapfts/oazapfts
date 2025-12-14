@@ -5,12 +5,12 @@ import { generateClientMethod } from "./generateClientMethod";
 import { createImportStatement } from "./generateImports";
 import { createDefaultsStatement } from "./generateDefaults";
 import * as OpenAPI from "../openApi3-x";
-import type { Hooks } from "../plugins";
+import type { OazapftsPluginHooks } from "../plugins";
 import { createServersStatement } from "../generateServers";
 
 export async function generateApi(
   ctx: OazapftsContext,
-  hooks: Hooks,
+  hooks: OazapftsPluginHooks,
 ): Promise<ts.SourceFile> {
   // Preprocess components (needs mutable context)
   h.preprocessComponents(ctx);
