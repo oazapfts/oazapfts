@@ -1,7 +1,6 @@
 import * as cg from "./tscodegen";
 import ts from "typescript";
 import SwaggerParser from "@apidevtools/swagger-parser";
-import converter from "swagger2openapi";
 import { OpenAPI, OpenAPIV3 } from "openapi-types";
 import { createContext } from "./context";
 import { generateApi } from "./generate/generateApi";
@@ -38,9 +37,8 @@ export type Opts = {
 export async function generateAst(
   doc: OpenAPIV3.Document,
   opts: Opts,
-  isConverted: boolean,
 ): Promise<ts.SourceFile> {
-  const ctx = createContext(doc, opts, isConverted);
+  const ctx = createContext(doc, opts);
 
   // Prepend title and version to banner
   const { title, version } = doc.info;
@@ -63,8 +61,8 @@ export async function generateSource(
   spec: string,
   opts: Opts = {},
 ): Promise<string> {
-  const { doc, isConverted } = await parseSpec(spec);
-  const ast = await generateAst(doc, opts, isConverted);
+  const doc = await parseSpec(spec);
+  const ast = await generateAst(doc, opts);
   return printAst(ast);
 }
 
@@ -74,16 +72,11 @@ function isOpenApiV3(doc: OpenAPI.Document): doc is OpenAPIV3.Document {
 
 export async function parseSpec(spec: string) {
   const doc = await SwaggerParser.bundle(spec);
-  if (isOpenApiV3(doc)) {
-    return {
-      doc,
-      isConverted: false,
-    };
-  } else {
-    const converted = await converter.convertObj(doc, {});
-    return {
-      doc: converted.openapi as OpenAPIV3.Document,
-      isConverted: true,
-    };
+  if (!isOpenApiV3(doc)) {
+    throw new Error(
+      "Only OpenAPI v3 is supported\nYou may convert you spec with https://github.com/swagger-api/swagger-converter or swagger2openapi package",
+    );
   }
+
+  return doc;
 }

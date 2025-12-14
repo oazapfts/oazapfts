@@ -28,20 +28,13 @@ export function generateClientMethod(
   const name = h.getOperationName(method, path, operationId);
 
   // merge item and op parameters
-  const resolvedParameters = h.resolveArray(ctx, item.parameters);
+  const parameters = h.resolveArray(ctx, item.parameters);
   for (const p of h.resolveArray(ctx, op.parameters)) {
-    const existing = resolvedParameters.find(
-      (r) => r.name === p.name && r.in === p.in,
-    );
+    const existing = parameters.find((r) => r.name === p.name && r.in === p.in);
     if (!existing) {
-      resolvedParameters.push(p);
+      parameters.push(p);
     }
   }
-
-  // expand older OpenAPI parameters into deepObject style where needed
-  const parameters = ctx.isConverted
-    ? h.supportDeepObjects(resolvedParameters)
-    : resolvedParameters;
 
   // convert parameter names to argument names ...
   const argNames = new Map<OpenApi.ParameterObject, string>();

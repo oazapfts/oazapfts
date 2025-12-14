@@ -52,7 +52,6 @@ export type Defaults = {
 export type OazapftsContext = {
   readonly inputSpec: ReadonlyDeep<Document>;
   readonly opts: ReadonlyDeep<Opts>;
-  readonly isConverted: boolean;
   readonly spec: Document;
 
   /** Banner comment at the top of the file (the text content, not including comment markers) */
@@ -99,14 +98,12 @@ export type OazapftsContext = {
 export function createContext(
   spec: Document,
   opts: OazapftsContext["opts"],
-  isConverted: OazapftsContext["isConverted"] = false,
 ): OazapftsContext {
   const ourSpec = _.cloneDeep(spec);
 
   return {
     inputSpec: spec,
     opts,
-    isConverted,
     spec: ourSpec,
 
     // Template parts

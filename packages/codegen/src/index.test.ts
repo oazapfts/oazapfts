@@ -69,6 +69,21 @@ async function checkForTypeErrors(source: string) {
 }
 
 describe("generateSource", () => {
+  it("no longer supports non-OpenAPI v3 specs", async () => {
+    await expect(
+      generateSource({
+        // A minimal Swagger 2.0 spec (OpenAPI 2)
+        swagger: "2.0",
+        info: {
+          title: "Swagger API",
+          version: "1.0.0",
+        },
+      } as any),
+    ).rejects.toThrow(
+      "Only OpenAPI v3 is supported\nYou may convert you spec with https://github.com/swagger-api/swagger-converter or swagger2openapi package",
+    );
+  });
+
   it("should generate the same api twice", async () => {
     const spec = path.join(demoFolder, "./petstore.json");
     const src1 = await generate(spec);
