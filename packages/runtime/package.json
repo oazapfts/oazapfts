@@ -35,7 +35,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs",
-    "prepack": "npm run build && sed -i 's|dist/||g' package.json && mv dist/* ."
+    "prepack": "sed -i 's|dist/||g' package.json && mv dist/* ."
   },
   "release": {
     "extends": "semantic-release-monorepo",
