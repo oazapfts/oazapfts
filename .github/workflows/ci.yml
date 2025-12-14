@@ -38,8 +38,16 @@ jobs:
       - name: 🔍 Lint
         run: npm run lint
 
+      - name: 🏗️ Build
+        run: npm run build
+
+      - name: 🚔 Type check
+        run: npm run type-check
+
       - name: 🧪 Test
         run: npm test
+        env:
+          PREPARE: false
 
       - name: 🚔 Ensure generated code is up to date
         run: npm run test:e2e:clean
