@@ -4,9 +4,9 @@ import * as h from "../helpers";
 import { generateClientMethod } from "./generateClientMethod";
 import { createImportStatement } from "./generateImports";
 import { createDefaultsStatement } from "./generateDefaults";
-import { createServersStatement } from "./generateServersStatement";
 import * as OpenAPI from "../openApi3-x";
 import type { Hooks } from "../plugins";
+import { createServersStatement } from "../generateServers";
 
 export async function generateApi(
   ctx: OazapftsContext,

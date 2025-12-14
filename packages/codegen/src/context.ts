@@ -5,17 +5,12 @@ import ts, {
   TypeReferenceNode,
 } from "typescript";
 import type { Opts } from "./";
-import type { Document } from "./openApi3-x";
+import type { Document, ServerObject } from "./openApi3-x";
 import { defaultBaseUrl } from "./generateServers";
 import _ from "lodash";
 import { CustomHeaders } from "@oazapfts/runtime";
 
 // ─── Data types for template parts ──────────────────────────────────────────
-
-export type ServerDefinition = {
-  url: string;
-  description?: string;
-};
 
 export type ImportSpecifier = {
   name: string;
@@ -67,7 +62,7 @@ export type OazapftsContext = {
   /** Runtime defaults (baseUrl, etc.) - will be generated as `export const defaults = { ... }` */
   defaults: Defaults;
   /** Server definitions - will be generated as `export const servers = { ... }` */
-  servers: ServerDefinition[];
+  servers: ServerObject[];
   /** Initialization statements (e.g., `const oazapfts = Oazapfts.runtime(defaults)`) */
   init: Statement[];
 
@@ -106,13 +101,13 @@ export function createContext(
   opts: OazapftsContext["opts"],
   isConverted: OazapftsContext["isConverted"] = false,
 ): OazapftsContext {
-  const specServers = spec.servers || [];
+  const ourSpec = _.cloneDeep(spec);
 
   return {
     inputSpec: spec,
     opts,
     isConverted,
-    spec: _.cloneDeep(spec),
+    spec: ourSpec,
 
     // Template parts
     banner: `DO NOT MODIFY - This file has been generated using oazapfts.
@@ -121,11 +116,8 @@ See https://www.npmjs.com/package/oazapfts`,
       [{ namespace: "Oazapfts" }, { from: "@oazapfts/runtime" }],
       [{ namespace: "QS" }, { from: "@oazapfts/runtime/query" }],
     ],
-    defaults: { baseUrl: defaultBaseUrl(specServers), headers: {} },
-    servers: specServers.map((s) => ({
-      url: s.url,
-      description: s.description,
-    })),
+    defaults: { baseUrl: defaultBaseUrl(ourSpec.servers), headers: {} },
+    servers: ourSpec.servers || [],
     init: createInit(),
 
     // Internal state

@@ -56,3 +56,5 @@ export type PathsObject = OpenAPIV3.PathsObject | OpenAPIV3_1.PathsObject;
 export type PathItemObject =
   | OpenAPIV3.PathItemObject
   | OpenAPIV3_1.PathItemObject;
+
+export type ServerObject = OpenAPIV3.ServerObject | OpenAPIV3_1.ServerObject;
