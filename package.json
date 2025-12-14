@@ -9,7 +9,7 @@
   "version": "0.0.0-development",
   "description": "OpenApi TypeScript client generator",
   "scripts": {
-    "build": "npm run build -w oazapfts && npm run build -w @oazapfts/runtime",
+    "build": "npm run build -w @oazapfts/runtime && npm run build -w oazapfts",
     "test": "npm run test:unit -- --run && npm run test:e2e",
     "validate": "npm run lint && npm test && npm run test:e2e:clean && npm run type-check",
     "lint": "prettier --check .",

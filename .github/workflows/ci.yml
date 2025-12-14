@@ -38,11 +38,11 @@ jobs:
       - name: 🔍 Lint
         run: npm run lint
 
-      - name: 🚔 Type check
-        run: npm run type-check
-
       - name: 🏗️ Build
         run: npm run prepare
+
+      - name: 🚔 Type check
+        run: npm run type-check
 
       - name: 🧪 Test
         run: npm test
