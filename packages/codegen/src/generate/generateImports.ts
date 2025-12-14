@@ -22,11 +22,7 @@ export function createImportStatement(imp: Import): ts.ImportDeclaration {
   }
 
   // Namespace import: [{ namespace: "X" }, { from: "module" }]
-  if (
-    imp.length === 2 &&
-    typeof imp[0] === "object" &&
-    "namespace" in imp[0]
-  ) {
+  if (imp.length === 2 && typeof imp[0] === "object" && "namespace" in imp[0]) {
     const [{ namespace }, { from }] = imp as [
       { namespace: string },
       { from: string },
@@ -36,7 +32,9 @@ export function createImportStatement(imp: Import): ts.ImportDeclaration {
       ts.factory.createImportClause(
         false,
         undefined,
-        ts.factory.createNamespaceImport(ts.factory.createIdentifier(namespace)),
+        ts.factory.createNamespaceImport(
+          ts.factory.createIdentifier(namespace),
+        ),
       ),
       ts.factory.createStringLiteral(from),
     );
@@ -115,4 +113,3 @@ function createImportSpecifier(
     ts.factory.createIdentifier(spec.as || spec.name),
   );
 }
-
