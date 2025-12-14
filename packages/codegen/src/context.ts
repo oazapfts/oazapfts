@@ -5,7 +5,7 @@ import ts, {
   TypeReferenceNode,
 } from "typescript";
 import type { Opts } from "./";
-import type { Document, ServerObject } from "./openApi3-x";
+import type { Document, SchemaObject, ServerObject } from "./openApi3-x";
 import { defaultBaseUrl } from "./generateServers";
 import _ from "lodash";
 import { CustomHeaders } from "@oazapfts/runtime";
@@ -66,7 +66,7 @@ export type OazapftsContext = {
   init: Statement[];
 
   // see `preprocessComponents` for the definition of a discriminating schema
-  discriminatingSchemas: Set<string>;
+  discriminatingSchemas: Set<SchemaObject>;
 
   aliases: (TypeAliasDeclaration | InterfaceDeclaration)[];
 

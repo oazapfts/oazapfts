@@ -2,6 +2,7 @@ import { OazapftsContext } from "../context";
 import * as OpenApi from "../openApi3-x";
 import { getRefBasename } from "./getRefBasename";
 import { isReference } from "./isReference";
+import { resolve } from "./resolve";
 
 /**
  * In order to support discriminated unions.
@@ -15,29 +16,21 @@ import { isReference } from "./isReference";
  *    with `oneOf` nor `anyOf`.
  * 3. Make all mappings of discriminating schemas explicit to generate types immediately.
  */
-export function preprocessComponents({
-  spec,
-  discriminatingSchemas,
-}: OazapftsContext) {
-  if (!spec.components?.schemas) {
+export function preprocessComponents(ctx: OazapftsContext) {
+  if (!ctx.spec.components?.schemas) {
     return;
   }
 
   const prefix = "#/components/schemas/";
-  const schemas: Record<
-    string,
-    OpenApi.SchemaObject | OpenApi.ReferenceObject
-  > = spec.components.schemas;
+  const schemas = ctx.spec.components.schemas;
 
   // First scan: Add `x-component-ref-path` property and record discriminating schemas
   for (const name of Object.keys(schemas)) {
     const schema = schemas[name];
     if (isReference(schema) || typeof schema === "boolean") continue;
 
-    schema["x-component-ref-path"] = prefix + name;
-
     if (schema.discriminator && !schema.oneOf && !schema.anyOf) {
-      discriminatingSchemas.add(prefix + name);
+      ctx.discriminatingSchemas.add(schema);
     }
   }
 
@@ -60,7 +53,9 @@ export function preprocessComponents({
     for (const childSchema of schema.allOf) {
       if (
         !isReference(childSchema) ||
-        !discriminatingSchemas.has(childSchema.$ref)
+        !ctx.discriminatingSchemas.has(
+          resolve<OpenApi.SchemaObject>(childSchema, ctx),
+        )
       ) {
         continue;
       }

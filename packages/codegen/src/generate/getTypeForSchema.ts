@@ -90,13 +90,16 @@ function getBaseTypeFromSchema(
     for (const childSchema of schema.allOf) {
       if (
         h.isReference(childSchema) &&
-        ctx.discriminatingSchemas.has(childSchema.$ref)
+        ctx.discriminatingSchemas.has(
+          h.resolve(childSchema, ctx) as OpenApi.SchemaObject,
+        )
       ) {
         const discriminatingSchema =
           h.resolve<OpenApi.DiscriminatingSchemaObject>(childSchema, ctx);
         const discriminator = discriminatingSchema.discriminator;
+
         const matches = Object.entries(discriminator.mapping ?? {})
-          .filter(([, ref]) => ref === schema["x-component-ref-path"])
+          .filter(([, ref]) => h.resolve({ $ref: ref }, ctx) === schema)
           .map(([discriminatorValue]) => discriminatorValue);
         if (matches.length > 0) {
           types.push(
@@ -187,7 +190,7 @@ function getBaseTypeFromSchema(
       getTypeFromSchema(ctx, schema.items, undefined, onlyMode),
     );
   }
-  if ("prefixItems" in schema && schema.prefixItems) {
+  if ("prefixItems" in schema && Array.isArray(schema.prefixItems)) {
     // prefixItems -> typed tuple
     return ts.factory.createTupleTypeNode(
       schema.prefixItems.map((schema) => getTypeFromSchema(ctx, schema)),
@@ -213,7 +216,7 @@ function getBaseTypeFromSchema(
   if (schema.format == "binary") {
     return ts.factory.createTypeReferenceNode("Blob", []);
   }
-  if (schema.const) {
+  if ("const" in schema && schema.const) {
     return getTypeFromEnum([schema.const]);
   }
   if (schema.type !== undefined) {
