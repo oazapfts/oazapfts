@@ -5,3 +5,4 @@
 - [ ] read-only spec
 - [ ] remove custom x-extends from schemas
 - [ ] remove DiscriminatingSchemaObject in favor of checking presence of discriminator property
+- [ ] fix server drift
