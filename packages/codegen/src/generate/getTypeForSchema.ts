@@ -10,7 +10,7 @@ import { getTypeFromProperties } from "./getTypeFromProperties";
 import { getTrueEnum } from "./getTrueEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
 import { getEmptySchemaType } from "../helpers/emptySchemaType";
-import { OpenAPIV3 } from "openapi-types";
+import { getDiscriminatorType } from "./getDiscriminatorType";
 
 /**
  * Creates a type node from a given schema.
@@ -103,7 +103,12 @@ function getBaseTypeFromSchema(
             ts.factory.createTypeLiteralNode([
               cg.createPropertySignature({
                 name: discriminator.propertyName,
-                type: getTypeFromEnum(matches),
+                type: getDiscriminatorType(
+                  ctx,
+                  childSchema,
+                  discriminator.propertyName,
+                  matches,
+                ),
               }),
             ]),
           );

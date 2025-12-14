@@ -8,9 +8,9 @@ export function isTrueEnum(
 ): name is string {
   return Boolean(
     typeof schema !== "boolean" &&
-      schema.enum &&
-      ctx.opts.useEnumType &&
-      name &&
-      schema.type !== "boolean",
+    schema.enum &&
+    ctx.opts.useEnumType &&
+    name &&
+    schema.type !== "boolean",
   );
 }

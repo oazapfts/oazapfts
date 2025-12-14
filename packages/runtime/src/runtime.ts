@@ -147,11 +147,13 @@ export function runtime(defaults: RequestOpts = {}) {
       if (body == null)
         return { ...req, body, headers: normalizeHeaders(headers) };
 
-      const data = new (req.FormData ||
+      const data = new (
+        req.FormData ||
         req.formDataConstructor ||
         defaults.FormData ||
         defaults.formDataConstructor ||
-        FormData)();
+        FormData
+      )();
 
       const append = (name: string, value: unknown) => {
         if (typeof value === "string" || value instanceof Blob) {

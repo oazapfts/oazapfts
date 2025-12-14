@@ -5,6 +5,7 @@ import * as OpenApi from "../openApi3-x";
 import { isReference, getRefBasename, resolve } from "../helpers";
 import { createPropertySignature } from "../tscodegen";
 import { getTypeFromSchema } from "./getTypeForSchema";
+import { getDiscriminatorType } from "./getDiscriminatorType";
 
 export function getUnionType(
   variants: (OpenApi.ReferenceObject | OpenApi.SchemaObject)[],
@@ -69,8 +70,11 @@ export function getUnionType(
           ts.factory.createTypeLiteralNode([
             createPropertySignature({
               name: discriminator.propertyName,
-              type: ts.factory.createLiteralTypeNode(
-                ts.factory.createStringLiteral(discriminatorValue),
+              type: getDiscriminatorType(
+                ctx,
+                variant,
+                discriminator.propertyName,
+                [discriminatorValue],
               ),
             }),
           ]),

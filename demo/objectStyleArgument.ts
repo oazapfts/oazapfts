@@ -38,6 +38,8 @@ export type Pet = {
   size?: "P" | "M" | "G" | "0";
   /** integer test case for #349 */
   typeId?: 1 | 2 | 3 | 4 | 6 | 8 | -1;
+  /** string test case for #766 */
+  channel?: "P" | "M" | "G";
 };
 export type ApiResponse = {
   code?: number;

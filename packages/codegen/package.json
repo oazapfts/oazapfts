@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs && chmod +x dist/cli.js && chmod +x dist/cli.cjs",
-    "prepack": "sed -i 's|dist/||g' package.json && mv dist/* ."
+    "prepack": "npm run build && sed -i 's|dist/||g' package.json && mv dist/* ."
   },
   "release": {
     "extends": "semantic-release-monorepo",
@@ -46,21 +46,20 @@
     ]
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.20",
+    "@types/lodash": "^4.17.21",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^24.1.0",
-    "@types/tapable": "^2.2.7"
+    "@types/tapable": "^2.3.0"
   },
   "peerDependencies": {
     "@oazapfts/runtime": "*"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^12.0.0",
+    "@apidevtools/swagger-parser": "^12.1.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "swagger2openapi": "^7.0.8",
-    "tapable": "^2.2.2",
-    "typescript": "^5.8.3"
+    "tapable": "^2.3.0",
+    "typescript": "^5.9.3"
   },
   "keywords": [
     "openapi",

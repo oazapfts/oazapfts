@@ -49,7 +49,11 @@ export function getTrueEnum(
   }
 
   const members = values.map((s, index) => {
-    if (schema.type === "number" || schema.type === "integer") {
+    if (
+      schema.type === "number" ||
+      schema.type === "integer" ||
+      schema.type === "string"
+    ) {
       const name = names ? names[index] : String(s);
       return ts.factory.createEnumMember(
         ts.factory.createIdentifier(h.toIdentifier(name, true)),
