@@ -99,17 +99,17 @@ export function UNSTABLE_sortPlugins<
   const defaultPlugins: Plugin[] = [];
   const lazyPlugins: Plugin[] = [];
   for (const plugin of plugins) {
-    if (plugin.precedence === UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER) {
-      eagerPlugins.push(plugin);
-    }
-    if (
-      !plugin.precedence ||
-      plugin.precedence === UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT
-    ) {
-      defaultPlugins.push(plugin);
-    }
-    if (plugin.precedence === UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY) {
-      lazyPlugins.push(plugin);
+    switch (plugin.precedence) {
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER:
+        eagerPlugins.push(plugin);
+        break;
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY:
+        lazyPlugins.push(plugin);
+        break;
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT:
+      default:
+        defaultPlugins.push(plugin);
+        break;
     }
   }
 
