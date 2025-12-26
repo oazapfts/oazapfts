@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     target: mode === "esm" ? "esnext" : "es2015",
     lib: {
-      entry: ["src/index.ts", "src/cli.ts"],
+      entry: ["src/index.ts", "src/cli.ts", "src/plugin.ts", "src/context.ts"],
       formats: [mode === "esm" ? "es" : "cjs"],
     },
     rollupOptions: {
