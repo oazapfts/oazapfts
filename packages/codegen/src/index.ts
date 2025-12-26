@@ -9,10 +9,10 @@ import {
   UNSTABLE_createHooks,
   UNSTABLE_applyPlugins,
 } from "./plugin";
+import { ArgumentStyle } from "./generate/generateClientMethod";
 
 export { cg as UNSTABLE_cg, type OpenAPI };
 
-export const oazapftsArgumentStyleOptions = ["positional", "object"];
 export type OazapftsOptions = {
   include?: string[];
   exclude?: string[];
@@ -21,7 +21,7 @@ export type OazapftsOptions = {
   useEnumType?: boolean;
   mergeReadWriteOnly?: boolean;
   useUnknown?: boolean;
-  argumentStyle?: (typeof oazapftsArgumentStyleOptions)[number];
+  argumentStyle?: ArgumentStyle;
   /**
    * Plugins to apply during code generation.
    * Each plugin receives hooks and can tap into generation steps.

@@ -4,7 +4,8 @@ import { readFile, writeFile } from "fs/promises";
 import minimist, { type ParsedArgs } from "minimist";
 import { join } from "path";
 
-import { generateSource, oazapftsArgumentStyleOptions } from "./";
+import { generateSource } from "./";
+import { argumentStyleOptions } from "./generate/generateClientMethod";
 
 async function run(argv: ParsedArgs) {
   const {
@@ -40,10 +41,10 @@ async function run(argv: ParsedArgs) {
 
   if (
     argumentStyle !== undefined &&
-    !oazapftsArgumentStyleOptions.includes(argumentStyle)
+    !argumentStyleOptions.includes(argumentStyle)
   ) {
     console.error(
-      `--argumentStyle should be one of <${oazapftsArgumentStyleOptions.join(
+      `--argumentStyle should be one of <${argumentStyleOptions.join(
         " | ",
       )}>, but got "${argumentStyle}"`,
     );
@@ -78,7 +79,7 @@ function printUsage() {
     --useEnumType
     --useUnknown
     --mergeReadWriteOnly
-    --argumentStyle=<${oazapftsArgumentStyleOptions.join(" | ")}> (default: positional)
+    --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
 `);
 }
 

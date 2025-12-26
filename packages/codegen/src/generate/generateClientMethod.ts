@@ -11,6 +11,9 @@ import { getResponseType } from "./getResponseType";
 import { getTypeFromResponses } from "./getTypeFromResponses";
 import * as OpenAPI from "../helpers/openApi3-x";
 
+export const argumentStyleOptions = ["positional", "object"] as const;
+export type ArgumentStyle = (typeof argumentStyleOptions)[number];
+
 export function generateClientMethod(
   method: h.HttpMethod,
   path: string,
