@@ -1,8 +1,16 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import * as path from "node:path";
 import * as fs from "node:fs";
-import { generateSource, Opts } from "./index";
-import { readFile } from "node:fs/promises";
+import oazapftsLib, {
+  generateAst,
+  generateSource,
+  oazapfts,
+  parseSpec,
+  printAst,
+  UNSTABLE_cg,
+  type OazapftsOptions,
+  type OpenAPI,
+} from "./index";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
 
@@ -38,7 +46,7 @@ function findCodeSection(
  */
 async function generate(
   file: string,
-  opts: Opts & { minify?: boolean } = { minify: true },
+  opts: OazapftsOptions & { minify?: boolean } = { minify: true },
 ) {
   const src = await generateSource(file, opts);
   const error = await checkForTypeErrors(src);
@@ -69,11 +77,56 @@ async function checkForTypeErrors(source: string) {
   return error?.messageText;
 }
 
+describe("index exports (public API surface)", () => {
+  it("exports generateSource as default and as oazapfts alias", () => {
+    expect(oazapftsLib).toBe(generateSource);
+    expect(oazapfts).toBe(generateSource);
+  });
+
+  it("exports the core helpers as functions", () => {
+    expect(typeof generateAst).toBe("function");
+    expect(typeof printAst).toBe("function");
+    expect(typeof parseSpec).toBe("function");
+  });
+
+  it("exports UNSTABLE_cg utilities", () => {
+    expect(typeof UNSTABLE_cg).toBe("object");
+  });
+
+  it("exports OpenAPI and OazapftsOptions types (compile-time)", () => {
+    const _: OpenAPI.Document = {
+      openapi: "3.0.0",
+      info: { title: "Test", version: "1.0.0" },
+      paths: {},
+    };
+    const __: OazapftsOptions = {
+      argumentStyle: "positional",
+      include: ["*"],
+      exclude: [],
+      mergeReadWriteOnly: true,
+      useEnumType: true,
+      useUnknown: true,
+      optimistic: true,
+      unionUndefined: true,
+      UNSTABLE_plugins: [],
+    };
+  });
+});
+
 describe("generateSource", () => {
-  beforeAll(async () => {
-    global.__API_STUB_PLACEHOLDER__ = (
-      await readFile(__dirname + "/../template/ApiStub.ts")
-    ).toString();
+  it("no longer supports non-OpenAPI v3 specs", async () => {
+    await expect(
+      generateSource({
+        // A minimal Swagger 2.0 spec (OpenAPI 2)
+        swagger: "2.0",
+        info: {
+          title: "Swagger API",
+          version: "1.0.0",
+        },
+      } as any),
+    ).rejects.toThrow(
+      "Only OpenAPI v3 is supported\nYou may convert you spec with https://github.com/swagger-api/swagger-converter or swagger2openapi package",
+    );
   });
 
   it("should generate the same api twice", async () => {

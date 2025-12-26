@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { toIdentifier } from "./generate";
+import { toIdentifier } from "../helpers/toIdentifier";
 
 const factory = ts.factory;
 
@@ -444,7 +444,7 @@ export function findFirstVariableDeclaration(
     (n) => getFirstDeclarationName(n) === name,
   );
   const [first] = statement.declarationList.declarations;
-  if (!first) throw new Error("Missing declaration");
+  if (!first) throw new Error(`Missing ${name} declaration`);
   return first;
 }
 
@@ -462,6 +462,37 @@ export function changePropertyValue(
   } else {
     throw new Error(`No such property: ${property}`);
   }
+}
+
+type Visitor = (
+  node: ts.Node,
+  context: ts.TransformationContext,
+) => void | ts.Node;
+
+function createTransformer(visitor: Visitor) {
+  return <T extends ts.Node>(context: ts.TransformationContext) =>
+    (rootNode: T) => {
+      function visit(node: ts.Node): ts.Node {
+        const result = visitor(node, context);
+
+        if (result) {
+          return result;
+        }
+
+        return ts.visitEachChild(node, visit, context);
+      }
+
+      return ts.visitNode(rootNode, visit);
+    };
+}
+
+export function transform<T extends ts.Node>(
+  source: T,
+  ...visitors: Visitor[]
+) {
+  const result = ts.transform(source, visitors.map(createTransformer));
+
+  return result.transformed[0] as T;
 }
 
 export function appendNodes<T extends ts.Node>(
@@ -520,5 +551,34 @@ export function isValidIdentifier(str: string) {
     !!node &&
     node.kind === ts.SyntaxKind.Identifier &&
     ts.identifierToKeywordKind(node) === undefined
+  );
+}
+
+export function updateVariableDeclaration(
+  node: ts.VariableDeclaration,
+  updates: Partial<ts.VariableDeclaration>,
+) {
+  return ts.factory.updateVariableDeclaration(
+    node,
+    updates.name || node.name,
+    updates.exclamationToken || node.exclamationToken,
+    updates.type || node.type,
+    updates.initializer || node.initializer,
+  );
+}
+
+export function updateFunctionDeclaration(
+  node: ts.FunctionDeclaration,
+  updates: Partial<ts.FunctionDeclaration>,
+) {
+  return ts.factory.updateFunctionDeclaration(
+    node,
+    updates.modifiers || node.modifiers,
+    updates.asteriskToken || node.asteriskToken,
+    updates.name || node.name,
+    updates.typeParameters || node.typeParameters,
+    updates.parameters || node.parameters,
+    updates.type || node.type,
+    updates.body || node.body,
   );
 }

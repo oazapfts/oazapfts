@@ -2,6 +2,7 @@ import _ from "lodash";
 import * as cg from "./tscodegen";
 import ts from "typescript";
 import { OpenAPIV3 } from "openapi-types";
+import { ServerObject } from "../helpers/openApi3-x";
 
 const factory = ts.factory;
 
@@ -53,13 +54,13 @@ function createServerFunction(
   return cg.createArrowFunction(params, createTemplate(template));
 }
 
-function generateServerExpression(server: OpenAPIV3.ServerObject) {
+function generateServerExpression(server: ServerObject) {
   return server.variables
     ? createServerFunction(server.url, server.variables)
     : factory.createStringLiteral(server.url);
 }
 
-function defaultUrl(server?: OpenAPIV3.ServerObject) {
+function defaultUrl(server?: ServerObject) {
   if (!server) return "/";
   const { url, variables } = server;
   if (!variables) return url;
@@ -68,23 +69,38 @@ function defaultUrl(server?: OpenAPIV3.ServerObject) {
   );
 }
 
-export function defaultBaseUrl(servers: OpenAPIV3.ServerObject[]) {
-  return factory.createStringLiteral(defaultUrl(servers[0]));
+export function defaultBaseUrl(servers?: ServerObject[]) {
+  return defaultUrl(servers?.[0]);
 }
 
-function serverName(server: OpenAPIV3.ServerObject, index: number) {
+function serverName(server: ServerObject, index: number) {
   return server.description
     ? _.camelCase(server.description.replace(/\W+/, " "))
     : `server${index + 1}`;
 }
 
-export default function generateServers(
-  servers: OpenAPIV3.ServerObject[],
-): ts.ObjectLiteralExpression {
+export function generateServers(servers: ServerObject[]) {
   return cg.createObjectLiteral(
     servers.map((server, i) => [
       serverName(server, i),
       generateServerExpression(server),
     ]),
+  );
+}
+
+export function createServersStatement(servers: ServerObject[]) {
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          "servers",
+          undefined,
+          undefined,
+          generateServers(servers),
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
   );
 }

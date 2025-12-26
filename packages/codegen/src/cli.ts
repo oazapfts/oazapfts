@@ -1,36 +1,71 @@
 #!/usr/bin/env node
 
-import fs from "fs";
-import minimist from "minimist";
+import { readFile, writeFile } from "fs/promises";
+import minimist, { type ParsedArgs } from "minimist";
+import { join } from "path";
 
-import { generateSource, Opts, optsArgumentStyles } from "./";
+import { generateSource } from "./";
+import { argumentStyleOptions } from "./generate/generateClientMethod";
 
-const argv = minimist(process.argv.slice(2), {
-  alias: {
-    i: "include",
-    e: "exclude",
-  },
-  boolean: ["optimistic", "useEnumType", "mergeReadWriteOnly", "useUnknown"],
-  string: ["argumentStyle"],
-});
+async function run(argv: ParsedArgs) {
+  const {
+    include,
+    exclude,
+    optimistic,
+    useEnumType,
+    mergeReadWriteOnly,
+    useUnknown,
+    argumentStyle,
+    help,
+    version,
+  } = argv;
+  const [spec, dest] = argv._;
 
-async function generate(spec: string, dest: string, opts: Opts) {
-  const code = await generateSource(spec, opts);
-  if (dest) fs.writeFileSync(dest, code);
+  if (help) {
+    printUsage();
+    process.exit(0);
+  }
+
+  if (version) {
+    const pkg = JSON.parse(
+      await readFile(join(__dirname, "..", "package.json"), "utf8"),
+    );
+    console.log(pkg.version);
+    process.exit(0);
+  }
+
+  if (!spec) {
+    printUsage();
+    process.exit(1);
+  }
+
+  if (
+    argumentStyle !== undefined &&
+    !argumentStyleOptions.includes(argumentStyle)
+  ) {
+    console.error(
+      `--argumentStyle should be one of <${argumentStyleOptions.join(
+        " | ",
+      )}>, but got "${argumentStyle}"`,
+    );
+    process.exit(1);
+  }
+
+  const code = await generateSource(spec, {
+    include,
+    exclude,
+    optimistic,
+    useEnumType,
+    useUnknown,
+    mergeReadWriteOnly,
+    argumentStyle,
+  });
+
+  if (dest) await writeFile(dest, code);
   else console.log(code);
 }
 
-const {
-  include,
-  exclude,
-  optimistic,
-  useEnumType,
-  mergeReadWriteOnly,
-  useUnknown,
-  argumentStyle,
-} = argv;
-const [spec, dest] = argv._;
-if (!spec) {
+function printUsage() {
   console.error(`
     Usage:
     oazapfts <spec> [filename]
@@ -38,33 +73,35 @@ if (!spec) {
     Options:
     --exclude, -e <tag to exclude>
     --include, -i <tag to include>
+    --help,    -h
+    --version, -v
     --optimistic
     --useEnumType
     --useUnknown
     --mergeReadWriteOnly
-    --argumentStyle=<${optsArgumentStyles.join(" | ")}> (default: positional)
+    --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
 `);
-  process.exit(1);
 }
 
-if (
-  argumentStyle !== undefined &&
-  !optsArgumentStyles.includes(argumentStyle)
-) {
-  console.error(
-    `--argumentStyle should be one of <${optsArgumentStyles.join(
-      " | ",
-    )}>, but got "${argumentStyle}"`,
-  );
+run(
+  minimist(process.argv.slice(2), {
+    alias: {
+      h: "help",
+      v: "version",
+      i: "include",
+      e: "exclude",
+    },
+    boolean: [
+      "help",
+      "version",
+      "optimistic",
+      "useEnumType",
+      "mergeReadWriteOnly",
+      "useUnknown",
+    ],
+    string: ["argumentStyle"],
+  }),
+).catch((error) => {
+  console.error(error);
   process.exit(1);
-}
-
-generate(spec, dest, {
-  include,
-  exclude,
-  optimistic,
-  useEnumType,
-  useUnknown,
-  mergeReadWriteOnly,
-  argumentStyle,
 });
