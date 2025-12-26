@@ -5,7 +5,6 @@ import oazapftsLib, {
   generateAst,
   generateSource,
   oazapfts,
-  oazapftsArgumentStyleOptions,
   parseSpec,
   printAst,
   UNSTABLE_cg,
@@ -82,10 +81,6 @@ describe("index exports (public API surface)", () => {
   it("exports generateSource as default and as oazapfts alias", () => {
     expect(oazapftsLib).toBe(generateSource);
     expect(oazapfts).toBe(generateSource);
-  });
-
-  it("exports stable argument style options", () => {
-    expect(oazapftsArgumentStyleOptions).toEqual(["positional", "object"]);
   });
 
   it("exports the core helpers as functions", () => {
