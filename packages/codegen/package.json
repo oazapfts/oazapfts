@@ -20,15 +20,19 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./generate": {
-      "types": "./dist/generate.d.ts",
-      "require": "./dist/generate.cjs",
-      "default": "./dist/generate.js"
+    "./context": {
+      "types": "./dist/context.d.ts",
+      "require": "./dist/context.cjs",
+      "default": "./dist/context.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs && chmod +x dist/cli.js && chmod +x dist/cli.cjs",
-    "prepack": "sed -i 's|dist/||g' package.json && mv dist/* ."
+    "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs && chmod +x dist/cli.js && chmod +x dist/cli.cjs"
   },
   "release": {
     "extends": "semantic-release-monorepo",
@@ -57,7 +61,6 @@
     "@apidevtools/swagger-parser": "^12.1.0",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
-    "swagger2openapi": "^7.0.8",
     "tapable": "^2.3.0",
     "typescript": "^5.9.3"
   },

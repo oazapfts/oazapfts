@@ -1,14 +1,19 @@
-import * as cg from "./tscodegen";
-import ApiGenerator from "./generate";
-import ts from "typescript";
+import * as cg from "./generate/tscodegen";
+import { type SourceFile } from "typescript";
 import SwaggerParser from "@apidevtools/swagger-parser";
-import converter from "swagger2openapi";
-import { OpenAPI, OpenAPIV3 } from "openapi-types";
+import { createContext, OazapftsContext } from "./context";
+import { generateApi } from "./generate/generateApi";
+import * as OpenAPI from "./helpers/openApi3-x";
+import {
+  type UNSTABLE_OazapftsPlugin,
+  UNSTABLE_createHooks,
+  UNSTABLE_applyPlugins,
+} from "./plugin";
 
-export { cg };
+export { cg as UNSTABLE_cg, type OpenAPI };
 
-export const optsArgumentStyles = ["positional", "object"];
-export type Opts = {
+export const oazapftsArgumentStyleOptions = ["positional", "object"];
+export type OazapftsOptions = {
   include?: string[];
   exclude?: string[];
   optimistic?: boolean;
@@ -16,49 +21,81 @@ export type Opts = {
   useEnumType?: boolean;
   mergeReadWriteOnly?: boolean;
   useUnknown?: boolean;
-  argumentStyle?: (typeof optsArgumentStyles)[number];
+  argumentStyle?: (typeof oazapftsArgumentStyleOptions)[number];
+  /**
+   * Plugins to apply during code generation.
+   * Each plugin receives hooks and can tap into generation steps.
+   */
+  UNSTABLE_plugins?: UNSTABLE_OazapftsPlugin[];
 };
 
-export function generateAst(
-  doc: OpenAPIV3.Document,
-  opts: Opts,
-  isConverted: boolean,
+/**
+ * Create a a TypeScript source file from an OpenAPI spec.
+ *
+ * @param spec - Path to an OpenAPI spec file or source string
+ * @param opts - Options for the code generation
+ * @returns The generated TypeScript source file
+ */
+export async function generateSource(spec: string, opts: OazapftsOptions = {}) {
+  const doc = await parseSpec(spec);
+
+  const ctx = createContext(doc, opts);
+  ctx.banner = [doc.info.title, doc.info.version, ctx.banner]
+    .filter(Boolean)
+    .join("\n");
+
+  const ast = await generateAst(ctx, opts.UNSTABLE_plugins);
+
+  return printAst(ast);
+}
+export { generateSource as default, generateSource as oazapfts };
+
+/**
+ * Create an Typescript AST from an OpenAPI document.
+ *
+ * @param ctx - Oazapfts context
+ * @param UNSTABLE_plugins - Unstable plugins to apply
+ * @returns The generated TypeScript AST
+ */
+export async function generateAst(
+  ctx: OazapftsContext,
+  UNSTABLE_plugins: UNSTABLE_OazapftsPlugin[] = [],
 ) {
-  return new ApiGenerator(doc, opts, isConverted).generateApi();
+  const hooks = UNSTABLE_createHooks();
+  await UNSTABLE_applyPlugins(hooks, UNSTABLE_plugins);
+
+  return generateApi(ctx, hooks);
 }
 
-export function printAst(ast: ts.SourceFile) {
+/**
+ * Print a TypeScript AST to a string.
+ *
+ * @param ast - The TypeScript AST to print
+ * @returns The printed TypeScript source
+ */
+export function printAst(ast: SourceFile) {
   return cg.printFile(ast);
 }
 
-export async function generateSource(
-  spec: string,
-  opts: Opts = {},
-): Promise<string> {
-  const { doc, isConverted } = await parseSpec(spec);
-  const ast = generateAst(doc, opts, isConverted);
-  const { title, version } = doc.info;
-  const preamble = ["$&", title, version].filter(Boolean).join("\n * ");
-  const src = printAst(ast);
-  return src.replace(/^\/\*\*/, preamble);
-}
-
-function isOpenApiV3(doc: OpenAPI.Document): doc is OpenAPIV3.Document {
-  return "openapi" in doc && doc.openapi.startsWith("3");
-}
-
+/**
+ * Parse an OpenAPI spec into a document object.
+ *
+ * @param spec - Path to an OpenAPI spec file or source string
+ * @returns The parsed OpenAPI document
+ */
 export async function parseSpec(spec: string) {
   const doc = await SwaggerParser.bundle(spec);
-  if (isOpenApiV3(doc)) {
-    return {
-      doc,
-      isConverted: false,
-    };
-  } else {
-    const converted = await converter.convertObj(doc, {});
-    return {
-      doc: converted.openapi as OpenAPIV3.Document,
-      isConverted: true,
-    };
+  if (!isOpenApiV3(doc)) {
+    throw new Error(
+      "Only OpenAPI v3 is supported\nYou may convert you spec with https://github.com/swagger-api/swagger-converter or swagger2openapi package",
+    );
   }
+
+  return doc;
+}
+
+function isOpenApiV3(
+  doc: Awaited<ReturnType<typeof SwaggerParser.bundle>>,
+): doc is OpenAPI.Document {
+  return "openapi" in doc && doc.openapi.startsWith("3");
 }
