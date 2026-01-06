@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import generateServers from "./generateServers";
+import { generateServers } from "./generateServers";
 import * as cg from "./tscodegen";
 
 describe("generateServer", () => {
