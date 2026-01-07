@@ -80,10 +80,17 @@ export function printAst(ast: SourceFile) {
 /**
  * Parse an OpenAPI spec into a document object.
  *
- * @param spec - Path to an OpenAPI spec file or source string
+ * @param spec - Path to a local OpenAPI spec file,
+ *                or a URL to an OpenAPI spec file
+ *                or a OpenAPI document object
  * @returns The parsed OpenAPI document
  */
-export async function parseSpec(spec: string) {
+export async function parseSpec(spec: string | OpenAPI.Document) {
+  if (typeof spec === "string" && spec.startsWith("http")) {
+    const response = await fetch(spec);
+    spec = await response.json();
+  }
+
   const doc = await SwaggerParser.bundle(spec);
   if (!isOpenApiV3(doc)) {
     throw new Error(

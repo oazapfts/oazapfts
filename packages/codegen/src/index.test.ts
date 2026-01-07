@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import oazapftsLib, {
@@ -583,6 +583,26 @@ describe("useEnumType", () => {
     expect(src).toContain(
       `export enum Category2 { Rich = "rich", Wealthy = "wealthy", Poor = "poor" }`,
     );
+  });
+});
+
+describe("parseSpec", () => {
+  it("downloads spec when it looks like an url", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          openapi: "3.0.0",
+          info: {
+            title: "Petstore",
+            version: "1.0.0",
+          },
+          paths: {},
+          components: {},
+        } satisfies OpenAPI.Document),
+      ),
+    );
+    const spec = await parseSpec("https://petstore.swagger.io/v3/swagger.json");
+    expect(spec).toBeDefined();
   });
 });
 
