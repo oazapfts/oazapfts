@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.21",
+    "@types/lodash": "^4.17.23",
     "@types/minimist": "^1.2.5",
     "@types/tapable": "^2.3.0"
   },
