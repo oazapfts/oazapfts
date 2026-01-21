@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "minimist": "^1.2.8",
     "tapable": "^2.3.0",
     "typescript": "^5.9.3"
