@@ -39,6 +39,7 @@ Options:
 --useUnknown
 --mergeReadWriteOnly
 --argumentStyle=<positional | object> (default: positional)
+--allSchemas
 ```
 
 Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either json or yml) and `<filename>` is the location of the `.ts` file to be generated. If the filename is omitted, the code is written to stdout.
@@ -54,6 +55,8 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 - `--mergeReadWriteOnly` by default oazapfs will generate separate types for read-only and write-only properties. This option will merge them into one type.
 
 - `--argumentStyle` if "object" generated functions take single object style argument for parameters and requestBody, by default it's "positional" and parameters are separate as positional arguments
+
+- `--allSchemas` generate types for all schemas included in the spec
 
 ## Consuming the generated API
 

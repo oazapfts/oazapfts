@@ -7,6 +7,7 @@ import { createDefaultsStatement } from "./createDefaultsStatement";
 import * as OpenAPI from "../helpers/openApi3-x";
 import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
 import { createServersStatement } from "./generateServers";
+import { getRefAlias } from "./getRefAlias";
 
 export async function generateApi(
   ctx: OazapftsContext,
@@ -50,6 +51,12 @@ export async function generateApi(
       );
 
       methods.push(...generatedMethods);
+    }
+  }
+
+  if (ctx.opts.allSchemas && ctx.spec.components?.schemas) {
+    for (const [name, schema] of Object.entries(ctx.spec.components.schemas)) {
+      getRefAlias({ $ref: `#/components/schemas/${name}` }, ctx, schema);
     }
   }
 

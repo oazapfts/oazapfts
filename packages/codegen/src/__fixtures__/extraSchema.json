@@ -1,0 +1,31 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Extra schema example",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {},
+  "components": {
+    "schemas": {
+      "BlogEntry": {
+        "type": "object",
+        "required": ["id", "title", "content"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": true
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
