@@ -22,6 +22,7 @@ export type OazapftsOptions = {
   mergeReadWriteOnly?: boolean;
   useUnknown?: boolean;
   argumentStyle?: ArgumentStyle;
+  allSchemas?: boolean;
   /**
    * Plugins to apply during code generation.
    * Each plugin receives hooks and can tap into generation steps.

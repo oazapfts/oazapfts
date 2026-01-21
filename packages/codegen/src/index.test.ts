@@ -108,6 +108,7 @@ describe("index exports (public API surface)", () => {
       useUnknown: true,
       optimistic: true,
       unionUndefined: true,
+      allSchemas: false,
       UNSTABLE_plugins: [],
     };
   });
@@ -659,5 +660,21 @@ describe("argumentStyle", () => {
         `function getInventory(opts?: Oazapfts.RequestOpts) { return oazapfts.fetchJson<{ status: 200; data: { [key: string]: number; }; }>("/store/inventory", { ...opts }); }`,
       );
     });
+  });
+});
+
+describe("allSchemas", () => {
+  it("should not include all schemas by default", async () => {
+    const src = await generate(__dirname + "/__fixtures__/extraSchema.json");
+    expect(src).not.toContain(`export type BlogEntry`);
+  });
+
+  it("should include all schemas", async () => {
+    const src = await generate(__dirname + "/__fixtures__/extraSchema.json", {
+      allSchemas: true,
+    });
+    expect(src).toContain(
+      `export type BlogEntry = { id: number; title: string; content: any | null; };`,
+    );
   });
 });

@@ -13,6 +13,7 @@
     "test": "npm run test:unit -- --run && npm run test:e2e",
     "validate": "npm run lint && npm test && npm run test:e2e:clean && npm run type-check",
     "lint": "prettier --check .",
+    "lint:fix": "prettier --write .",
     "type-check": "cd packages/codegen && tsc --noEmit && cd ../runtime && tsc --noEmit",
     "test:unit": "cd packages && vitest",
     "test:e2e": "npm run generate-demo && with-server 'cd demo && vitest --run'",

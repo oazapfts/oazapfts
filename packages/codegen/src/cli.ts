@@ -16,6 +16,7 @@ async function run(argv: ParsedArgs) {
     mergeReadWriteOnly,
     useUnknown,
     argumentStyle,
+    allSchemas,
     help,
     version,
   } = argv;
@@ -59,6 +60,7 @@ async function run(argv: ParsedArgs) {
     useUnknown,
     mergeReadWriteOnly,
     argumentStyle,
+    allSchemas,
   });
 
   if (dest) await writeFile(dest, code);
@@ -80,6 +82,7 @@ function printUsage() {
     --useUnknown
     --mergeReadWriteOnly
     --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
+    --allSchemas
 `);
 }
 
@@ -98,6 +101,7 @@ run(
       "useEnumType",
       "mergeReadWriteOnly",
       "useUnknown",
+      "allSchemas",
     ],
     string: ["argumentStyle"],
   }),
