@@ -288,7 +288,7 @@ export function generateClientMethod(
   ];
 
   // Generate deprecated legacy alias if needed for backward compatibility
-  if (deprecatedLegacyName) {
+  if (deprecatedLegacyName && !ctx.opts.futureStripLegacyMethods) {
     const deprecatedComment = [
       `@deprecated Use {@link ${primaryName}} instead.`,
       summary || description,

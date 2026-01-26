@@ -552,6 +552,45 @@ describe("generateSource", () => {
     expect(src).not.toContain("export function getPets");
   });
 
+  it("should skip deprecated legacy alias when futureStripLegacyMethods is true", async () => {
+    const src = await generate(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {
+          "/product/{product}/accept": {
+            post: {
+              operationId: "product.acceptProduct",
+              tags: ["Product"],
+              parameters: [
+                {
+                  name: "product",
+                  in: "path",
+                  required: true,
+                  description: "The product ID",
+                  schema: { type: "integer" },
+                },
+              ],
+              responses: {
+                200: { description: "ok" },
+              },
+            },
+          },
+        },
+      } as any,
+      { minify: false, futureStripLegacyMethods: true },
+    );
+
+    // Primary function uses normalized operationId
+    expect(src).toContain(
+      "export function productAcceptProduct(product: number, opts?: Oazapfts.RequestOpts)",
+    );
+
+    // Should NOT have deprecated alias when futureStripLegacyMethods is true
+    expect(src).not.toContain("export function postProductByProductAccept");
+    expect(src).not.toContain("@deprecated");
+  });
+
   it("should generate correct array type for prefixItems", async () => {
     const src = await generate(__dirname + "/__fixtures__/prefixItems.json");
     expect(src).toContain("export type Coordinates = [ number, number ];");

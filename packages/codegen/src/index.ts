@@ -24,6 +24,12 @@ export type OazapftsOptions = {
   argumentStyle?: ArgumentStyle;
   allSchemas?: boolean;
   /**
+   * When true, skip generating deprecated legacy method aliases for backward
+   * compatibility. Only the primary normalized operationId-based names will
+   * be generated.
+   */
+  futureStripLegacyMethods?: boolean;
+  /**
    * Plugins to apply during code generation.
    * Each plugin receives hooks and can tap into generation steps.
    */
