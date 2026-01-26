@@ -486,7 +486,7 @@ describe("generateSource", () => {
 
     // Both should have the same implementation
     expect(src).toContain(
-      'return oazapfts.fetchText(`/product/${encodeURIComponent(product)}/accept`',
+      "return oazapfts.fetchText(`/product/${encodeURIComponent(product)}/accept`",
     );
   });
 
@@ -520,7 +520,9 @@ describe("generateSource", () => {
     );
 
     // Deprecated function should have @deprecated JSDoc
-    expect(src).toContain("@deprecated Use {@link apiPetControllerListPetAction}");
+    expect(src).toContain(
+      "@deprecated Use {@link apiPetControllerListPetAction}",
+    );
   });
 
   it("should not emit deprecated alias for simple operationId", async () => {
