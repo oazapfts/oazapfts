@@ -17,6 +17,7 @@ async function run(argv: ParsedArgs) {
     useUnknown,
     argumentStyle,
     allSchemas,
+    futureStripLegacyMethods,
     help,
     version,
   } = argv;
@@ -61,6 +62,7 @@ async function run(argv: ParsedArgs) {
     mergeReadWriteOnly,
     argumentStyle,
     allSchemas,
+    futureStripLegacyMethods,
   });
 
   if (dest) await writeFile(dest, code);
@@ -83,6 +85,7 @@ function printUsage() {
     --mergeReadWriteOnly
     --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
     --allSchemas
+    --futureStripLegacyMethods
 `);
 }
 
@@ -102,6 +105,7 @@ run(
       "mergeReadWriteOnly",
       "useUnknown",
       "allSchemas",
+      "futureStripLegacyMethods",
     ],
     string: ["argumentStyle"],
   }),
