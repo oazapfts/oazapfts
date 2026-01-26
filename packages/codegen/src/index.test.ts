@@ -442,6 +442,44 @@ describe("generateSource", () => {
     expect(src).toContain("getPetById(id: number, { idQuery }");
   });
 
+  it("should fall back to path-based name when operationId contains punctuation", async () => {
+    const src = await generate(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {
+          "/product/{product}/accept": {
+            post: {
+              operationId: "product.acceptProduct",
+              tags: ["Product"],
+              parameters: [
+                {
+                  name: "product",
+                  in: "path",
+                  required: true,
+                  description: "The product ID",
+                  schema: { type: "integer" },
+                },
+              ],
+              responses: {
+                200: { description: "ok" },
+              },
+            },
+          },
+        },
+      } as any,
+      { minify: true },
+    );
+
+    // operationId contains "." so it gets ignored; name is derived from HTTP verb + path.
+    expect(src).toContain(
+      "export function postProductByProductAccept(product: number, opts?: Oazapfts.RequestOpts)",
+    );
+    expect(src).toContain(
+      'return oazapfts.fetchText(`/product/${encodeURIComponent(product)}/accept`, { ...opts, method: "POST" });',
+    );
+  });
+
   it("should generate correct array type for prefixItems", async () => {
     const src = await generate(__dirname + "/__fixtures__/prefixItems.json");
     expect(src).toContain("export type Coordinates = [ number, number ];");
