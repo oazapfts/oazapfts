@@ -442,7 +442,7 @@ describe("generateSource", () => {
     expect(src).toContain("getPetById(id: number, { idQuery }");
   });
 
-  it("should fall back to path-based name when operationId contains punctuation", async () => {
+  it("should normalize operationId with dots and emit deprecated legacy alias", async () => {
     const src = await generate(
       {
         openapi: "3.0.0",
@@ -468,16 +468,88 @@ describe("generateSource", () => {
           },
         },
       } as any,
-      { minify: true },
+      { minify: false },
     );
 
-    // operationId contains "." so it gets ignored; name is derived from HTTP verb + path.
+    // Primary function uses normalized operationId
+    expect(src).toContain(
+      "export function productAcceptProduct(product: number, opts?: Oazapfts.RequestOpts)",
+    );
+
+    // Deprecated legacy alias for backward compatibility
     expect(src).toContain(
       "export function postProductByProductAccept(product: number, opts?: Oazapfts.RequestOpts)",
     );
+
+    // Deprecated function should have @deprecated JSDoc
+    expect(src).toContain("@deprecated Use {@link productAcceptProduct}");
+
+    // Both should have the same implementation
     expect(src).toContain(
-      'return oazapfts.fetchText(`/product/${encodeURIComponent(product)}/accept`, { ...opts, method: "POST" });',
+      'return oazapfts.fetchText(`/product/${encodeURIComponent(product)}/accept`',
     );
+  });
+
+  it("should normalize namespace-style operationId and emit deprecated legacy alias", async () => {
+    const src = await generate(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {
+          "/pets": {
+            get: {
+              operationId: "API\\PetController::listPetAction",
+              responses: {
+                200: { description: "ok" },
+              },
+            },
+          },
+        },
+      } as any,
+      { minify: false },
+    );
+
+    // Primary function uses normalized operationId
+    expect(src).toContain(
+      "export function apiPetControllerListPetAction(opts?: Oazapfts.RequestOpts)",
+    );
+
+    // Deprecated legacy alias for backward compatibility
+    expect(src).toContain(
+      "export function getPets(opts?: Oazapfts.RequestOpts)",
+    );
+
+    // Deprecated function should have @deprecated JSDoc
+    expect(src).toContain("@deprecated Use {@link apiPetControllerListPetAction}");
+  });
+
+  it("should not emit deprecated alias for simple operationId", async () => {
+    const src = await generate(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {
+          "/pets": {
+            get: {
+              operationId: "listPets",
+              responses: {
+                200: { description: "ok" },
+              },
+            },
+          },
+        },
+      } as any,
+      { minify: false },
+    );
+
+    // Only the primary function should exist
+    expect(src).toContain(
+      "export function listPets(opts?: Oazapfts.RequestOpts)",
+    );
+
+    // Should NOT have deprecated comment or getPets fallback
+    expect(src).not.toContain("@deprecated");
+    expect(src).not.toContain("export function getPets");
   });
 
   it("should generate correct array type for prefixItems", async () => {

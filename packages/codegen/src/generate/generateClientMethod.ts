@@ -28,7 +28,11 @@ export function generateClientMethod(
     return [];
   }
 
-  const name = h.getOperationName(method, path, operationId);
+  const { primaryName, deprecatedLegacyName } = h.getOperationNames(
+    method,
+    path,
+    operationId,
+  );
 
   // merge item and op parameters
   const parameters = h.resolveArray(ctx, item.parameters);
@@ -247,37 +251,65 @@ export function generateClientMethod(
     );
   }
 
-  return [
+  const methodBody = cg.block(
+    ts.factory.createReturnStatement(
+      h.wrapResult(
+        h.callOazapftsFunction(
+          {
+            json: "fetchJson",
+            text: "fetchText",
+            blob: "fetchBlob",
+          }[returnType],
+          args,
+          returnType === "json" || returnType === "blob"
+            ? [
+                getTypeFromResponses(responses!, ctx, "readOnly") ||
+                  ts.SyntaxKind.AnyKeyword,
+              ]
+            : undefined,
+        ),
+        ctx,
+      ),
+    ),
+  );
+
+  const result: ts.FunctionDeclaration[] = [
     cg.addComment(
       cg.createFunctionDeclaration(
-        name,
+        primaryName,
         {
           modifiers: [cg.modifier.export],
         },
         methodParams,
-        cg.block(
-          ts.factory.createReturnStatement(
-            h.wrapResult(
-              h.callOazapftsFunction(
-                {
-                  json: "fetchJson",
-                  text: "fetchText",
-                  blob: "fetchBlob",
-                }[returnType],
-                args,
-                returnType === "json" || returnType === "blob"
-                  ? [
-                      getTypeFromResponses(responses!, ctx, "readOnly") ||
-                        ts.SyntaxKind.AnyKeyword,
-                    ]
-                  : undefined,
-              ),
-              ctx,
-            ),
-          ),
-        ),
+        methodBody,
       ),
       summary || description,
     ),
   ];
+
+  // Generate deprecated legacy alias if needed for backward compatibility
+  if (deprecatedLegacyName) {
+    const deprecatedComment = [
+      `@deprecated Use {@link ${primaryName}} instead.`,
+      summary || description,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    result.push(
+      cg.addComment(
+        cg.createFunctionDeclaration(
+          deprecatedLegacyName,
+          {
+            modifiers: [cg.modifier.export],
+          },
+          methodParams,
+          methodBody,
+        ),
+        deprecatedComment,
+      ),
+    );
+  }
+
+  return result;
 }
