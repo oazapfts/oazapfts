@@ -1,8 +1,14 @@
-import { factory } from "typescript";
+import ts, { factory } from "typescript";
 import { OazapftsContext } from "../context";
-import { isTrueEnum, resolve, toIdentifier } from "../helpers";
+import {
+  getEnumStyle,
+  isNamedEnumSchema,
+  resolve,
+  toIdentifier,
+} from "../helpers";
 import * as OpenApi from "../helpers/openApi3-x";
 import { getTrueEnum } from "./getTrueEnum";
+import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
 
 /**
@@ -16,7 +22,8 @@ export function getDiscriminatorType(
   propertyName: string,
   matches: string[],
 ) {
-  if (!ctx.opts.useEnumType) {
+  const enumStyle = getEnumStyle(ctx.opts);
+  if (enumStyle === "union") {
     return getTypeFromEnum(matches);
   }
 
@@ -44,18 +51,29 @@ export function getDiscriminatorType(
 
   if (
     !discriminatorPropertySchema ||
-    !isTrueEnum(discriminatorPropertySchema, ctx, propertyName)
+    !isNamedEnumSchema(discriminatorPropertySchema, propertyName)
   ) {
     return getTypeFromEnum(matches);
   }
 
-  const enumTypeRef = getTrueEnum(
-    discriminatorPropertySchema,
-    propertyName,
-    ctx,
-  );
+  const enumTypeRef =
+    enumStyle === "as-const"
+      ? getAsConstEnum(discriminatorPropertySchema, propertyName, ctx)
+      : getTrueEnum(discriminatorPropertySchema, propertyName, ctx);
+
+  const enumName = ts.isIdentifier(enumTypeRef.typeName)
+    ? (enumTypeRef.typeName.escapedText as string)
+    : "";
 
   const memberTypes = matches.map((value) => {
+    if (enumStyle === "as-const") {
+      return factory.createTypeQueryNode(
+        factory.createQualifiedName(
+          factory.createIdentifier(enumName),
+          factory.createIdentifier(toIdentifier(value, true)),
+        ),
+      );
+    }
     return factory.createTypeReferenceNode(
       factory.createQualifiedName(
         enumTypeRef.typeName,

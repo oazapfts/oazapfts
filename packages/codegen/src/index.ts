@@ -10,6 +10,7 @@ import {
   UNSTABLE_applyPlugins,
 } from "./plugin";
 import { ArgumentStyle } from "./generate/generateClientMethod";
+import { EnumStyle } from "./helpers/getEnumStyle";
 
 export { cg as UNSTABLE_cg, type OpenAPI };
 
@@ -19,6 +20,11 @@ export type OazapftsOptions = {
   optimistic?: boolean;
   unionUndefined?: boolean;
   useEnumType?: boolean;
+  /**
+   * Controls how enums are generated in TypeScript.
+   * Takes precedence over `useEnumType` if both are specified.
+   */
+  enumStyle?: EnumStyle;
   mergeReadWriteOnly?: boolean;
   useUnknown?: boolean;
   argumentStyle?: ArgumentStyle;

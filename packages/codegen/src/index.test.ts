@@ -814,6 +814,162 @@ describe("argumentStyle", () => {
   });
 });
 
+describe("enumStyle: as-const", () => {
+  let src: string;
+
+  beforeAll(async () => {
+    src = await generate(path.join(demoFolder, "./petstore.json"), {
+      enumStyle: "as-const",
+    });
+  });
+
+  it("should create as-const string objects", () => {
+    expect(src).toContain(
+      `export const Status = { Available: "available", Pending: "pending", Sold: "sold", Private: "private", $10Percent: "10percent" } as const;`,
+    );
+    expect(src).toContain(
+      `export type Status = (typeof Status)[keyof typeof Status];`,
+    );
+  });
+
+  it("should create as-const objects with enumNames", () => {
+    expect(src).toContain(
+      `export const Channel = { Pending: "P", Margin: "M", Gap: "G" } as const;`,
+    );
+    expect(src).toContain(
+      `export type Channel = (typeof Channel)[keyof typeof Channel];`,
+    );
+  });
+
+  it("should create array of as-const enums", () => {
+    expect(src).toContain(
+      `export const Activities = { Running: "running", Playing: "playing", Laying: "laying", Begging: "begging" } as const;`,
+    );
+    expect(src).toContain(`: Activities[]`);
+  });
+
+  it("should handle values with the same name", () => {
+    expect(src).toContain(
+      `export const Status2 = { Placed: "placed", Approved: "approved", Delivered: "delivered" } as const;`,
+    );
+  });
+
+  it("should avoid name conflicts between types and enums", () => {
+    expect(src).toContain(
+      `export type Category = { id?: number; name?: string; };`,
+    );
+    expect(src).not.toContain(`export const Category =`);
+    expect(src).toContain(
+      `export const Category2 = { Rich: "rich", Wealthy: "wealthy", Poor: "poor" } as const;`,
+    );
+  });
+});
+
+describe("enumStyle: as-const with discriminator", () => {
+  it("should use typeof member references in discriminator types", async () => {
+    const allOfFixture = JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, "__fixtures__", "allOf.json"),
+        "utf8",
+      ),
+    );
+
+    allOfFixture.components.schemas.Pet.properties.petType = {
+      type: "string",
+      enum: ["dog", "Cat", "Lizard"],
+    };
+
+    allOfFixture.components.schemas.Pet.discriminator.mapping = {
+      dog: "#/components/schemas/Dog",
+      Cat: "#/components/schemas/Cat",
+      Lizard: "#/components/schemas/Lizard",
+    };
+
+    const src = await generate(allOfFixture, {
+      enumStyle: "as-const",
+      minify: false,
+    });
+
+    // Should create the as-const object and companion type
+    expect(
+      findCodeSection(src, {
+        matching: "export const PetType",
+        after: 6,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export const PetType = {
+          Dog: "dog",
+          Cat: "Cat",
+          Lizard: "Lizard"
+      } as const;
+      export type PetType = (typeof PetType)[keyof typeof PetType];
+      "
+    `);
+
+    // Should use typeof member references in discriminator types
+    expect(
+      findCodeSection(src, {
+        matching: "export type Dog =",
+        after: 4,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export type Dog = {
+          petType: typeof PetType.Dog;
+      } & PetBase & {
+          bark?: string;
+      };"
+    `);
+
+    expect(
+      findCodeSection(src, {
+        matching: "export type Cat =",
+        after: 4,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export type Cat = {
+          petType: typeof PetType.Cat;
+      } & PetBase & {
+          name?: string;
+      };"
+    `);
+
+    // Base should use the as-const type
+    expect(
+      findCodeSection(src, {
+        matching: "export type PetBase =",
+        after: 2,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export type PetBase = {
+          petType: PetType;
+      };"
+    `);
+  });
+});
+
+describe("enumStyle takes precedence over useEnumType", () => {
+  it("should use as-const even when useEnumType is true", async () => {
+    const src = await generate(path.join(demoFolder, "./petstore.json"), {
+      useEnumType: true,
+      enumStyle: "as-const",
+    });
+    expect(src).toContain(`as const;`);
+    expect(src).not.toContain(`export enum Status`);
+  });
+
+  it("should use union when enumStyle is union even if useEnumType is true", async () => {
+    const src = await generate(path.join(demoFolder, "./petstore.json"), {
+      useEnumType: true,
+      enumStyle: "union",
+    });
+    expect(src).not.toContain(`export enum`);
+    expect(src).not.toContain(`as const;`);
+    expect(src).toContain(
+      `export type Option = ("one" | "two" | "three")[];`,
+    );
+  });
+});
+
 describe("allSchemas", () => {
   it("should not include all schemas by default", async () => {
     const src = await generate(__dirname + "/__fixtures__/extraSchema.json");

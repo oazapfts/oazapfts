@@ -1,15 +1,16 @@
-import { OazapftsContext } from "../context";
 import { SchemaObject } from "./openApi3-x";
 
-export function isTrueEnum(
+/**
+ * Check if a schema is suitable for generating a named enum declaration
+ * (has enum values, has a name, and is not a boolean type).
+ */
+export function isNamedEnumSchema(
   schema: SchemaObject,
-  ctx: OazapftsContext,
   name?: string,
 ): name is string {
   return Boolean(
     typeof schema !== "boolean" &&
     schema.enum &&
-    ctx.opts.useEnumType &&
     name &&
     schema.type !== "boolean",
   );
