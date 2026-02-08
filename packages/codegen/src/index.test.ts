@@ -820,48 +820,84 @@ describe("enumStyle: as-const", () => {
   beforeAll(async () => {
     src = await generate(path.join(demoFolder, "./petstore.json"), {
       enumStyle: "as-const",
+      minify: false,
     });
   });
 
   it("should create as-const string objects", () => {
-    expect(src).toContain(
-      `export const Status = { Available: "available", Pending: "pending", Sold: "sold", Private: "private", $10Percent: "10percent" } as const;`,
-    );
-    expect(src).toContain(
-      `export type Status = (typeof Status)[keyof typeof Status];`,
-    );
+    expect(
+      findCodeSection(src, { matching: "export const Status =", after: 7 }),
+    ).toMatchInlineSnapshot(`
+      "export const Status = {
+          Available: "available",
+          Pending: "pending",
+          Sold: "sold",
+          Private: "private",
+          $10Percent: "10percent"
+      } as const;
+      export type Status = (typeof Status)[keyof typeof Status];"
+    `);
   });
 
   it("should create as-const objects with enumNames", () => {
-    expect(src).toContain(
-      `export const Channel = { Pending: "P", Margin: "M", Gap: "G" } as const;`,
-    );
-    expect(src).toContain(
-      `export type Channel = (typeof Channel)[keyof typeof Channel];`,
-    );
+    expect(
+      findCodeSection(src, { matching: "export const Channel =", after: 5 }),
+    ).toMatchInlineSnapshot(`
+      "export const Channel = {
+          Pending: "P",
+          Margin: "M",
+          Gap: "G"
+      } as const;
+      export type Channel = (typeof Channel)[keyof typeof Channel];"
+    `);
   });
 
   it("should create array of as-const enums", () => {
-    expect(src).toContain(
-      `export const Activities = { Running: "running", Playing: "playing", Laying: "laying", Begging: "begging" } as const;`,
-    );
+    expect(
+      findCodeSection(src, {
+        matching: "export const Activities =",
+        after: 6,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export const Activities = {
+          Running: "running",
+          Playing: "playing",
+          Laying: "laying",
+          Begging: "begging"
+      } as const;
+      export type Activities = (typeof Activities)[keyof typeof Activities];"
+    `);
     expect(src).toContain(`: Activities[]`);
   });
 
   it("should handle values with the same name", () => {
-    expect(src).toContain(
-      `export const Status2 = { Placed: "placed", Approved: "approved", Delivered: "delivered" } as const;`,
-    );
+    expect(
+      findCodeSection(src, { matching: "export const Status2 =", after: 5 }),
+    ).toMatchInlineSnapshot(`
+      "export const Status2 = {
+          Placed: "placed",
+          Approved: "approved",
+          Delivered: "delivered"
+      } as const;
+      export type Status2 = (typeof Status2)[keyof typeof Status2];"
+    `);
   });
 
   it("should avoid name conflicts between types and enums", () => {
     expect(src).toContain(
-      `export type Category = { id?: number; name?: string; };`,
+      `export type Category = {\n    id?: number;\n    name?: string;\n};`,
     );
     expect(src).not.toContain(`export const Category =`);
-    expect(src).toContain(
-      `export const Category2 = { Rich: "rich", Wealthy: "wealthy", Poor: "poor" } as const;`,
-    );
+    expect(
+      findCodeSection(src, { matching: "export const Category2 =", after: 5 }),
+    ).toMatchInlineSnapshot(`
+      "export const Category2 = {
+          Rich: "rich",
+          Wealthy: "wealthy",
+          Poor: "poor"
+      } as const;
+      export type Category2 = (typeof Category2)[keyof typeof Category2];"
+    `);
   });
 });
 

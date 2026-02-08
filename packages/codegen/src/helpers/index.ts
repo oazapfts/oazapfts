@@ -13,7 +13,7 @@ export * from "./wrapResult";
 export * from "./getReferenceName";
 export * from "./findAvailableRef";
 export * from "./getRefName";
-export * from "./isTrueEnum";
+export * from "./isNamedEnumSchema";
 export * from "./getEnumStyle";
 export * from "./getEnumUniqueAlias";
 export * from "./getCustomNames";

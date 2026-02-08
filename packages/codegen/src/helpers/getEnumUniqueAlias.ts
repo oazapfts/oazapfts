@@ -7,7 +7,7 @@ export function getEnumUniqueAlias(
   ctx: OazapftsContext,
 ) {
   // If enum name already exists and have the same values
-  if (ctx.enumRefs[name] && ctx.enumRefs[name].values == values) {
+  if (ctx.enumRefs[name] && ctx.enumRefs[name].values === values) {
     return name;
   }
 

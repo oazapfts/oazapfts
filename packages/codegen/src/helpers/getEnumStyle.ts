@@ -9,7 +9,7 @@ export function getEnumStyle(opts: {
   enumStyle?: EnumStyle;
   useEnumType?: boolean;
 }): EnumStyle {
-  if (opts.enumStyle) return opts.enumStyle;
+  if (opts.enumStyle !== undefined) return opts.enumStyle;
   if (opts.useEnumType) return "enum";
   return "union";
 }

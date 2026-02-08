@@ -101,7 +101,7 @@ export function getAsConstEnum(
 
   ctx.enumRefs[proposedName] = {
     values: stringEnumValue,
-    type: ts.factory.createTypeReferenceNode(name, undefined),
+    type,
   };
 
   return type;

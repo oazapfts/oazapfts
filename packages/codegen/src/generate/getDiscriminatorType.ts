@@ -12,7 +12,7 @@ import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
 
 /**
- * Get enum member reference type for discriminator values when useEnumType is enabled
+ * Get enum member reference type for discriminator values when enumStyle is "enum" or "as-const"
  */
 export function getDiscriminatorType(
   ctx: OazapftsContext,
