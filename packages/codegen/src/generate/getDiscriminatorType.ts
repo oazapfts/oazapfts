@@ -36,7 +36,6 @@ export function getDiscriminatorType(
   );
 
   if (!discriminatorPropertySchema && discriminatingSchema.allOf) {
-    // Search in allOf parents
     for (const allOfSchema of discriminatingSchema.allOf) {
       const resolvedAllOf = resolve(allOfSchema, ctx);
       if (resolvedAllOf.properties?.[propertyName]) {

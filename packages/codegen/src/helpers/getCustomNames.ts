@@ -1,5 +1,9 @@
 import { SchemaObject } from "./openApi3-x";
 
+/**
+ * Extract custom member names from `x-enumNames` or `x-enum-varnames` extensions.
+ * Returns `undefined` when neither extension is present.
+ */
 export function getCustomNames(
   schema: Exclude<SchemaObject, boolean>,
   values: unknown[],

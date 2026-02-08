@@ -926,7 +926,6 @@ describe("enumStyle: as-const with discriminator", () => {
       minify: false,
     });
 
-    // Should create the as-const object and companion type
     expect(
       findCodeSection(src, {
         matching: "export const PetType",
@@ -942,7 +941,6 @@ describe("enumStyle: as-const with discriminator", () => {
       "
     `);
 
-    // Should use typeof member references in discriminator types
     expect(
       findCodeSection(src, {
         matching: "export type Dog =",
@@ -969,7 +967,6 @@ describe("enumStyle: as-const with discriminator", () => {
       };"
     `);
 
-    // Base should use the as-const type
     expect(
       findCodeSection(src, {
         matching: "export type PetBase =",
