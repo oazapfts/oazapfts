@@ -3,7 +3,7 @@ export type EnumStyle = (typeof enumStyleOptions)[number];
 
 /**
  * Resolve the effective enum style from options.
- * `enumStyle` takes precedence over `useEnumType` for backward compatibility.
+ * `enumStyle` takes precedence over the deprecated `useEnumType`.
  */
 export function getEnumStyle(opts: {
   enumStyle?: EnumStyle;

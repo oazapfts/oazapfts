@@ -92,7 +92,7 @@ function printUsage() {
     --help,    -h
     --version, -v
     --optimistic
-    --useEnumType
+    --useEnumType (deprecated, use --enumStyle=enum)
     --enumStyle=<${enumStyleOptions.join(" | ")}> (default: union)
     --useUnknown
     --mergeReadWriteOnly

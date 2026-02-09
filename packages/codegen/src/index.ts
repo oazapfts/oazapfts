@@ -19,6 +19,9 @@ export type OazapftsOptions = {
   exclude?: string[];
   optimistic?: boolean;
   unionUndefined?: boolean;
+  /**
+   * @deprecated Use `enumStyle: "enum"` instead.
+   */
   useEnumType?: boolean;
   /**
    * Controls how enums are generated in TypeScript.
