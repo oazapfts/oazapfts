@@ -55,10 +55,7 @@ async function run(argv: ParsedArgs) {
     process.exit(1);
   }
 
-  if (
-    enumStyle !== undefined &&
-    !enumStyleOptions.includes(enumStyle)
-  ) {
+  if (enumStyle !== undefined && !enumStyleOptions.includes(enumStyle)) {
     console.error(
       `--enumStyle should be one of <${enumStyleOptions.join(
         " | ",

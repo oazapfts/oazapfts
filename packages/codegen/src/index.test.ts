@@ -997,9 +997,7 @@ describe("enumStyle takes precedence over useEnumType", () => {
     });
     expect(src).not.toContain(`export enum`);
     expect(src).not.toContain(`as const;`);
-    expect(src).toContain(
-      `export type Option = ("one" | "two" | "three")[];`,
-    );
+    expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
   });
 });
 
