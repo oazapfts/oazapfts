@@ -60,25 +60,17 @@ export function getDiscriminatorType(
       ? getAsConstEnum(discriminatorPropertySchema, propertyName, ctx)
       : getTrueEnum(discriminatorPropertySchema, propertyName, ctx);
 
-  const enumName = ts.isIdentifier(enumTypeRef.typeName)
-    ? (enumTypeRef.typeName.escapedText as string)
-    : "";
-
   const memberTypes = matches.map((value) => {
-    if (enumStyle === "as-const") {
-      return factory.createTypeQueryNode(
-        factory.createQualifiedName(
-          factory.createIdentifier(enumName),
-          factory.createIdentifier(toIdentifier(value, true)),
-        ),
-      );
-    }
-    return factory.createTypeReferenceNode(
-      factory.createQualifiedName(
-        enumTypeRef.typeName,
-        factory.createIdentifier(toIdentifier(value, true)),
-      ),
+    const entity = factory.createQualifiedName(
+      enumTypeRef.typeName,
+      factory.createIdentifier(toIdentifier(value, true)),
     );
+
+    if (enumStyle === "as-const") {
+      return factory.createTypeQueryNode(entity);
+    }
+
+    return factory.createTypeReferenceNode(entity);
   });
 
   return memberTypes.length === 1
