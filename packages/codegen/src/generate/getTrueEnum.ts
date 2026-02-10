@@ -55,7 +55,7 @@ export function getTrueEnum(
       );
     }
     return ts.factory.createEnumMember(
-      ts.factory.createIdentifier(h.toIdentifier(s, true)),
+      ts.factory.createIdentifier(h.toIdentifier(String(s), true)),
       cg.createLiteral(s),
     );
   });

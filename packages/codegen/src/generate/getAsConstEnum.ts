@@ -56,7 +56,7 @@ export function getAsConstEnum(
       );
     }
     return ts.factory.createPropertyAssignment(
-      ts.factory.createIdentifier(h.toIdentifier(s, true)),
+      ts.factory.createIdentifier(h.toIdentifier(String(s), true)),
       cg.createLiteral(s),
     );
   });
