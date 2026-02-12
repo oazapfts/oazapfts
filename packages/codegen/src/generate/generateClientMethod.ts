@@ -10,6 +10,7 @@ import { getTypeFromSchema } from "./getTypeForSchema";
 import { getResponseType } from "./getResponseType";
 import { getTypeFromResponses } from "./getTypeFromResponses";
 import * as OpenAPI from "../helpers/openApi3-x";
+import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
 
 export const argumentStyleOptions = ["positional", "object"] as const;
 export type ArgumentStyle = (typeof argumentStyleOptions)[number];
@@ -17,12 +18,13 @@ export type ArgumentStyle = (typeof argumentStyleOptions)[number];
 export function generateClientMethod(
   method: h.HttpMethod,
   path: string,
-  op: OpenAPI.OperationObject,
-  item: OpenAPI.PathItemObject,
+  operation: OpenAPI.OperationObject,
+  pathItem: OpenAPI.PathItemObject,
   ctx: OazapftsContext,
+  hooks: UNSTABLE_OazapftsPluginHooks,
 ): ts.FunctionDeclaration[] {
   const { operationId, requestBody, responses, summary, description, tags } =
-    op;
+    operation;
 
   if (h.skip(ctx, tags)) {
     return [];
@@ -35,8 +37,8 @@ export function generateClientMethod(
   );
 
   // merge item and op parameters
-  const parameters = h.resolveArray(ctx, item.parameters);
-  for (const p of h.resolveArray(ctx, op.parameters)) {
+  const parameters = h.resolveArray(ctx, pathItem.parameters);
+  for (const p of h.resolveArray(ctx, operation.parameters)) {
     const existing = parameters.find((r) => r.name === p.name && r.in === p.in);
     if (!existing) {
       parameters.push(p);
@@ -186,11 +188,25 @@ export function generateClientMethod(
     const paramsByFormatter = _.groupBy(query, h.getFormatter);
     qs = h.callQsFunction(
       "query",
-      Object.entries(paramsByFormatter).map(([format, params]) => {
-        //const [allowReserved, encodeReserved] = _.partition(params, "allowReserved");
-        return h.callQsFunction(format, [
-          cg.createObjectLiteral(params.map((p) => [p.name, getArgName(p)])),
-        ]);
+      Object.entries(paramsByFormatter).map(([formatter, parameters]) => {
+        const args = hooks.querySerializerArgs.call(
+          [
+            cg.createObjectLiteral(
+              parameters.map((p) => [p.name, getArgName(p)]),
+            ),
+          ],
+          {
+            method,
+            path,
+            operation,
+            pathItem,
+            formatter,
+            parameters,
+            query,
+          },
+          ctx,
+        );
+        return h.callQsFunction(formatter, args);
       }),
     );
   }
