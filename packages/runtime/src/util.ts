@@ -3,6 +3,10 @@ type Encoders = Array<(s: string | number | boolean) => string>;
 // Encode param names and values as URIComponent
 export const encodeReserved = [encodeURIComponent, encodeURIComponent];
 export const allowReserved = [encodeURIComponent, encodeURI];
+export const numericBooleanReserved = [
+  encodeURIComponent,
+  encodeNumericBoolean,
+];
 
 /**
  * Creates a tag-function to encode template strings with the given encoders.
@@ -62,4 +66,10 @@ function castNonPrimitive(v: unknown) {
     return v;
   }
   return String(v);
+}
+
+function encodeNumericBoolean(uriComponent: boolean | string | number) {
+  if (uriComponent === true) return "1";
+  if (uriComponent === false) return "0";
+  return encodeURIComponent(uriComponent);
 }

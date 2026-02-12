@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as qs from "./query";
+import { numericBooleanReserved } from "./util";
 
 describe("delimited", () => {
   it("should use commas", () => {
@@ -22,6 +23,14 @@ describe("delimited", () => {
   it("should keep zeros", () => {
     expect(qs.form({ id: 0 })).toEqual("id=0");
   });
+  it("should support numeric booleans with custom encoder", () => {
+    expect(
+      qs.form(
+        { is_reviewed: true, include_archived: false },
+        numericBooleanReserved,
+      ),
+    ).toEqual("is_reviewed=1&include_archived=0");
+  });
 });
 
 describe("explode", () => {
@@ -35,6 +44,14 @@ describe("explode", () => {
   });
   it("should omit undefined values", () => {
     expect(qs.explode({ id: 23, foo: undefined })).toEqual("id=23");
+  });
+  it("should support numeric booleans with custom encoder", () => {
+    expect(
+      qs.explode(
+        { is_reviewed: true, flags: [true, false] },
+        numericBooleanReserved,
+      ),
+    ).toEqual("is_reviewed=1&flags=1&flags=0");
   });
 });
 
@@ -58,6 +75,14 @@ describe("deep", () => {
     expect(qs.deep({ names: ["Felix", "Dario"] })).toEqual(
       "names[]=Felix&names[]=Dario",
     );
+  });
+  it("should support numeric booleans with custom encoder", () => {
+    expect(
+      qs.deep(
+        { is_reviewed: true, flags: [true, false] },
+        numericBooleanReserved,
+      ),
+    ).toEqual("is_reviewed=1&flags[]=1&flags[]=0");
   });
 });
 
