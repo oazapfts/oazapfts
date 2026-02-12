@@ -1,5 +1,9 @@
 import ts from "typescript";
-import { AsyncSeriesWaterfallHook, AsyncSeriesHook } from "tapable";
+import {
+  AsyncSeriesWaterfallHook,
+  AsyncSeriesHook,
+  SyncWaterfallHook,
+} from "tapable";
 import type { OazapftsContext } from "./context";
 import type * as OpenApi from "./helpers/openApi3-x";
 import { HttpMethod } from "./helpers";
@@ -23,6 +27,20 @@ export type UNSTABLE_OazapftsPluginFn = (
 ) => void | Promise<void>;
 export type UNSTABLE_OazapftsPlugin = UNSTABLE_OazapftsPluginFn &
   UNSTABLE_OazapftsPluginOptions;
+
+export type UNSTABLE_QuerySerializerHookArgs = [
+  ts.Expression[],
+  {
+    method: HttpMethod;
+    path: string;
+    operation: OpenApi.OperationObject;
+    pathItem: OpenApi.PathItemObject;
+    formatter: string;
+    parameters: OpenApi.ParameterObject[];
+    query: OpenApi.ParameterObject[];
+  },
+  OazapftsContext,
+];
 
 export type UNSTABLE_OazapftsPluginHooks = {
   /**
@@ -49,6 +67,11 @@ export type UNSTABLE_OazapftsPluginHooks = {
     ]
   >;
   /**
+   * Customize query serializer call arguments for each formatter call.
+   * Default behavior is identity (returns the original args unchanged).
+   */
+  querySerializerArgs: SyncWaterfallHook<UNSTABLE_QuerySerializerHookArgs>;
+  /**
    * Called after the full AST has been generated, before printing to string.
    * Use this to add/modify/remove statements from the final source file.
    */
@@ -74,6 +97,10 @@ export function UNSTABLE_createHooks() {
     generateMethod: new AsyncSeriesWaterfallHook(
       ["methods", "endpoint", "ctx"],
       "generateMethod",
+    ),
+    querySerializerArgs: new SyncWaterfallHook(
+      ["args", "queryContext", "ctx"],
+      "querySerializerArgs",
     ),
     astGenerated: new AsyncSeriesWaterfallHook(["ast", "ctx"], "astGenerated"),
   } satisfies UNSTABLE_OazapftsPluginHooks;

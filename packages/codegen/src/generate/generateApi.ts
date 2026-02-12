@@ -36,6 +36,7 @@ export async function generateApi(
         operation as OpenAPI.OperationObject,
         pathItem,
         ctx,
+        hooks,
       );
 
       // Hook: generateMethod - allow plugins to modify/replace methods

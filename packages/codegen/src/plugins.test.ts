@@ -5,9 +5,15 @@ import {
   UNSTABLE_OazapftsPlugin,
   UNSTABLE_sortPlugins,
   UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+  UNSTABLE_QuerySerializerHookArgs,
 } from "./plugin";
-import { Document } from "./helpers/openApi3-x";
-import { createContext } from "./context";
+import {
+  Document,
+  OperationObject,
+  ParameterObject,
+  PathItemObject,
+} from "./helpers/openApi3-x";
+import { createContext, OazapftsContext } from "./context";
 
 // Minimal spec for testing
 function createMinimalSpec(overrides: Partial<Document> = {}): Document {
@@ -19,14 +25,21 @@ function createMinimalSpec(overrides: Partial<Document> = {}): Document {
   };
 }
 
+const TEST_CONTEXT = Symbol("TEST_CONTEXT");
+
 // Helper to generate source from inline spec
 async function generate(
   spec: Document,
   plugins: UNSTABLE_OazapftsPlugin[] = [],
 ): Promise<string> {
   const ctx = createContext(spec);
+  ctx[TEST_CONTEXT] = true;
   const ast = await generateAst(ctx, plugins);
   return printAst(ast);
+}
+
+function isTestContext(ctx: unknown): ctx is OazapftsContext {
+  return typeof ctx === "object" && ctx !== null && ctx[TEST_CONTEXT] === true;
 }
 
 describe("Plugin System", () => {
@@ -119,6 +132,14 @@ describe("Plugin System", () => {
           "/test": {
             get: {
               operationId: "test",
+              parameters: [
+                {
+                  name: "test",
+                  in: "query",
+                  required: true,
+                  schema: { type: "string" },
+                },
+              ],
               responses: { "200": { description: "OK" } },
             },
           },
@@ -131,6 +152,10 @@ describe("Plugin System", () => {
           callOrder.push("generateMethod");
           return methods;
         });
+        hooks.querySerializerArgs.tap("test", (args) => {
+          callOrder.push("querySerializerArgs");
+          return args;
+        });
         hooks.astGenerated.tap("test", (ast) => {
           callOrder.push("astGenerated");
           return ast;
@@ -139,7 +164,12 @@ describe("Plugin System", () => {
 
       await generate(spec, [plugin]);
 
-      expect(callOrder).toEqual(["prepare", "generateMethod", "astGenerated"]);
+      expect(callOrder).toEqual([
+        "prepare",
+        "querySerializerArgs",
+        "generateMethod",
+        "astGenerated",
+      ]);
     });
 
     it("should support async plugins", async () => {
@@ -662,6 +692,71 @@ describe("Plugin System", () => {
       expect(src).toContain("customImplementation");
       expect(src).toContain('return "custom"');
       expect(src).not.toContain("testOp");
+    });
+  });
+
+  describe("querySerializerArgs hook", () => {
+    it("should support modifying query serializer args", async () => {
+      const path = "/test";
+      const parameters: ParameterObject[] = [
+        {
+          name: "one",
+          in: "query",
+          required: true,
+          schema: { type: "string" },
+        },
+        {
+          name: "two",
+          in: "query",
+          required: true,
+          style: "deepObject",
+          schema: { type: "object", properties: { test: { type: "string" } } },
+        },
+      ];
+      const pathItem: PathItemObject = {
+        get: {
+          operationId: "testOp",
+          parameters,
+          responses: { "200": { description: "OK" } },
+        },
+      };
+      const operation: OperationObject = {
+        operationId: "testOp",
+        parameters,
+        responses: { "200": { description: "OK" } },
+      };
+      const spec = createMinimalSpec({
+        paths: {
+          [path]: pathItem,
+        },
+      });
+
+      const spy = vi.fn((..._: UNSTABLE_QuerySerializerHookArgs) => [
+        ts.factory.createIdentifier("hiiiiii"),
+      ]);
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.querySerializerArgs.tap("test", spy);
+      };
+
+      const src = await generate(spec, [plugin]);
+      expect(src).toContain(
+        "/test${QS.query(QS.explode(hiiiiii), QS.deep(hiiiiii))}",
+      );
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      const [exp, queryContext, ctx] = spy.mock.calls[0];
+      expect(ts.isObjectLiteralExpression(exp[0])).toEqual(true);
+      expect(queryContext).toEqual({
+        formatter: "explode",
+        method: "GET",
+        operation,
+        parameters: [parameters[0]],
+        path,
+        pathItem,
+        query: parameters,
+      });
+      expect(isTestContext(ctx)).toEqual(true);
     });
   });
 
