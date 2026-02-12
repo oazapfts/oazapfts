@@ -109,6 +109,7 @@ describe("index exports (public API surface)", () => {
       optimistic: true,
       unionUndefined: true,
       allSchemas: false,
+      numericBooleanQueryParameters: true,
       UNSTABLE_plugins: [],
     };
   });
@@ -811,6 +812,71 @@ describe("argumentStyle", () => {
         `function getInventory(opts?: Oazapfts.RequestOpts) { return oazapfts.fetchJson<{ status: 200; data: { [key: string]: number; }; }>("/store/inventory", { ...opts }); }`,
       );
     });
+  });
+});
+
+describe("numericBooleanQueryParameters", () => {
+  it("passes numeric boolean encoder to query serializers", async () => {
+    const src = await generate(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {
+          "/test": {
+            get: {
+              parameters: [
+                {
+                  name: "test",
+                  in: "query",
+                  required: true,
+                  schema: { type: "boolean" },
+                },
+              ],
+            },
+          },
+          "/negative": {
+            get: {
+              parameters: [
+                {
+                  name: "negative",
+                  in: "query",
+                  required: true,
+                  schema: { type: "string" },
+                },
+              ],
+            },
+          },
+        },
+      } as any,
+      { minify: false, numericBooleanQueryParameters: true },
+    );
+
+    expect(
+      findCodeSection(src, { matching: "export function getTest", after: 6 }),
+    ).toMatchInlineSnapshot(`
+      "export function getTest(test: boolean, opts?: Oazapfts.RequestOpts) {
+          return oazapfts.fetchText(\`/test\${QS.query(QS.explode({
+              test
+          }, QS.numericBooleanReserved))}\`, {
+              ...opts
+          });
+      }"
+    `);
+
+    expect(
+      findCodeSection(src, {
+        matching: "export function getNegative",
+        after: 6,
+      }),
+    ).toMatchInlineSnapshot(`
+      "export function getNegative(negative: string, opts?: Oazapfts.RequestOpts) {
+          return oazapfts.fetchText(\`/negative\${QS.query(QS.explode({
+              negative
+          }))}\`, {
+              ...opts
+          });
+      }"
+    `);
   });
 });
 

@@ -41,6 +41,7 @@ Options:
 --argumentStyle=<positional | object> (default: positional)
 --allSchemas
 --futureStripLegacyMethods
+--numericBooleanQueryParameters
 ```
 
 Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either json or yml) and `<filename>` is the location of the `.ts` file to be generated. If the filename is omitted, the code is written to stdout.
@@ -62,6 +63,8 @@ Where `<spec>` is the URL or local path of an OpenAPI or Swagger spec (in either
 - `--futureStripLegacyMethods` skip generating deprecated legacy method aliases.  
   By default, when an `operationId` contains special characters (like dots or colons, e.g. `scope1.userAccount.get`), oazapfts generates both a normalized method name (`scope1UserAccountGet`) and a deprecated fallback using the HTTP verb and path (`getUsersById`) for backward compatibility. Use this flag to only generate the normalized operationId-based names.
   The next major version will default to this behavior.
+
+- `--numericBooleanQueryParameters` when true, serialize boolean query parameters as `1 | 0` instead of `true | false`.
 
 ## Consuming the generated API
 
