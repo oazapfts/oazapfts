@@ -16,8 +16,8 @@ export function deep(
   params: Record<string, any>,
   [k, v] = encodeReserved,
 ): string {
-  const qk = encode([(s) => s, k]);
-  const qv = encode([(s) => s, v]);
+  const qk = encode([(s) => String(s), k]);
+  const qv = encode([(s) => String(s), v]);
   // don't add index to arrays
   // https://github.com/expressjs/body-parser/issues/289
   const visit = (obj: any, prefix = ""): string =>

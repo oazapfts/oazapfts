@@ -1,4 +1,4 @@
-type Encoders = Array<(s: string) => string>;
+type Encoders = Array<(s: string | number | boolean) => string>;
 
 // Encode param names and values as URIComponent
 export const encodeReserved = [encodeURIComponent, encodeURIComponent];
@@ -24,7 +24,7 @@ export function encode(encoders: Encoders, delimiter = ",") {
       return flat.map(encoder).join(delimiter);
     }
 
-    return encoder(String(v));
+    return encoder(castNonPrimitive(v));
   };
 
   return (strings: TemplateStringsArray, ...values: any[]) => {
@@ -51,4 +51,15 @@ export function joinUrl(...parts: Array<string | undefined>) {
     .map((s, i) => (i === 0 ? s : s!.replace(/^\/+/, "")))
     .map((s, i, a) => (i === a.length - 1 ? s : s!.replace(/\/+$/, "")))
     .join("/");
+}
+
+function castNonPrimitive(v: unknown) {
+  if (
+    typeof v === "string" ||
+    typeof v === "number" ||
+    typeof v === "boolean"
+  ) {
+    return v;
+  }
+  return String(v);
 }
