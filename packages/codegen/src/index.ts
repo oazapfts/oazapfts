@@ -11,6 +11,7 @@ import {
 } from "./plugin";
 import { ArgumentStyle } from "./generate/generateClientMethod";
 import { EnumStyle } from "./helpers/getEnumStyle";
+import { getInternalPlugins } from "./internalPlugins";
 
 export { cg as UNSTABLE_cg, type OpenAPI };
 
@@ -32,6 +33,10 @@ export type OazapftsOptions = {
   useUnknown?: boolean;
   argumentStyle?: ArgumentStyle;
   allSchemas?: boolean;
+  /**
+   * When true, serialize boolean query parameters as 1/0.
+   */
+  numericBooleanQueryParameters?: boolean;
   /**
    * When true, skip generating deprecated legacy method aliases for backward
    * compatibility. Only the primary normalized operationId-based names will
@@ -78,7 +83,10 @@ export async function generateAst(
   UNSTABLE_plugins: UNSTABLE_OazapftsPlugin[] = [],
 ) {
   const hooks = UNSTABLE_createHooks();
-  await UNSTABLE_applyPlugins(hooks, UNSTABLE_plugins);
+  await UNSTABLE_applyPlugins(hooks, [
+    ...getInternalPlugins(ctx),
+    ...UNSTABLE_plugins,
+  ]);
 
   return generateApi(ctx, hooks);
 }

@@ -19,6 +19,7 @@ async function run(argv: ParsedArgs) {
     useUnknown,
     argumentStyle,
     allSchemas,
+    numericBooleanQueryParameters,
     futureStripLegacyMethods,
     help,
     version,
@@ -74,6 +75,7 @@ async function run(argv: ParsedArgs) {
     mergeReadWriteOnly,
     argumentStyle,
     allSchemas,
+    numericBooleanQueryParameters,
     futureStripLegacyMethods,
   });
 
@@ -98,6 +100,7 @@ function printUsage() {
     --mergeReadWriteOnly
     --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
     --allSchemas
+    --numericBooleanQueryParameters
     --futureStripLegacyMethods
 `);
 }
@@ -118,6 +121,7 @@ run(
       "mergeReadWriteOnly",
       "useUnknown",
       "allSchemas",
+      "numericBooleanQueryParameters",
       "futureStripLegacyMethods",
     ],
     string: ["argumentStyle", "enumStyle"],
