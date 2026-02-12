@@ -8,6 +8,7 @@ import { getRefAlias } from "./getRefAlias";
 import { getUnionType } from "./getUnionType";
 import { getTypeFromProperties } from "./getTypeFromProperties";
 import { getTrueEnum } from "./getTrueEnum";
+import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
 import { getEmptySchemaType } from "../helpers/emptySchemaType";
 import { getDiscriminatorType } from "./getDiscriminatorType";
@@ -181,9 +182,16 @@ function getBaseTypeFromSchema(
 
     // items -> array of enums or unions
     if (schemaItems && !h.isReference(schemaItems) && schemaItems.enum) {
-      const enumType = h.isTrueEnum(schemaItems, ctx, name)
-        ? getTrueEnum(schemaItems, name, ctx)
-        : cg.createEnumTypeNode(schemaItems.enum);
+      const enumStyle = h.getEnumStyle(ctx.opts);
+      let enumType;
+      if (enumStyle !== "union" && h.isNamedEnumSchema(schemaItems, name)) {
+        enumType =
+          enumStyle === "as-const"
+            ? getAsConstEnum(schemaItems, name, ctx)
+            : getTrueEnum(schemaItems, name, ctx);
+      } else {
+        enumType = cg.createEnumTypeNode(schemaItems.enum);
+      }
 
       return factory.createArrayTypeNode(enumType);
     }
@@ -211,10 +219,13 @@ function getBaseTypeFromSchema(
   }
 
   if (schema.enum) {
-    // enum -> enum or union
-    return h.isTrueEnum(schema, ctx, name)
-      ? getTrueEnum(schema, name, ctx)
-      : cg.createEnumTypeNode(schema.enum);
+    const enumStyle = h.getEnumStyle(ctx.opts);
+    if (enumStyle !== "union" && h.isNamedEnumSchema(schema, name)) {
+      return enumStyle === "as-const"
+        ? getAsConstEnum(schema, name, ctx)
+        : getTrueEnum(schema, name, ctx);
+    }
+    return cg.createEnumTypeNode(schema.enum);
   }
   if (schema.format == "binary") {
     return ts.factory.createTypeReferenceNode("Blob", []);

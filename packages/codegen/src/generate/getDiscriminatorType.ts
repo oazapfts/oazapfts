@@ -1,12 +1,18 @@
-import { factory } from "typescript";
+import ts, { factory } from "typescript";
 import { OazapftsContext } from "../context";
-import { isTrueEnum, resolve, toIdentifier } from "../helpers";
+import {
+  getEnumStyle,
+  isNamedEnumSchema,
+  resolve,
+  toIdentifier,
+} from "../helpers";
 import * as OpenApi from "../helpers/openApi3-x";
 import { getTrueEnum } from "./getTrueEnum";
+import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
 
 /**
- * Get enum member reference type for discriminator values when useEnumType is enabled
+ * Get enum member reference type for discriminator values when enumStyle is "enum" or "as-const"
  */
 export function getDiscriminatorType(
   ctx: OazapftsContext,
@@ -16,7 +22,8 @@ export function getDiscriminatorType(
   propertyName: string,
   matches: string[],
 ) {
-  if (!ctx.opts.useEnumType) {
+  const enumStyle = getEnumStyle(ctx.opts);
+  if (enumStyle === "union") {
     return getTypeFromEnum(matches);
   }
 
@@ -29,7 +36,6 @@ export function getDiscriminatorType(
   );
 
   if (!discriminatorPropertySchema && discriminatingSchema.allOf) {
-    // Search in allOf parents
     for (const allOfSchema of discriminatingSchema.allOf) {
       const resolvedAllOf = resolve(allOfSchema, ctx);
       if (resolvedAllOf.properties?.[propertyName]) {
@@ -44,24 +50,27 @@ export function getDiscriminatorType(
 
   if (
     !discriminatorPropertySchema ||
-    !isTrueEnum(discriminatorPropertySchema, ctx, propertyName)
+    !isNamedEnumSchema(discriminatorPropertySchema, propertyName)
   ) {
     return getTypeFromEnum(matches);
   }
 
-  const enumTypeRef = getTrueEnum(
-    discriminatorPropertySchema,
-    propertyName,
-    ctx,
-  );
+  const enumTypeRef =
+    enumStyle === "as-const"
+      ? getAsConstEnum(discriminatorPropertySchema, propertyName, ctx)
+      : getTrueEnum(discriminatorPropertySchema, propertyName, ctx);
 
   const memberTypes = matches.map((value) => {
-    return factory.createTypeReferenceNode(
-      factory.createQualifiedName(
-        enumTypeRef.typeName,
-        factory.createIdentifier(toIdentifier(value, true)),
-      ),
+    const entity = factory.createQualifiedName(
+      enumTypeRef.typeName,
+      factory.createIdentifier(toIdentifier(value, true)),
     );
+
+    if (enumStyle === "as-const") {
+      return factory.createTypeQueryNode(entity);
+    }
+
+    return factory.createTypeReferenceNode(entity);
   });
 
   return memberTypes.length === 1

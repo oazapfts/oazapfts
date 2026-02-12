@@ -32,9 +32,12 @@ export function getRefAlias(
       (typeof schema !== "boolean" && schema.title) || h.getRefName($ref);
     const identifier = h.toIdentifier(name, true);
 
-    // When this is a true enum we can reference it directly,
+    // When this is a named enum (enum or as-const) we can reference it directly,
     // no need to create a type alias
-    if (h.isTrueEnum(schema, ctx, name)) {
+    if (
+      h.getEnumStyle(ctx.opts) !== "union" &&
+      h.isNamedEnumSchema(schema, name)
+    ) {
       return getTypeFromSchema(ctx, schema, name);
     }
 

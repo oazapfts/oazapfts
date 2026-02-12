@@ -4,6 +4,8 @@ import { OazapftsContext } from "../context";
 import { SchemaObject } from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
 import * as h from "../helpers";
+import { getEnumUniqueAlias } from "../helpers/getEnumUniqueAlias";
+import { getCustomNames } from "../helpers/getCustomNames";
 
 /**
  * Creates a enum "ref" if not used, reuse existing if values and name matches or creates a new one
@@ -15,8 +17,8 @@ export function getTrueEnum(
   ctx: OazapftsContext,
 ) {
   if (typeof schema === "boolean") {
-    // this should never be thrown, since the only `getTrueEnum` call is
-    // behind an `isTrueEnum` check, which returns false for boolean schemas.
+    // this should never be thrown, since `getTrueEnum` calls are
+    // behind an `isNamedEnumSchema` check, which returns false for boolean schemas.
     throw new Error(
       "cannot get enum from boolean schema. schema must be an object",
     );
@@ -28,7 +30,7 @@ export function getTrueEnum(
     .split(/[^A-Za-z0-9$_]/g)
     .map((n) => _.upperFirst(n))
     .join("");
-  const stringEnumValue = getEnumValuesString(schema.enum ? schema.enum : []);
+  const stringEnumValue = (schema.enum ?? []).join("_");
 
   const name = getEnumUniqueAlias(proposedName, stringEnumValue, ctx);
 
@@ -53,7 +55,7 @@ export function getTrueEnum(
       );
     }
     return ts.factory.createEnumMember(
-      ts.factory.createIdentifier(h.toIdentifier(s, true)),
+      ts.factory.createIdentifier(h.toIdentifier(String(s), true)),
       cg.createLiteral(s),
     );
   });
@@ -69,48 +71,4 @@ export function getTrueEnum(
   };
 
   return type;
-}
-
-function getEnumValuesString(values: string[]) {
-  return values.join("_");
-}
-
-function getEnumUniqueAlias(
-  name: string,
-  values: string,
-  ctx: OazapftsContext,
-) {
-  // If enum name already exists and have the same values
-  if (ctx.enumRefs[name] && ctx.enumRefs[name].values == values) {
-    return name;
-  }
-
-  return h.getUniqueAlias(name, ctx);
-}
-
-function getCustomNames(
-  schema: Exclude<SchemaObject, boolean>,
-  values: unknown[],
-) {
-  const names =
-    "x-enumNames" in schema
-      ? schema["x-enumNames"]
-      : "x-enum-varnames" in schema
-        ? schema["x-enum-varnames"]
-        : undefined;
-
-  if (names) {
-    if (!Array.isArray(names)) {
-      throw new Error("enum names must be an array");
-    }
-    if (names.length !== values.length) {
-      throw new Error("enum names must have the same length as enum values");
-    }
-    if (names.some((name) => typeof name !== "string")) {
-      throw new Error("enum names must be an array of strings");
-    }
-    return names as string[];
-  }
-
-  return undefined;
 }

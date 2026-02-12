@@ -6,6 +6,7 @@ import { join } from "path";
 
 import { generateSource } from "./";
 import { argumentStyleOptions } from "./generate/generateClientMethod";
+import { enumStyleOptions } from "./helpers/getEnumStyle";
 
 async function run(argv: ParsedArgs) {
   const {
@@ -13,6 +14,7 @@ async function run(argv: ParsedArgs) {
     exclude,
     optimistic,
     useEnumType,
+    enumStyle,
     mergeReadWriteOnly,
     useUnknown,
     argumentStyle,
@@ -53,11 +55,21 @@ async function run(argv: ParsedArgs) {
     process.exit(1);
   }
 
+  if (enumStyle !== undefined && !enumStyleOptions.includes(enumStyle)) {
+    console.error(
+      `--enumStyle should be one of <${enumStyleOptions.join(
+        " | ",
+      )}>, but got "${enumStyle}"`,
+    );
+    process.exit(1);
+  }
+
   const code = await generateSource(spec, {
     include,
     exclude,
     optimistic,
     useEnumType,
+    enumStyle,
     useUnknown,
     mergeReadWriteOnly,
     argumentStyle,
@@ -80,7 +92,8 @@ function printUsage() {
     --help,    -h
     --version, -v
     --optimistic
-    --useEnumType
+    --useEnumType (deprecated, use --enumStyle=enum)
+    --enumStyle=<${enumStyleOptions.join(" | ")}> (default: union)
     --useUnknown
     --mergeReadWriteOnly
     --argumentStyle=<${argumentStyleOptions.join(" | ")}> (default: positional)
@@ -107,7 +120,7 @@ run(
       "allSchemas",
       "futureStripLegacyMethods",
     ],
-    string: ["argumentStyle"],
+    string: ["argumentStyle", "enumStyle"],
   }),
 ).catch((error) => {
   console.error(error);
