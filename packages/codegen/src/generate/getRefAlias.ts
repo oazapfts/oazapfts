@@ -1,5 +1,6 @@
 import ts from "typescript";
 import _ from "lodash";
+import { resolve, getRefName } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as cg from "./tscodegen";
 import * as OpenApi from "../helpers/openApi3-x";
@@ -23,13 +24,13 @@ export function getRefAlias(
     : obj.$ref;
 
   if (!ctx.refs[$ref]) {
-    let schema = h.resolve<OpenApi.SchemaObject>(obj, ctx);
+    let schema = resolve<OpenApi.SchemaObject>(obj, ctx);
     if (typeof schema !== "boolean" && ignoreDiscriminator) {
       schema = _.cloneDeep(schema);
       delete schema.discriminator;
     }
     const name =
-      (typeof schema !== "boolean" && schema.title) || h.getRefName($ref);
+      (typeof schema !== "boolean" && schema.title) || getRefName($ref);
     const identifier = h.toIdentifier(name, true);
 
     // When this is a named enum (enum or as-const) we can reference it directly,
