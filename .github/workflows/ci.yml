@@ -99,6 +99,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 📦 Release @oazapfts/resolve
+        run: |
+          set -e  # Exit immediately if a command exits with a non-zero status.
+
+          cd packages/resolve
+          npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 📦 Release oazapfts
 
         run: |

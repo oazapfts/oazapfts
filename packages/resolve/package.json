@@ -1,0 +1,49 @@
+{
+  "name": "@oazapfts/resolve",
+  "version": "0.0.0-development",
+  "description": "Resolve OpenApi references",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oazapfts/oazapfts",
+    "directory": "packages/resolve"
+  },
+  "scripts": {
+    "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs"
+  },
+  "release": {
+    "extends": "semantic-release-monorepo",
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ]
+  },
+  "keywords": [
+    "openapi",
+    "typescript",
+    "runtime",
+    "http",
+    "oazapfts"
+  ],
+  "dependencies": {
+    "openapi-types": "^12.1.3"
+  }
+}
