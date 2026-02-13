@@ -1,5 +1,6 @@
 import ts, { factory } from "typescript";
 import _ from "lodash";
+import { isReference, resolve } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
@@ -41,7 +42,7 @@ function getBaseTypeFromSchema(
   onlyMode?: OnlyMode,
 ): ts.TypeNode {
   if (schema === undefined) return getEmptySchemaType(ctx);
-  if (h.isReference(schema)) {
+  if (isReference(schema)) {
     return getRefAlias(schema, ctx, onlyMode) as ts.TypeReferenceNode;
   }
 
@@ -90,20 +91,20 @@ function getBaseTypeFromSchema(
     const types: ts.TypeNode[] = [];
     for (const childSchema of schema.allOf) {
       if (
-        h.isReference(childSchema) &&
+        isReference(childSchema) &&
         ctx.discriminatingSchemas.has(
-          h.resolve(childSchema, ctx) as OpenApi.SchemaObject,
+          resolve(childSchema, ctx) as OpenApi.SchemaObject,
         )
       ) {
         const discriminatingSchema =
-          h.resolve<OpenApi.UNSTABLE_DiscriminatingSchemaObject>(
+          resolve<OpenApi.UNSTABLE_DiscriminatingSchemaObject>(
             childSchema,
             ctx,
           );
         const discriminator = discriminatingSchema.discriminator;
 
         const matches = Object.entries(discriminator.mapping ?? {})
-          .filter(([, ref]) => h.resolve({ $ref: ref }, ctx) === schema)
+          .filter(([, ref]) => resolve({ $ref: ref }, ctx) === schema)
           .map(([discriminatorValue]) => discriminatorValue);
         if (matches.length > 0) {
           types.push(
@@ -181,7 +182,7 @@ function getBaseTypeFromSchema(
     const schemaItems = schema.items;
 
     // items -> array of enums or unions
-    if (schemaItems && !h.isReference(schemaItems) && schemaItems.enum) {
+    if (schemaItems && !isReference(schemaItems) && schemaItems.enum) {
       const enumStyle = h.getEnumStyle(ctx.opts);
       let enumType;
       if (enumStyle !== "union" && h.isNamedEnumSchema(schemaItems, name)) {

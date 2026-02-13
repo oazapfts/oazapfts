@@ -1,8 +1,8 @@
 import ts from "typescript";
+import { resolve } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
-import { resolve } from "../helpers";
 import { getTypeFromSchema } from "./getTypeForSchema";
 import { getSchemaFromContent } from "./getSchemaFromContent";
 

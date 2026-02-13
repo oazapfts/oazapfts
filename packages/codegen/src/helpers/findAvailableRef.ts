@@ -1,5 +1,5 @@
 import { OazapftsContext } from "../context";
-import { resolve } from "./resolve";
+import { resolve } from "@oazapfts/resolve";
 
 export function findAvailableRef(ref: string, ctx: OazapftsContext) {
   const available = (ref: string) => {
