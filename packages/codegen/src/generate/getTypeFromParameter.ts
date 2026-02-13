@@ -1,6 +1,6 @@
+import { isReference } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
 import { ParameterObject } from "../helpers/openApi3-x";
-import { isReference } from "../helpers";
 import { getSchemaFromContent } from "./getSchemaFromContent";
 import { getTypeFromSchema } from "./getTypeForSchema";
 

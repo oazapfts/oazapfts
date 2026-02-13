@@ -1,5 +1,5 @@
 import ts from "typescript";
-import * as h from "../helpers";
+import { resolve } from "@oazapfts/resolve";
 import type { OazapftsContext } from "../context";
 import type { ParameterObject } from "../helpers/openApi3-x";
 import {
@@ -12,7 +12,7 @@ function hasBooleanQueryParameter(
   ctx: OazapftsContext,
 ) {
   return query.some((param) => {
-    const schema = param.schema && h.resolve(param.schema, ctx);
+    const schema = param.schema && resolve(param.schema, ctx);
     return !!schema && typeof schema === "object" && schema.type === "boolean";
   });
 }
