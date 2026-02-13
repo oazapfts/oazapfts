@@ -1,3 +1,4 @@
+import { resolve } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
 import { ResponsesObject } from "../helpers/openApi3-x";
 import * as h from "../helpers";
@@ -10,7 +11,7 @@ export function getResponseType(
   if (!responses) return "text";
 
   const resolvedResponses = Object.values(responses).map((response) =>
-    h.resolve(response, ctx),
+    resolve(response, ctx),
   );
 
   // if no content is specified, assume `text` (backwards-compatibility)

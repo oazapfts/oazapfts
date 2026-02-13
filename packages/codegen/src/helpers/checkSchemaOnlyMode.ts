@@ -1,7 +1,6 @@
+import { isReference, resolve } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyModes } from "../context";
 import { ReferenceObject, SchemaObject } from "./openApi3-x";
-import { isReference } from "./isReference";
-import { resolve } from "./resolve";
 
 export function /**
  * Checks if readOnly/writeOnly properties are present in the given schema.

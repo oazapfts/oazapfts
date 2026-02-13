@@ -1,8 +1,8 @@
 import ts from "typescript";
 import _ from "lodash";
+import { isReference, resolve, getRefBasename } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
-import { isReference, getRefBasename, resolve } from "../helpers";
 import { createPropertySignature } from "./tscodegen";
 import { getTypeFromSchema } from "./getTypeForSchema";
 import { getDiscriminatorType } from "./getDiscriminatorType";

@@ -1,5 +1,6 @@
 import ts from "typescript";
 import _ from "lodash";
+import { resolveArray, resolve, getReferenceName } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
@@ -35,8 +36,8 @@ export function generateClientMethod(
   );
 
   // merge item and op parameters
-  const parameters = h.resolveArray(ctx, item.parameters);
-  for (const p of h.resolveArray(ctx, op.parameters)) {
+  const parameters = resolveArray(ctx, item.parameters);
+  for (const p of resolveArray(ctx, op.parameters)) {
     const existing = parameters.find((r) => r.name === p.name && r.in === p.in);
     if (!existing) {
       parameters.push(p);
@@ -68,7 +69,7 @@ export function generateClientMethod(
 
       // build the method signature - first all the required parameters
       const requiredParams = required.map((p) =>
-        cg.createParameter(getArgName(h.resolve(p, ctx)), {
+        cg.createParameter(getArgName(resolve(p, ctx)), {
           type: getTypeFromParameter(p, ctx),
         }),
       );
@@ -76,11 +77,11 @@ export function generateClientMethod(
 
       // add body if present
       if (requestBody) {
-        body = h.resolve(requestBody, ctx);
+        body = resolve(requestBody, ctx);
         const schema = getSchemaFromContent(body.content);
         const type = getTypeFromSchema(ctx, schema, undefined, "writeOnly");
         bodyVar = h.toIdentifier(
-          (type as any).name || h.getReferenceName(schema) || "body",
+          (type as any).name || getReferenceName(schema) || "body",
         );
         methodParams.push(
           cg.createParameter(bodyVar, {
@@ -96,7 +97,7 @@ export function generateClientMethod(
           cg.createParameter(
             cg.createObjectBinding(
               optional
-                .map((param) => h.resolve(param, ctx))
+                .map((param) => resolve(param, ctx))
                 .map((param) => ({ name: getArgName(param) })),
             ),
             {
@@ -104,7 +105,7 @@ export function generateClientMethod(
               type: ts.factory.createTypeLiteralNode(
                 optional.map((p) =>
                   cg.createPropertySignature({
-                    name: getArgName(h.resolve(p, ctx)),
+                    name: getArgName(resolve(p, ctx)),
                     questionToken: true,
                     type: getTypeFromParameter(p, ctx),
                   }),
@@ -120,7 +121,7 @@ export function generateClientMethod(
       // build the method signature - first all the required/optional parameters
       const paramMembers = parameters.map((p) =>
         cg.createPropertySignature({
-          name: getArgName(h.resolve(p, ctx)),
+          name: getArgName(resolve(p, ctx)),
           questionToken: !p.required,
           type: getTypeFromParameter(p, ctx),
         }),
@@ -128,11 +129,11 @@ export function generateClientMethod(
 
       // add body if present
       if (requestBody) {
-        body = h.resolve(requestBody, ctx);
+        body = resolve(requestBody, ctx);
         const schema = getSchemaFromContent(body.content);
         const type = getTypeFromSchema(ctx, schema, undefined, "writeOnly");
         bodyVar = h.toIdentifier(
-          (type as any).name || h.getReferenceName(schema) || "body",
+          (type as any).name || getReferenceName(schema) || "body",
         );
         paramMembers.push(
           cg.createPropertySignature({
@@ -152,7 +153,7 @@ export function generateClientMethod(
         cg.createParameter(
           cg.createObjectBinding([
             ...parameters
-              .map((param) => h.resolve(param, ctx))
+              .map((param) => resolve(param, ctx))
               .map((param) => ({ name: getArgName(param) })),
             ...(bodyVar ? [{ name: bodyVar }] : []),
           ]),

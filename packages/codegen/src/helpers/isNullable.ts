@@ -1,5 +1,5 @@
+import { isReference } from "@oazapfts/resolve";
 import { ReferenceObject, SchemaObject } from "./openApi3-x";
-import { isReference } from "./isReference";
 
 export function isNullable(schema?: SchemaObject | ReferenceObject) {
   if (typeof schema === "boolean") return schema;

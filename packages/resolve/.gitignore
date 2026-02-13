@@ -1,0 +1,6 @@
+# dist is moved to root upon publish
+*.cjs
+*.cjs.map
+*.js
+*.js.map
+*.d.ts

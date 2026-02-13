@@ -1,0 +1,4 @@
+src/
+vite.config.ts
+tsconfig.json
+.*
