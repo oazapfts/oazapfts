@@ -148,6 +148,10 @@ describe("Plugin System", () => {
 
       const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", () => callOrder.push("prepare"));
+        hooks.filterEndpoint.tap("test", (shouldGenerate) => {
+          callOrder.push("filterEndpoint");
+          return shouldGenerate;
+        });
         hooks.generateMethod.tap("test", (methods) => {
           callOrder.push("generateMethod");
           return methods;
@@ -166,6 +170,7 @@ describe("Plugin System", () => {
 
       expect(callOrder).toEqual([
         "prepare",
+        "filterEndpoint",
         "querySerializerArgs",
         "generateMethod",
         "astGenerated",
@@ -695,6 +700,72 @@ describe("Plugin System", () => {
     });
   });
 
+  describe("filterEndpoint hook", () => {
+    it("should allow filtering out endpoints before generation", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/public": {
+            get: {
+              operationId: "publicEndpoint",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+          "/private": {
+            get: {
+              operationId: "privateEndpoint",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
+          return shouldGenerate && endpoint.path !== "/private";
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+
+      expect(src).toContain("publicEndpoint");
+      expect(src).not.toContain("privateEndpoint");
+    });
+
+    it("should run before generateMethod for filtered endpoints", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/a": {
+            get: {
+              operationId: "keepA",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+          "/b": {
+            get: {
+              operationId: "skipB",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+      const generateMethodPaths: string[] = [];
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
+          return shouldGenerate && endpoint.path !== "/b";
+        });
+        hooks.generateMethod.tap("test", (methods, endpoint) => {
+          generateMethodPaths.push(endpoint.path);
+          return methods;
+        });
+      };
+
+      await generate(spec, [plugin]);
+
+      expect(generateMethodPaths).toEqual(["/a"]);
+    });
+  });
+
   describe("querySerializerArgs hook", () => {
     it("should support modifying query serializer args", async () => {
       const path = "/test";
@@ -1058,6 +1129,7 @@ describe("Plugin System", () => {
 
       const identityPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("id", () => {});
+        hooks.filterEndpoint.tap("id", (g) => g);
         hooks.generateMethod.tap("id", (m) => m);
         hooks.astGenerated.tap("id", (a) => a);
       };
@@ -1098,11 +1170,8 @@ describe("Plugin System", () => {
       });
 
       const publicOnlyPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("public-only", (methods, endpoint) => {
-          if (endpoint.operation.tags?.includes("public")) {
-            return methods;
-          }
-          return [];
+        hooks.filterEndpoint.tap("public-only", (_, endpoint) => {
+          return !!endpoint.operation.tags?.includes("public");
         });
       };
 

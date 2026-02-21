@@ -50,6 +50,23 @@ export type UNSTABLE_OazapftsPluginHooks = {
    */
   prepare: AsyncSeriesHook<[OazapftsContext]>;
   /**
+   * Decide whether a given endpoint should be generated.
+   * Receives the current decision (default true) as first argument.
+   * Return false to skip endpoint generation.
+   */
+  filterEndpoint: SyncWaterfallHook<
+    [
+      boolean,
+      {
+        method: HttpMethod;
+        path: string;
+        operation: OpenApi.OperationObject;
+        pathItem: OpenApi.PathItemObject;
+      },
+      OazapftsContext,
+    ]
+  >;
+  /**
    * Generate or modify a client method for an endpoint.
    * First argument is the array of generated FunctionDeclarations (may be empty).
    * Return modified array to change the methods for this endpoint.
@@ -94,6 +111,10 @@ export function UNSTABLE_createPlugin(
 export function UNSTABLE_createHooks() {
   return {
     prepare: new AsyncSeriesHook(["ctx"], "prepare"),
+    filterEndpoint: new SyncWaterfallHook(
+      ["generate", "endpoint", "ctx"],
+      "filterEndpoint",
+    ),
     generateMethod: new AsyncSeriesWaterfallHook(
       ["methods", "endpoint", "ctx"],
       "generateMethod",

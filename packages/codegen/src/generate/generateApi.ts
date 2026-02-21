@@ -28,12 +28,22 @@ export async function generateApi(
       if (!operation) continue;
       const method = verb.toUpperCase();
       if (!h.isHttpMethod(method)) continue;
+      const endpoint = {
+        method,
+        path,
+        operation: operation as OpenAPI.OperationObject,
+        pathItem,
+      };
+
+      // Hook: filterEndpoint - allow plugins to skip endpoint generation
+      const shouldGenerate = hooks.filterEndpoint.call(true, endpoint, ctx);
+      if (!shouldGenerate) continue;
 
       // Generate default methods
       let generatedMethods = generateClientMethod(
         method,
         path,
-        operation as OpenAPI.OperationObject,
+        endpoint.operation,
         pathItem,
         ctx,
         hooks,
@@ -42,12 +52,7 @@ export async function generateApi(
       // Hook: generateMethod - allow plugins to modify/replace methods
       generatedMethods = await hooks.generateMethod.promise(
         generatedMethods,
-        {
-          method,
-          path,
-          operation: operation as OpenAPI.OperationObject,
-          pathItem,
-        },
+        endpoint,
         ctx,
       );
 
