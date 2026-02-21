@@ -24,12 +24,8 @@ export function generateClientMethod(
   ctx: OazapftsContext,
   hooks: UNSTABLE_OazapftsPluginHooks,
 ): ts.FunctionDeclaration[] {
-  const { operationId, requestBody, responses, summary, description, tags } =
+  const { operationId, requestBody, responses, summary, description } =
     operation;
-
-  if (h.skip(ctx, tags)) {
-    return [];
-  }
 
   const { primaryName, deprecatedLegacyName } = h.getOperationNames(
     method,
