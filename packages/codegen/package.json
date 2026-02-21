@@ -55,10 +55,10 @@
     "@types/tapable": "^2.3.0"
   },
   "peerDependencies": {
-    "@oazapfts/runtime": "*"
+    "@oazapfts/runtime": "0.0.0-development || ^1.2.0"
   },
   "dependencies": {
-    "@oazapfts/resolve": "*",
+    "@oazapfts/resolve": "0.0.0-development || ^1.0.0",
     "@apidevtools/swagger-parser": "^12.1.0",
     "lodash": "^4.17.23",
     "minimist": "^1.2.8",
