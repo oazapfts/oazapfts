@@ -152,9 +152,9 @@ describe("Plugin System", () => {
           callOrder.push("filterEndpoint");
           return shouldGenerate;
         });
-        hooks.generateMethod.tap("test", (methods) => {
+        hooks.generateMethod.tap("test", () => {
           callOrder.push("generateMethod");
-          return methods;
+          return undefined;
         });
         hooks.querySerializerArgs.tap("test", (args) => {
           callOrder.push("querySerializerArgs");
@@ -171,8 +171,8 @@ describe("Plugin System", () => {
       expect(callOrder).toEqual([
         "prepare",
         "filterEndpoint",
-        "querySerializerArgs",
         "generateMethod",
+        "querySerializerArgs",
         "astGenerated",
       ]);
     });
@@ -543,14 +543,14 @@ describe("Plugin System", () => {
       } | null = null;
 
       const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
+        hooks.generateMethod.tap("test", (endpoint) => {
           capturedEndpoint = {
             method: endpoint.method,
             path: endpoint.path,
             operationId: endpoint.operation.operationId,
             tags: endpoint.operation.tags,
           };
-          return methods;
+          return undefined;
         });
       };
 
@@ -561,142 +561,6 @@ describe("Plugin System", () => {
       expect(capturedEndpoint!.path).toBe("/users/{id}");
       expect(capturedEndpoint!.operationId).toBe("getUserById");
       expect(capturedEndpoint!.tags).toContain("users");
-    });
-
-    it("should allow filtering out methods", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/public": {
-            get: {
-              operationId: "publicEndpoint",
-              responses: { "200": { description: "OK" } },
-            },
-          },
-          "/private": {
-            get: {
-              operationId: "privateEndpoint",
-              tags: ["internal"],
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
-          if (endpoint.operation.tags?.includes("internal")) {
-            return [];
-          }
-          return methods;
-        });
-      };
-
-      const src = await generate(spec, [plugin]);
-
-      expect(src).toContain("publicEndpoint");
-      expect(src).not.toContain("privateEndpoint");
-    });
-
-    it("should allow renaming methods", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/test": {
-            get: {
-              operationId: "originalName",
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods) => {
-          return methods.map((method) => {
-            return ts.factory.updateFunctionDeclaration(
-              method,
-              method.modifiers,
-              method.asteriskToken,
-              ts.factory.createIdentifier("renamedMethod"),
-              method.typeParameters,
-              method.parameters,
-              method.type,
-              method.body,
-            );
-          });
-        });
-      };
-
-      const src = await generate(spec, [plugin]);
-
-      expect(src).toContain("renamedMethod");
-      expect(src).not.toContain("originalName");
-    });
-
-    it("should allow adding comments to methods", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/test": {
-            get: {
-              operationId: "testOp",
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
-          return methods.map((method) => {
-            return ts.addSyntheticLeadingComment(
-              method,
-              ts.SyntaxKind.MultiLineCommentTrivia,
-              `* @custom ${endpoint.operation.operationId} `,
-              true,
-            );
-          });
-        });
-      };
-
-      const src = await generate(spec, [plugin]);
-      expect(src).toContain("@custom testOp");
-    });
-
-    it("should allow completely replacing method implementation", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/test": {
-            get: {
-              operationId: "testOp",
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", () => {
-          const customMethod = ts.factory.createFunctionDeclaration(
-            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-            undefined,
-            "customImplementation",
-            undefined,
-            [],
-            undefined,
-            ts.factory.createBlock([
-              ts.factory.createReturnStatement(
-                ts.factory.createStringLiteral("custom"),
-              ),
-            ]),
-          );
-          return [customMethod];
-        });
-      };
-
-      const src = await generate(spec, [plugin]);
-
-      expect(src).toContain("customImplementation");
-      expect(src).toContain('return "custom"');
-      expect(src).not.toContain("testOp");
     });
   });
 
@@ -754,9 +618,9 @@ describe("Plugin System", () => {
         hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
           return shouldGenerate && endpoint.path !== "/b";
         });
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
+        hooks.generateMethod.tap("test", (endpoint) => {
           generateMethodPaths.push(endpoint.path);
-          return methods;
+          return undefined;
         });
       };
 
@@ -959,7 +823,7 @@ describe("Plugin System", () => {
       expect(callOrder).toEqual(["plugin1", "plugin2"]);
     });
 
-    it("should chain waterfall transformations", async () => {
+    it("should stop after first generateMethod result", async () => {
       const spec = createMinimalSpec({
         paths: {
           "/test": {
@@ -970,46 +834,47 @@ describe("Plugin System", () => {
           },
         },
       });
+      const callOrder: string[] = [];
 
       const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("prefix", (methods) => {
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`prefix_${name}`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
+        hooks.generateMethod.tap("prefix", () => {
+          callOrder.push("prefix");
+          return [
+            ts.factory.createFunctionDeclaration(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              undefined,
+              "prefix_original",
+              undefined,
+              [],
+              undefined,
+              ts.factory.createBlock([], true),
+            ),
+          ];
         });
       };
 
       const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("suffix", (methods) => {
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`${name}_suffix`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
+        hooks.generateMethod.tap("suffix", () => {
+          callOrder.push("suffix");
+          return [
+            ts.factory.createFunctionDeclaration(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              undefined,
+              "original_suffix",
+              undefined,
+              [],
+              undefined,
+              ts.factory.createBlock([], true),
+            ),
+          ];
         });
       };
 
       const src = await generate(spec, [prefixPlugin, suffixPlugin]);
 
-      expect(src).toContain("prefix_original_suffix");
+      expect(callOrder).toEqual(["prefix"]);
+      expect(src).toContain("prefix_original");
+      expect(src).not.toContain("original_suffix");
     });
 
     it("should allow data sharing between plugins via closure", async () => {
@@ -1033,11 +898,11 @@ describe("Plugin System", () => {
       const collectedOps: string[] = [];
 
       const collectorPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("collector", (methods, endpoint) => {
+        hooks.generateMethod.tap("collector", (endpoint) => {
           if (endpoint.operation.operationId) {
             collectedOps.push(endpoint.operation.operationId);
           }
-          return methods;
+          return undefined;
         });
       };
 
@@ -1130,7 +995,7 @@ describe("Plugin System", () => {
       const identityPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("id", () => {});
         hooks.filterEndpoint.tap("id", (g) => g);
-        hooks.generateMethod.tap("id", (m) => m);
+        hooks.generateMethod.tap("id", () => undefined);
         hooks.astGenerated.tap("id", (a) => a);
       };
 
@@ -1180,53 +1045,6 @@ describe("Plugin System", () => {
       expect(src).toContain("getPublicData");
       expect(src).not.toContain("getAdminUsers");
       expect(src).not.toContain("getHealth");
-    });
-
-    it("should support prefixing methods by tag", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/users": {
-            get: {
-              operationId: "list",
-              tags: ["users"],
-              responses: { "200": { description: "OK" } },
-            },
-          },
-          "/posts": {
-            get: {
-              operationId: "list",
-              tags: ["posts"],
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const tagPrefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("tag-prefix", (methods, endpoint) => {
-          const tag = endpoint.operation.tags?.[0];
-          if (!tag) return methods;
-
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`${tag}_${name}`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
-        });
-      };
-
-      const src = await generate(spec, [tagPrefixPlugin]);
-
-      expect(src).toContain("users_list");
-      expect(src).toContain("posts_list");
     });
 
     it("should support adding metadata export", async () => {

@@ -1,5 +1,6 @@
 import ts from "typescript";
 import {
+  AsyncSeriesBailHook,
   AsyncSeriesWaterfallHook,
   AsyncSeriesHook,
   SyncWaterfallHook,
@@ -67,13 +68,12 @@ export type UNSTABLE_OazapftsPluginHooks = {
     ]
   >;
   /**
-   * Generate or modify a client method for an endpoint.
-   * First argument is the array of generated FunctionDeclarations (may be empty).
-   * Return modified array to change the methods for this endpoint.
+   * Generate client methods for an endpoint.
+   * This is a bail hook: the first plugin that returns a value wins.
+   * Return `undefined` to delegate to later plugins.
    */
-  generateMethod: AsyncSeriesWaterfallHook<
+  generateMethod: AsyncSeriesBailHook<
     [
-      ts.FunctionDeclaration[],
       {
         method: HttpMethod;
         path: string;
@@ -81,7 +81,8 @@ export type UNSTABLE_OazapftsPluginHooks = {
         pathItem: OpenApi.PathItemObject;
       },
       OazapftsContext,
-    ]
+    ],
+    ts.FunctionDeclaration[] | undefined
   >;
   /**
    * Customize query serializer call arguments for each formatter call.
@@ -115,8 +116,8 @@ export function UNSTABLE_createHooks() {
       ["generate", "endpoint", "ctx"],
       "filterEndpoint",
     ),
-    generateMethod: new AsyncSeriesWaterfallHook(
-      ["methods", "endpoint", "ctx"],
+    generateMethod: new AsyncSeriesBailHook(
+      ["endpoint", "ctx"],
       "generateMethod",
     ),
     querySerializerArgs: new SyncWaterfallHook(
