@@ -156,6 +156,10 @@ describe("Plugin System", () => {
           callOrder.push("generateMethod");
           return undefined;
         });
+        hooks.refineMethod.tap("test", (methods) => {
+          callOrder.push("refineMethod");
+          return methods;
+        });
         hooks.querySerializerArgs.tap("test", (args) => {
           callOrder.push("querySerializerArgs");
           return args;
@@ -173,6 +177,7 @@ describe("Plugin System", () => {
         "filterEndpoint",
         "generateMethod",
         "querySerializerArgs",
+        "refineMethod",
         "astGenerated",
       ]);
     });
@@ -561,6 +566,207 @@ describe("Plugin System", () => {
       expect(capturedEndpoint!.path).toBe("/users/{id}");
       expect(capturedEndpoint!.operationId).toBe("getUserById");
       expect(capturedEndpoint!.tags).toContain("users");
+    });
+
+    it("should allow completely replacing method implementation", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "testOp",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("test", () => {
+          const customMethod = ts.factory.createFunctionDeclaration(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            undefined,
+            "customImplementation",
+            undefined,
+            [],
+            undefined,
+            ts.factory.createBlock([
+              ts.factory.createReturnStatement(
+                ts.factory.createStringLiteral("custom"),
+              ),
+            ]),
+          );
+          return [customMethod];
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+
+      expect(src).toContain("customImplementation");
+      expect(src).toContain('return "custom"');
+      expect(src).not.toContain("testOp");
+    });
+  });
+
+  describe("refineMethod hook", () => {
+    it("should allow renaming methods", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "originalName",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("test", (methods) => {
+          return methods.map((method) => {
+            return ts.factory.updateFunctionDeclaration(
+              method,
+              method.modifiers,
+              method.asteriskToken,
+              ts.factory.createIdentifier("renamedMethod"),
+              method.typeParameters,
+              method.parameters,
+              method.type,
+              method.body,
+            );
+          });
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+
+      expect(src).toContain("renamedMethod");
+      expect(src).not.toContain("originalName");
+    });
+
+    it("should allow adding comments to methods", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "testOp",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("test", (methods, endpoint) => {
+          return methods.map((method) => {
+            return ts.addSyntheticLeadingComment(
+              method,
+              ts.SyntaxKind.MultiLineCommentTrivia,
+              `* @custom ${endpoint.operation.operationId} `,
+              true,
+            );
+          });
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+      expect(src).toContain("@custom testOp");
+    });
+
+    it("should allow returning a subset of methods", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "testOp",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("seed", () => {
+          const keep = ts.factory.createFunctionDeclaration(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            undefined,
+            "keepMethod",
+            undefined,
+            [],
+            undefined,
+            ts.factory.createBlock([], true),
+          );
+          const drop = ts.factory.createFunctionDeclaration(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            undefined,
+            "dropMethod",
+            undefined,
+            [],
+            undefined,
+            ts.factory.createBlock([], true),
+          );
+          return [keep, drop];
+        });
+        hooks.refineMethod.tap("subset", (methods) => {
+          return methods.filter((m) => m.name?.text !== "dropMethod");
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+      expect(src).toContain("keepMethod");
+      expect(src).not.toContain("dropMethod");
+    });
+
+    it("should chain multiple refineMethod transformations", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "original",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("prefix", (methods) => {
+          return methods.map((m) => {
+            const name = m.name?.text || "";
+            return ts.factory.updateFunctionDeclaration(
+              m,
+              m.modifiers,
+              m.asteriskToken,
+              ts.factory.createIdentifier(`prefix_${name}`),
+              m.typeParameters,
+              m.parameters,
+              m.type,
+              m.body,
+            );
+          });
+        });
+      };
+
+      const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("suffix", (methods) => {
+          return methods.map((m) => {
+            const name = m.name?.text || "";
+            return ts.factory.updateFunctionDeclaration(
+              m,
+              m.modifiers,
+              m.asteriskToken,
+              ts.factory.createIdentifier(`${name}_suffix`),
+              m.typeParameters,
+              m.parameters,
+              m.type,
+              m.body,
+            );
+          });
+        });
+      };
+
+      const src = await generate(spec, [prefixPlugin, suffixPlugin]);
+
+      expect(src).toContain("prefix_original_suffix");
     });
   });
 
@@ -996,6 +1202,7 @@ describe("Plugin System", () => {
         hooks.prepare.tap("id", () => {});
         hooks.filterEndpoint.tap("id", (g) => g);
         hooks.generateMethod.tap("id", () => undefined);
+        hooks.refineMethod.tap("id", (m) => m);
         hooks.astGenerated.tap("id", (a) => a);
       };
 

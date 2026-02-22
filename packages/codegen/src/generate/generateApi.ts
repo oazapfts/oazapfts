@@ -41,8 +41,13 @@ export async function generateApi(
       // Hook: generateMethod - first plugin returning methods wins
       const generatedMethods =
         (await hooks.generateMethod.promise(endpoint, ctx)) ?? [];
+      const refinedMethods = await hooks.refineMethod.promise(
+        generatedMethods,
+        endpoint,
+        ctx,
+      );
 
-      methods.push(...generatedMethods);
+      methods.push(...refinedMethods);
     }
   }
 

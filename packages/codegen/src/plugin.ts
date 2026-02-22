@@ -43,6 +43,16 @@ export type UNSTABLE_QuerySerializerHookArgs = [
   OazapftsContext,
 ];
 
+export type UNSTABLE_EndpointHookArgs = [
+  {
+    method: HttpMethod;
+    path: string;
+    operation: OpenApi.OperationObject;
+    pathItem: OpenApi.PathItemObject;
+  },
+  OazapftsContext,
+];
+
 export type UNSTABLE_OazapftsPluginHooks = {
   /**
    * Called after context is created with all template parts initialized.
@@ -73,16 +83,16 @@ export type UNSTABLE_OazapftsPluginHooks = {
    * Return `undefined` to delegate to later plugins.
    */
   generateMethod: AsyncSeriesBailHook<
-    [
-      {
-        method: HttpMethod;
-        path: string;
-        operation: OpenApi.OperationObject;
-        pathItem: OpenApi.PathItemObject;
-      },
-      OazapftsContext,
-    ],
+    UNSTABLE_EndpointHookArgs,
     ts.FunctionDeclaration[] | undefined
+  >;
+  /**
+   * Refine client methods for an endpoint.
+   * Receives generated methods and can return a modified array.
+   * Runs after generateMethod for each endpoint.
+   */
+  refineMethod: AsyncSeriesWaterfallHook<
+    [ts.FunctionDeclaration[], ...UNSTABLE_EndpointHookArgs]
   >;
   /**
    * Customize query serializer call arguments for each formatter call.
@@ -119,6 +129,10 @@ export function UNSTABLE_createHooks() {
     generateMethod: new AsyncSeriesBailHook(
       ["endpoint", "ctx"],
       "generateMethod",
+    ),
+    refineMethod: new AsyncSeriesWaterfallHook(
+      ["methods", "endpoint", "ctx"],
+      "refineMethod",
     ),
     querySerializerArgs: new SyncWaterfallHook(
       ["args", "queryContext", "ctx"],
