@@ -1,7 +1,6 @@
 import ts from "typescript";
 import { OazapftsContext } from "../context";
 import * as h from "../helpers";
-import { generateClientMethod } from "./generateClientMethod";
 import { createImportStatement } from "./generateImports";
 import { createDefaultsStatement } from "./createDefaultsStatement";
 import * as OpenAPI from "../helpers/openApi3-x";
@@ -28,30 +27,27 @@ export async function generateApi(
       if (!operation) continue;
       const method = verb.toUpperCase();
       if (!h.isHttpMethod(method)) continue;
-
-      // Generate default methods
-      let generatedMethods = generateClientMethod(
+      const endpoint = {
         method,
         path,
-        operation as OpenAPI.OperationObject,
+        operation: operation as OpenAPI.OperationObject,
         pathItem,
-        ctx,
-        hooks,
-      );
+      };
 
-      // Hook: generateMethod - allow plugins to modify/replace methods
-      generatedMethods = await hooks.generateMethod.promise(
+      // Hook: filterEndpoint - allow plugins to skip endpoint generation
+      const shouldGenerate = hooks.filterEndpoint.call(true, endpoint, ctx);
+      if (!shouldGenerate) continue;
+
+      // Hook: generateMethod - first plugin returning methods wins
+      const generatedMethods =
+        (await hooks.generateMethod.promise(endpoint, ctx)) ?? [];
+      const refinedMethods = await hooks.refineMethod.promise(
         generatedMethods,
-        {
-          method,
-          path,
-          operation: operation as OpenAPI.OperationObject,
-          pathItem,
-        },
+        endpoint,
         ctx,
       );
 
-      methods.push(...generatedMethods);
+      methods.push(...refinedMethods);
     }
   }
 
