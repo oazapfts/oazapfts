@@ -7,7 +7,7 @@ import * as cg from "./tscodegen";
 import * as h from "../helpers";
 import { getTypeFromParameter } from "./getTypeFromParameter";
 import { getSchemaFromContent } from "./getSchemaFromContent";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getResponseType } from "./getResponseType";
 import { getTypeFromResponses } from "./getTypeFromResponses";
 import * as OpenAPI from "../helpers/openApi3-x";

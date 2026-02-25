@@ -4,7 +4,7 @@ import { isReference, resolve, getRefBasename } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import { createPropertySignature } from "./tscodegen";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getDiscriminatorType } from "./getDiscriminatorType";
 
 export function getUnionType(

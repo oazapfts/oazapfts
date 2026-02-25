@@ -3,7 +3,7 @@ import { OazapftsContext, OnlyMode } from "../context";
 import { ReferenceObject, SchemaObject } from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
 import { checkSchemaOnlyMode } from "../helpers";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getEmptySchemaType } from "../helpers/emptySchemaType";
 
 /**
