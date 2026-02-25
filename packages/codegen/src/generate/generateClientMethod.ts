@@ -31,6 +31,7 @@ export function generateClientMethod(
     method,
     path,
     operationId,
+    ctx.operationNames,
   );
 
   // merge item and op parameters

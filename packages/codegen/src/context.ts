@@ -96,6 +96,8 @@ export type OazapftsContext = {
 
   // Keep track of already used type aliases
   typeAliases: Record<string, number>;
+  // Keep track of already used operation names for collision handling
+  operationNames: Map<string, number>;
 };
 
 export function createContext(
@@ -127,6 +129,7 @@ See https://www.npmjs.com/package/oazapfts`,
     refs: {},
     refsOnlyMode: new Map(),
     typeAliases: {},
+    operationNames: new Map(),
   };
 }
 

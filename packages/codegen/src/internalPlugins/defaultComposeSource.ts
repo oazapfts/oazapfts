@@ -1,5 +1,4 @@
 import ts from "typescript";
-import * as h from "../helpers";
 import { createDefaultsStatement } from "../generate/createDefaultsStatement";
 import { createImportStatement } from "../generate/generateImports";
 import { createServersStatement } from "../generate/generateServers";
@@ -18,7 +17,7 @@ export function defaultComposeSourcePlugin() {
           ...ctx.init,
           createServersStatement(ctx.servers),
           ...ctx.aliases,
-          ...h.dedupeMethodNames(methods),
+          ...methods,
           ...ctx.enumAliases,
         ] satisfies ts.Statement[];
       });

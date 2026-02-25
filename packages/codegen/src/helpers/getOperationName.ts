@@ -24,6 +24,7 @@ export function getOperationNames(
   verb: string,
   path: string,
   operationId?: string,
+  operationNames: Map<string, number> = new Map(),
 ): OperationNames {
   const fallbackName = getFallbackName(verb, path);
   const legacyId = getLegacyOperationIdentifier(operationId);
@@ -32,15 +33,24 @@ export function getOperationNames(
   // If new normalization produces a valid identifier but legacy did not,
   // we need to emit a deprecated alias for backward compatibility.
   if (newId && !legacyId) {
+    const primaryName = reserveOperationName(newId, operationNames);
+    const deprecatedLegacyName = reserveOperationName(
+      fallbackName,
+      operationNames,
+    );
     return {
-      primaryName: newId,
-      deprecatedLegacyName: fallbackName,
+      primaryName,
+      deprecatedLegacyName,
     };
   }
 
   // Either both agree on the id, or both fall back
+  const primaryName = reserveOperationName(
+    newId || fallbackName,
+    operationNames,
+  );
   return {
-    primaryName: newId || fallbackName,
+    primaryName,
   };
 }
 
@@ -55,6 +65,31 @@ export function getOperationName(
   operationId?: string,
 ) {
   return getOperationNames(verb, path, operationId).primaryName;
+}
+
+/**
+ * Make sure the name is unique by appending a counter to the name.
+ */
+function reserveOperationName(
+  name: string,
+  operationNames: Map<string, number>,
+): string {
+  let count = operationNames.get(name) ?? 0;
+  if (count === 0) {
+    operationNames.set(name, 1);
+    return name;
+  }
+
+  count += 1;
+  let dedupedName = `${name}${count}`;
+  while (operationNames.has(dedupedName)) {
+    count += 1;
+    dedupedName = `${name}${count}`;
+  }
+
+  operationNames.set(name, count);
+  operationNames.set(dedupedName, 1);
+  return dedupedName;
 }
 
 /**
