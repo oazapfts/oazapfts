@@ -1,0 +1,1 @@
+export { getTypeFromSchema } from "./getTypeFromSchema";

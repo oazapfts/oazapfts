@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { keywordType } from "./tscodegen";
+import { keywordType } from "../generate/tscodegen";
 
 /**
  * Creates literal type (or union) from an array of values

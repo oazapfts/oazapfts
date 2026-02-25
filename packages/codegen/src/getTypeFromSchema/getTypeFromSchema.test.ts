@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { printNode } from "./tscodegen";
+import { printNode } from "../generate/tscodegen";
 import { getTypeFromSchema } from "./getTypeFromSchema";
 import { createContext } from "../context";
 import { OpenAPIV3 } from "openapi-types";

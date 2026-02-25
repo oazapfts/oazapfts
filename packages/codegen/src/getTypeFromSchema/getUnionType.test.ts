@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { OpenAPIV3 } from "openapi-types";
-import { printNode } from "./tscodegen";
+import { printNode } from "../generate/tscodegen";
 import { createContext } from "../context";
 import { getUnionType } from "./getUnionType";
 

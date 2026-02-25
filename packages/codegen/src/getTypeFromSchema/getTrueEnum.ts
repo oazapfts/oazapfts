@@ -2,7 +2,7 @@ import ts from "typescript";
 import _ from "lodash";
 import { OazapftsContext } from "../context";
 import { SchemaObject } from "../helpers/openApi3-x";
-import * as cg from "./tscodegen";
+import * as cg from "../generate/tscodegen";
 import * as h from "../helpers";
 import { getEnumUniqueAlias } from "../helpers/getEnumUniqueAlias";
 import { getCustomNames } from "../helpers/getCustomNames";

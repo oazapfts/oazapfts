@@ -3,15 +3,15 @@ import _ from "lodash";
 import { isReference, resolve } from "@oazapfts/resolve";
 import { OazapftsContext, OnlyMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
-import * as cg from "./tscodegen";
+import * as cg from "../generate/tscodegen";
 import * as h from "../helpers";
-import { getRefAlias } from "./getRefAlias";
+import { getEmptySchemaType } from "../helpers/emptySchemaType";
+import { getRefAlias } from "../generate/getRefAlias";
 import { getUnionType } from "./getUnionType";
 import { getTypeFromProperties } from "./getTypeFromProperties";
 import { getTrueEnum } from "./getTrueEnum";
 import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";
-import { getEmptySchemaType } from "../helpers/emptySchemaType";
 import { getDiscriminatorType } from "./getDiscriminatorType";
 
 /**
