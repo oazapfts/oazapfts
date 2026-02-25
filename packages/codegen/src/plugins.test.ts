@@ -633,6 +633,7 @@ describe("Plugin System", () => {
       const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("test", (methods) => {
           return methods.map((method) => {
+            if (!ts.isFunctionDeclaration(method)) return method;
             return ts.factory.updateFunctionDeclaration(
               method,
               method.modifiers,
@@ -717,7 +718,9 @@ describe("Plugin System", () => {
           return [keep, drop];
         });
         hooks.refineMethod.tap("subset", (methods) => {
-          return methods.filter((m) => m.name?.text !== "dropMethod");
+          return methods.filter(
+            (m) => !ts.isFunctionDeclaration(m) || m.name?.text !== "dropMethod",
+          );
         });
       };
 
@@ -741,6 +744,7 @@ describe("Plugin System", () => {
       const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("prefix", (methods) => {
           return methods.map((m) => {
+            if (!ts.isFunctionDeclaration(m)) return m;
             const name = m.name?.text || "";
             return ts.factory.updateFunctionDeclaration(
               m,
@@ -759,6 +763,7 @@ describe("Plugin System", () => {
       const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("suffix", (methods) => {
           return methods.map((m) => {
+            if (!ts.isFunctionDeclaration(m)) return m;
             const name = m.name?.text || "";
             return ts.factory.updateFunctionDeclaration(
               m,

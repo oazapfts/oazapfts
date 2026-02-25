@@ -16,7 +16,7 @@ export async function generateApi(
   await hooks.prepare.promise(ctx);
 
   // Generate methods with hook support
-  const methods: ts.FunctionDeclaration[] = [];
+  const methods: ts.Statement[] = [];
   for (const [path, pathItem] of Object.entries(ctx.spec.paths || {})) {
     if (!pathItem) continue;
 

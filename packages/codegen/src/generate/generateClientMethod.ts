@@ -23,7 +23,7 @@ export function generateClientMethod(
   pathItem: OpenAPI.PathItemObject,
   ctx: OazapftsContext,
   hooks: UNSTABLE_OazapftsPluginHooks,
-): ts.FunctionDeclaration[] {
+): ts.Statement[] {
   const { operationId, requestBody, responses, summary, description } =
     operation;
 
@@ -287,7 +287,7 @@ export function generateClientMethod(
     ),
   );
 
-  const result: ts.FunctionDeclaration[] = [
+  const result: ts.Statement[] = [
     cg.addComment(
       cg.createFunctionDeclaration(
         primaryName,

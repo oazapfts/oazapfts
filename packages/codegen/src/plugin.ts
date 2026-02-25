@@ -55,7 +55,7 @@ export type UNSTABLE_EndpointHookArgs = [
 
 export type UNSTABLE_ComposeSourceHookArgs = [
   OazapftsContext,
-  ts.FunctionDeclaration[],
+  ts.Statement[],
 ];
 
 export type UNSTABLE_OazapftsPluginHooks = {
@@ -89,7 +89,7 @@ export type UNSTABLE_OazapftsPluginHooks = {
    */
   generateMethod: AsyncSeriesBailHook<
     UNSTABLE_EndpointHookArgs,
-    ts.FunctionDeclaration[] | undefined
+    ts.Statement[] | undefined
   >;
   /**
    * Refine client methods for an endpoint.
@@ -97,7 +97,7 @@ export type UNSTABLE_OazapftsPluginHooks = {
    * Runs after generateMethod for each endpoint.
    */
   refineMethod: AsyncSeriesWaterfallHook<
-    [ts.FunctionDeclaration[], ...UNSTABLE_EndpointHookArgs]
+    [ts.Statement[], ...UNSTABLE_EndpointHookArgs]
   >;
   /**
    * Compose top-level source statements from context and generated methods.
