@@ -1,5 +1,6 @@
 import type { OazapftsContext } from "../context";
 import type { UNSTABLE_OazapftsPlugin } from "../plugin";
+import { defaultComposeSourcePlugin } from "./defaultComposeSource";
 import { defaultGenerateMethodPlugin } from "./defaultGenerateMethod";
 import { includeExcludeFilterEndpointPlugin } from "./includeExcludeFilterEndpoint";
 import { numericBooleanQueryParametersPlugin } from "./numericBooleanQueryParameters";
@@ -11,5 +12,6 @@ export function getInternalPlugins(
     includeExcludeFilterEndpointPlugin(),
     numericBooleanQueryParametersPlugin(),
     defaultGenerateMethodPlugin(),
+    defaultComposeSourcePlugin(),
   ];
 }

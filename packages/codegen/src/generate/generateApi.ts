@@ -1,11 +1,8 @@
 import ts from "typescript";
 import { OazapftsContext } from "../context";
 import * as h from "../helpers";
-import { createImportStatement } from "./generateImports";
-import { createDefaultsStatement } from "./createDefaultsStatement";
 import * as OpenAPI from "../helpers/openApi3-x";
 import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
-import { createServersStatement } from "./generateServers";
 import { getRefAlias } from "./getRefAlias";
 
 export async function generateApi(
@@ -57,32 +54,14 @@ export async function generateApi(
     }
   }
 
-  // Compose the final source file from template parts
-  let apiSourceFile = composeSourceFile(ctx, methods);
-
-  // Hook: astGenerated - allow plugins to modify final AST
-  apiSourceFile = await hooks.astGenerated.promise(apiSourceFile, ctx);
-
-  return apiSourceFile;
-}
-
-/**
- * Compose the final source file from all template parts and generated code.
- */
-export function composeSourceFile(
-  ctx: OazapftsContext,
-  methods: ts.FunctionDeclaration[],
-): ts.SourceFile {
-  // Build statements array from flat context properties
-  let statements: ts.Statement[] = [
-    ...ctx.imports.map(createImportStatement),
-    createDefaultsStatement(ctx.defaults),
-    ...ctx.init,
-    createServersStatement(ctx.servers),
-    ...ctx.aliases,
-    ...h.dedupeMethodNames(methods),
-    ...ctx.enumAliases,
-  ];
+  // Hook: composeSource/refineSource - compose and refine top-level statements
+  const composedStatements =
+    (await hooks.composeSource.promise(ctx, methods)) ?? [];
+  const statements = await hooks.refineSource.promise(
+    composedStatements,
+    ctx,
+    methods,
+  );
 
   // Add banner comment to first statement if present
   if (ctx.banner && statements.length > 0) {
@@ -96,9 +75,14 @@ export function composeSourceFile(
   }
 
   // Create the source file with all parts in order
-  return ts.factory.createSourceFile(
+  let apiSourceFile = ts.factory.createSourceFile(
     statements,
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
     ts.NodeFlags.None,
   );
+
+  // Hook: astGenerated - allow plugins to modify final AST
+  apiSourceFile = await hooks.astGenerated.promise(apiSourceFile, ctx);
+
+  return apiSourceFile;
 }

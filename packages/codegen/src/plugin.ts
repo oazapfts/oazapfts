@@ -53,6 +53,11 @@ export type UNSTABLE_EndpointHookArgs = [
   OazapftsContext,
 ];
 
+export type UNSTABLE_ComposeSourceHookArgs = [
+  OazapftsContext,
+  ts.FunctionDeclaration[],
+];
+
 export type UNSTABLE_OazapftsPluginHooks = {
   /**
    * Called after context is created with all template parts initialized.
@@ -95,6 +100,23 @@ export type UNSTABLE_OazapftsPluginHooks = {
     [ts.FunctionDeclaration[], ...UNSTABLE_EndpointHookArgs]
   >;
   /**
+   * Compose top-level source statements from context and generated methods.
+   * This is a bail hook: the first plugin that returns a value wins.
+   * Return `undefined` to delegate to later plugins.
+   */
+  composeSource: AsyncSeriesBailHook<
+    UNSTABLE_ComposeSourceHookArgs,
+    ts.Statement[] | undefined
+  >;
+  /**
+   * Refine top-level source statements before SourceFile construction.
+   * Receives composed statements and can return a modified array.
+   * Runs after composeSource.
+   */
+  refineSource: AsyncSeriesWaterfallHook<
+    [ts.Statement[], ...UNSTABLE_ComposeSourceHookArgs]
+  >;
+  /**
    * Customize query serializer call arguments for each formatter call.
    * Default behavior is identity (returns the original args unchanged).
    */
@@ -133,6 +155,11 @@ export function UNSTABLE_createHooks() {
     refineMethod: new AsyncSeriesWaterfallHook(
       ["methods", "endpoint", "ctx"],
       "refineMethod",
+    ),
+    composeSource: new AsyncSeriesBailHook(["ctx", "methods"], "composeSource"),
+    refineSource: new AsyncSeriesWaterfallHook(
+      ["statements", "ctx", "methods"],
+      "refineSource",
     ),
     querySerializerArgs: new SyncWaterfallHook(
       ["args", "queryContext", "ctx"],

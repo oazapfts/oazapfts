@@ -160,6 +160,14 @@ describe("Plugin System", () => {
           callOrder.push("refineMethod");
           return methods;
         });
+        hooks.composeSource.tap("test", () => {
+          callOrder.push("composeSource");
+          return [];
+        });
+        hooks.refineSource.tap("test", (statements) => {
+          callOrder.push("refineSource");
+          return statements;
+        });
         hooks.querySerializerArgs.tap("test", (args) => {
           callOrder.push("querySerializerArgs");
           return args;
@@ -178,6 +186,8 @@ describe("Plugin System", () => {
         "generateMethod",
         "querySerializerArgs",
         "refineMethod",
+        "composeSource",
+        "refineSource",
         "astGenerated",
       ]);
     });
@@ -901,6 +911,163 @@ describe("Plugin System", () => {
     });
   });
 
+  describe("composeSource/refineSource hooks", () => {
+    it("should stop after first composeSource result", async () => {
+      const spec = createMinimalSpec();
+      const callOrder: string[] = [];
+
+      const firstPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("first", () => {
+          callOrder.push("first");
+          return [
+            ts.factory.createVariableStatement(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              ts.factory.createVariableDeclarationList(
+                [
+                  ts.factory.createVariableDeclaration(
+                    "fromFirstCompose",
+                    undefined,
+                    undefined,
+                    ts.factory.createTrue(),
+                  ),
+                ],
+                ts.NodeFlags.Const,
+              ),
+            ),
+          ];
+        });
+      };
+
+      const secondPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("second", () => {
+          callOrder.push("second");
+          return [
+            ts.factory.createVariableStatement(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              ts.factory.createVariableDeclarationList(
+                [
+                  ts.factory.createVariableDeclaration(
+                    "fromSecondCompose",
+                    undefined,
+                    undefined,
+                    ts.factory.createTrue(),
+                  ),
+                ],
+                ts.NodeFlags.Const,
+              ),
+            ),
+          ];
+        });
+      };
+
+      const src = await generate(spec, [firstPlugin, secondPlugin]);
+
+      expect(callOrder).toEqual(["first"]);
+      expect(src).toContain("fromFirstCompose");
+      expect(src).not.toContain("fromSecondCompose");
+    });
+
+    it("should chain multiple refineSource transformations", async () => {
+      const spec = createMinimalSpec();
+
+      const composePlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("seed", () => [
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "seedStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createStringLiteral("seed"),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const firstRefine: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineSource.tap("firstRefine", (statements) => [
+          ...statements,
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "firstRefineStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createNumericLiteral(1),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const secondRefine: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.refineSource.tap("secondRefine", (statements) => [
+          ...statements,
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "secondRefineStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createNumericLiteral(2),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const src = await generate(spec, [
+        composePlugin,
+        firstRefine,
+        secondRefine,
+      ]);
+
+      expect(src).toContain("seedStatement");
+      expect(src).toContain("firstRefineStatement");
+      expect(src).toContain("secondRefineStatement");
+    });
+
+    it("should fall back to default statement composition", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "testOp",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      let composeCalled = false;
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("delegate", () => {
+          composeCalled = true;
+          return undefined;
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+
+      expect(composeCalled).toBe(true);
+      expect(src).toContain("export const defaults");
+      expect(src).toContain("testOp");
+    });
+  });
+
   describe("astGenerated hook", () => {
     it("should receive complete AST", async () => {
       const spec = createMinimalSpec({
@@ -1203,6 +1370,8 @@ describe("Plugin System", () => {
         hooks.filterEndpoint.tap("id", (g) => g);
         hooks.generateMethod.tap("id", () => undefined);
         hooks.refineMethod.tap("id", (m) => m);
+        hooks.composeSource.tap("id", () => undefined);
+        hooks.refineSource.tap("id", (s) => s);
         hooks.astGenerated.tap("id", (a) => a);
       };
 
