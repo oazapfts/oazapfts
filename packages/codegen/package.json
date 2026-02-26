@@ -33,7 +33,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && vite build --mode esm && vite build --mode cjs && chmod +x dist/cli.js && chmod +x dist/cli.cjs",
-    "prepack": "node -e \"/* REMOVE 0.0.0-development FROM ALL DEPENDENCY RANGES */const fs=require('fs');const p='package.json';const pkg=JSON.parse(fs.readFileSync(p,'utf8'));const clean=(deps)=>{if(!deps)return;for(const name in deps){deps[name]=deps[name].replace(/^0\\\\.0\\\\.0-development\\\\s*\\\\|\\\\|\\\\s*/,'');}};clean(pkg.dependencies);clean(pkg.peerDependencies);clean(pkg.optionalDependencies);fs.writeFileSync(p,JSON.stringify(pkg,null,2)+'\\\\n');\""
+    "prepack": "node -e \"/* REMOVE INTERNAL VERSIONS FROM ALL DEPENDENCY RANGES */const fs=require('fs');const p='package.json';const pkg=JSON.parse(fs.readFileSync(p,'utf8'));const clean=(deps)=>{if(!deps)return;for(const name in deps){deps[name]=deps[name].replace(/^0\\\\.0\\\\.0-development\\\\s*\\\\|\\\\|\\\\s*/,'');}};clean(pkg.dependencies);clean(pkg.peerDependencies);clean(pkg.optionalDependencies);fs.writeFileSync(p,JSON.stringify(pkg,null,2)+'\\\\n');\""
   },
   "release": {
     "extends": "semantic-release-monorepo",
