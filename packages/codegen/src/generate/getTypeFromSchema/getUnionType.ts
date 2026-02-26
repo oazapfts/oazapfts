@@ -84,11 +84,7 @@ export function getUnionType(
   } else {
     // oneOf -> untagged union
     return ts.factory.createUnionTypeNode(
-      _.uniq(
-        variants.map((schema) =>
-          getTypeFromSchema(ctx, schema),
-        ),
-      ),
+      _.uniq(variants.map((schema) => getTypeFromSchema(ctx, schema))),
     );
   }
 }

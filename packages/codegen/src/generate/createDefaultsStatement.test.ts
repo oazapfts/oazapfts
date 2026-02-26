@@ -49,6 +49,8 @@ describe("createHeaderValueLiteral", () => {
     expect(cg.printNode(createHeaderValueLiteral(true))).toBe("true");
     expect(cg.printNode(createHeaderValueLiteral(false))).toBe("false");
     expect(cg.printNode(createHeaderValueLiteral(null))).toBe("null");
-    expect(cg.printNode(createHeaderValueLiteral(undefined))).toBe(`"undefined"`);
+    expect(cg.printNode(createHeaderValueLiteral(undefined))).toBe(
+      `"undefined"`,
+    );
   });
 });

@@ -4,11 +4,7 @@ import SwaggerParser from "@apidevtools/swagger-parser";
 import { createContext, OazapftsContext } from "./context";
 import { generateApi } from "./generate/generateApi";
 import * as OpenAPI from "./helpers/openApi3-x";
-import {
-  type OazapftsPlugin,
-  createHooks,
-  applyPlugins,
-} from "./plugin";
+import { type OazapftsPlugin, createHooks, applyPlugins } from "./plugin";
 import { ArgumentStyle } from "./generate/generateClientMethod";
 import { EnumStyle } from "./helpers/getEnumStyle";
 import { getInternalPlugins } from "./internalPlugins";
@@ -83,10 +79,7 @@ export async function generateAst(
   plugins: OazapftsPlugin[] = [],
 ) {
   const hooks = createHooks();
-  await applyPlugins(hooks, [
-    ...getInternalPlugins(ctx),
-    ...plugins,
-  ]);
+  await applyPlugins(hooks, [...getInternalPlugins(ctx), ...plugins]);
 
   return generateApi(ctx, hooks);
 }

@@ -2,10 +2,7 @@ import ts from "typescript";
 import { createDefaultsStatement } from "../generate/createDefaultsStatement";
 import { createImportStatement } from "../generate/generateImports";
 import { createServersStatement } from "../generate/generateServers";
-import {
-  createPlugin,
-  OAZAPFTS_PLUGIN_PRECEDENCE,
-} from "../plugin";
+import { createPlugin, OAZAPFTS_PLUGIN_PRECEDENCE } from "../plugin";
 
 export function defaultComposeSourcePlugin() {
   return createPlugin(

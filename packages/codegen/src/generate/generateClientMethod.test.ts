@@ -54,7 +54,10 @@ describe("generateClientMethod", () => {
             description: "ok",
             content: {
               "application/json": {
-                schema: { type: "object", properties: { id: { type: "string" } } },
+                schema: {
+                  type: "object",
+                  properties: { id: { type: "string" } },
+                },
               },
             },
           },

@@ -4,8 +4,9 @@ import * as cg from "./tscodegen";
 
 describe("createImportStatement", () => {
   it("creates side effect imports", () => {
-    expect(cg.printNode(createImportStatement("@oazapfts/runtime")))
-      .toMatchInlineSnapshot(`"import "@oazapfts/runtime";"`);
+    expect(
+      cg.printNode(createImportStatement("@oazapfts/runtime")),
+    ).toMatchInlineSnapshot(`"import "@oazapfts/runtime";"`);
   });
 
   it("creates namespace imports", () => {
@@ -17,8 +18,9 @@ describe("createImportStatement", () => {
   });
 
   it("creates default imports", () => {
-    expect(cg.printNode(createImportStatement(["Client", { from: "./client" }])))
-      .toMatchInlineSnapshot(`"import Client from "./client";"`);
+    expect(
+      cg.printNode(createImportStatement(["Client", { from: "./client" }])),
+    ).toMatchInlineSnapshot(`"import Client from "./client";"`);
   });
 
   it("creates named imports with aliases", () => {

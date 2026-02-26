@@ -118,21 +118,14 @@ function getBaseTypeFromSchema(
           );
         }
         types.push(
-          getRefAlias(
-            childSchema,
-            ctx,
-            /* ignoreDiscriminator */ true,
-          ),
+          getRefAlias(childSchema, ctx, /* ignoreDiscriminator */ true),
         );
       } else {
         types.push(
-          getTypeFromSchema(
-            ctx,
-            {
-              required: schema.required,
-              ...childSchema,
-            },
-          ),
+          getTypeFromSchema(ctx, {
+            required: schema.required,
+            ...childSchema,
+          }),
         );
       }
     }
@@ -190,9 +183,7 @@ function getBaseTypeFromSchema(
     }
 
     // items -> array
-    return ts.factory.createArrayTypeNode(
-      getTypeFromSchema(ctx, schema.items),
-    );
+    return ts.factory.createArrayTypeNode(getTypeFromSchema(ctx, schema.items));
   }
   if ("prefixItems" in schema && Array.isArray(schema.prefixItems)) {
     // prefixItems -> typed tuple

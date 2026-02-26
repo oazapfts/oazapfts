@@ -1,8 +1,5 @@
 import { generateClientMethod } from "../generate/generateClientMethod";
-import {
-  createPlugin,
-  OAZAPFTS_PLUGIN_PRECEDENCE,
-} from "../plugin";
+import { createPlugin, OAZAPFTS_PLUGIN_PRECEDENCE } from "../plugin";
 
 export function defaultGenerateMethodPlugin() {
   return createPlugin(

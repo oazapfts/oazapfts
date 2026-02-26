@@ -2,10 +2,7 @@ import ts from "typescript";
 import { resolve } from "@oazapfts/resolve";
 import type { OazapftsContext } from "../context";
 import type { ParameterObject } from "../helpers/openApi3-x";
-import {
-  createPlugin,
-  OAZAPFTS_PLUGIN_PRECEDENCE,
-} from "../plugin";
+import { createPlugin, OAZAPFTS_PLUGIN_PRECEDENCE } from "../plugin";
 
 function hasBooleanQueryParameter(
   query: ParameterObject[],

@@ -26,8 +26,7 @@ export type OazapftsPluginOptions = {
 export type OazapftsPluginFn = (
   hooks: OazapftsPluginHooks,
 ) => void | Promise<void>;
-export type OazapftsPlugin = OazapftsPluginFn &
-  OazapftsPluginOptions;
+export type OazapftsPlugin = OazapftsPluginFn & OazapftsPluginOptions;
 
 export type QuerySerializerHookArgs = [
   ts.Expression[],
@@ -53,10 +52,7 @@ export type EndpointHookArgs = [
   OazapftsContext,
 ];
 
-export type ComposeSourceHookArgs = [
-  OazapftsContext,
-  ts.Statement[],
-];
+export type ComposeSourceHookArgs = [OazapftsContext, ts.Statement[]];
 
 export type OazapftsPluginHooks = {
   /**
@@ -96,9 +92,7 @@ export type OazapftsPluginHooks = {
    * Receives generated methods and can return a modified array.
    * Runs after generateMethod for each endpoint.
    */
-  refineMethod: AsyncSeriesWaterfallHook<
-    [ts.Statement[], ...EndpointHookArgs]
-  >;
+  refineMethod: AsyncSeriesWaterfallHook<[ts.Statement[], ...EndpointHookArgs]>;
   /**
    * Compose top-level source statements from context and generated methods.
    * This is a bail hook: the first plugin that returns a value wins.
@@ -182,9 +176,9 @@ export async function applyPlugins(
   }
 }
 
-export function sortPlugins<
-  Plugin extends Pick<OazapftsPlugin, "precedence">,
->(plugins: Plugin[]) {
+export function sortPlugins<Plugin extends Pick<OazapftsPlugin, "precedence">>(
+  plugins: Plugin[],
+) {
   const eagerPlugins: Plugin[] = [];
   const defaultPlugins: Plugin[] = [];
   const lazyPlugins: Plugin[] = [];

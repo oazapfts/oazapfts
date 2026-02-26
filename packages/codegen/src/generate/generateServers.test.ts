@@ -58,7 +58,9 @@ describe("generateServer", () => {
   });
 
   it("creates exported servers statement", () => {
-    const statement = createServersStatement([{ url: "https://api.example.com" }]);
+    const statement = createServersStatement([
+      { url: "https://api.example.com" },
+    ]);
 
     expect(cg.printNode(statement)).toMatchInlineSnapshot(`
       "export const servers = {

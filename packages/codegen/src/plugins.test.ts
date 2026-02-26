@@ -719,7 +719,8 @@ describe("Plugin System", () => {
         });
         hooks.refineMethod.tap("subset", (methods) => {
           return methods.filter(
-            (m) => !ts.isFunctionDeclaration(m) || m.name?.text !== "dropMethod",
+            (m) =>
+              !ts.isFunctionDeclaration(m) || m.name?.text !== "dropMethod",
           );
         });
       };

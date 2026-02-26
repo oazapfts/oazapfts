@@ -108,7 +108,12 @@ describe("getOperationNames", () => {
     const operationNames = new Map<string, number>();
 
     const first = getOperationNames("GET", "/pets", "listPets", operationNames);
-    const second = getOperationNames("GET", "/dogs", "listPets", operationNames);
+    const second = getOperationNames(
+      "GET",
+      "/dogs",
+      "listPets",
+      operationNames,
+    );
 
     expect(first.primaryName).toBe("listPets");
     expect(second.primaryName).toBe("listPets2");
@@ -143,11 +148,21 @@ describe("getOperationNames", () => {
   it("should de-collide based on usage count plus collision index", () => {
     const operationNames = new Map<string, number>();
 
-    const explicitHello1 = getOperationNames("GET", "/a", "hello1", operationNames);
+    const explicitHello1 = getOperationNames(
+      "GET",
+      "/a",
+      "hello1",
+      operationNames,
+    );
     const firstHello = getOperationNames("GET", "/b", "hello", operationNames);
     const secondHello = getOperationNames("GET", "/c", "hello", operationNames);
     const thirdHello = getOperationNames("GET", "/d", "hello", operationNames);
-    const explicitHello2 = getOperationNames("GET", "/e", "hello2", operationNames);
+    const explicitHello2 = getOperationNames(
+      "GET",
+      "/e",
+      "hello2",
+      operationNames,
+    );
 
     expect(explicitHello1.primaryName).toBe("hello1");
     expect(firstHello.primaryName).toBe("hello");
