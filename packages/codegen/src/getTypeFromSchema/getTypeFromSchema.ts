@@ -1,7 +1,7 @@
 import ts, { factory } from "typescript";
 import _ from "lodash";
 import { isReference, resolve } from "@oazapfts/resolve";
-import { OazapftsContext, OnlyMode } from "../context";
+import { OazapftsContext } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "../generate/tscodegen";
 import * as h from "../helpers";
@@ -23,9 +23,8 @@ export function getTypeFromSchema(
   ctx: OazapftsContext,
   schema?: OpenApi.SchemaObject | OpenApi.ReferenceObject,
   name?: string,
-  onlyMode?: OnlyMode,
 ) {
-  const type = getBaseTypeFromSchema(ctx, schema, name, onlyMode);
+  const type = getBaseTypeFromSchema(ctx, schema, name);
   return h.isNullable(schema)
     ? ts.factory.createUnionTypeNode([type, cg.keywordType.null])
     : type;
@@ -39,11 +38,10 @@ function getBaseTypeFromSchema(
   ctx: OazapftsContext,
   schema?: OpenApi.SchemaObject | OpenApi.ReferenceObject,
   name?: string,
-  onlyMode?: OnlyMode,
 ): ts.TypeNode {
   if (schema === undefined) return getEmptySchemaType(ctx);
   if (isReference(schema)) {
-    return getRefAlias(schema, ctx, onlyMode) as ts.TypeReferenceNode;
+    return getRefAlias(schema, ctx) as ts.TypeReferenceNode;
   }
 
   if (schema === true) {
@@ -69,12 +67,11 @@ function getBaseTypeFromSchema(
       ),
       ctx,
       schema.discriminator,
-      onlyMode,
     );
   }
   if (schema.anyOf) {
     // anyOf -> union
-    return getUnionType(schema.anyOf, ctx, undefined, onlyMode);
+    return getUnionType(schema.anyOf, ctx);
   }
   if (schema.discriminator?.mapping) {
     // discriminating schema -> union
@@ -83,7 +80,6 @@ function getBaseTypeFromSchema(
       Object.values(mapping).map((ref) => ({ $ref: ref })),
       ctx,
       undefined,
-      onlyMode,
     );
   }
   if (schema.allOf) {
@@ -125,7 +121,6 @@ function getBaseTypeFromSchema(
           getRefAlias(
             childSchema,
             ctx,
-            onlyMode,
             /* ignoreDiscriminator */ true,
           ),
         );
@@ -137,8 +132,6 @@ function getBaseTypeFromSchema(
               required: schema.required,
               ...childSchema,
             },
-            undefined,
-            onlyMode,
           ),
         );
       }
@@ -152,7 +145,6 @@ function getBaseTypeFromSchema(
           ctx,
           schema.required,
           schema.additionalProperties,
-          onlyMode,
         ),
       );
     }
@@ -174,7 +166,7 @@ function getBaseTypeFromSchema(
           delete subSchema.properties;
         }
 
-        return getBaseTypeFromSchema(ctx, subSchema, name, onlyMode);
+        return getBaseTypeFromSchema(ctx, subSchema, name);
       }),
     );
   }
@@ -199,7 +191,7 @@ function getBaseTypeFromSchema(
 
     // items -> array
     return ts.factory.createArrayTypeNode(
-      getTypeFromSchema(ctx, schema.items, undefined, onlyMode),
+      getTypeFromSchema(ctx, schema.items),
     );
   }
   if ("prefixItems" in schema && Array.isArray(schema.prefixItems)) {
@@ -215,7 +207,6 @@ function getBaseTypeFromSchema(
       ctx,
       schema.required,
       schema.additionalProperties,
-      onlyMode,
     );
   }
 

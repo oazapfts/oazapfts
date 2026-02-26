@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { OazapftsContext, OnlyMode } from "../context";
+import { OazapftsContext } from "../context";
 import { ReferenceObject, SchemaObject } from "../helpers/openApi3-x";
 import * as cg from "../generate/tscodegen";
 import { checkSchemaOnlyMode } from "../helpers";
@@ -16,15 +16,16 @@ export function getTypeFromProperties(
   ctx: OazapftsContext,
   required?: string[],
   additionalProperties?: boolean | SchemaObject | ReferenceObject,
-  onlyMode?: OnlyMode,
 ): ts.TypeLiteralNode {
+  const currentMode = ctx.mode;
+
   // Check if any of the props are readOnly or writeOnly schemas
   const propertyNames = Object.keys(props);
   const filteredPropertyNames = propertyNames.filter((name) => {
     const schema = props[name];
     const { readOnly, writeOnly } = checkSchemaOnlyMode(schema, ctx, false);
 
-    switch (onlyMode) {
+    switch (currentMode) {
       case "readOnly":
         return readOnly || !writeOnly;
       case "writeOnly":
@@ -37,7 +38,7 @@ export function getTypeFromProperties(
   const members: ts.TypeElement[] = filteredPropertyNames.map((name) => {
     const schema = props[name];
     const isRequired = required && required.includes(name);
-    let type = getTypeFromSchema(ctx, schema, name, onlyMode);
+    let type = getTypeFromSchema(ctx, schema, name);
     if (!isRequired && ctx.opts.unionUndefined) {
       type = ts.factory.createUnionTypeNode([type, cg.keywordType.undefined]);
     }
@@ -71,7 +72,7 @@ export function getTypeFromProperties(
     const type =
       additionalProperties === true
         ? getEmptySchemaType(ctx)
-        : getTypeFromSchema(ctx, additionalProperties, undefined, onlyMode);
+        : getTypeFromSchema(ctx, additionalProperties);
 
     members.push(cg.createIndexSignature(type));
   }

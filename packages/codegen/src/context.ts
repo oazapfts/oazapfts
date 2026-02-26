@@ -56,6 +56,7 @@ export type Defaults = {
 export type OazapftsContext = {
   readonly opts: ReadonlyDeep<OazapftsOptions>;
   readonly spec: Document;
+  readonly mode?: OnlyMode;
 
   /** Banner comment at the top of the file (the text content, not including comment markers) */
   banner: string;
@@ -109,6 +110,7 @@ export function createContext(
   return {
     opts,
     spec,
+    mode: undefined,
 
     // Template parts
     banner: `DO NOT MODIFY - This file has been generated using oazapfts.
@@ -131,6 +133,13 @@ See https://www.npmjs.com/package/oazapfts`,
     typeAliases: {},
     operationNames: new Map(),
   };
+}
+
+export function withMode(
+  ctx: OazapftsContext,
+  mode?: OnlyMode,
+): OazapftsContext {
+  return { ...ctx, mode };
 }
 
 /** Creates: const oazapfts = Oazapfts.runtime(defaults); */

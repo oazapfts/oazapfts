@@ -49,8 +49,8 @@ export async function generateApi(
   }
 
   if (ctx.opts.allSchemas && ctx.spec.components?.schemas) {
-    for (const [name, schema] of Object.entries(ctx.spec.components.schemas)) {
-      getRefAlias({ $ref: `#/components/schemas/${name}` }, ctx, schema);
+    for (const [name] of Object.entries(ctx.spec.components.schemas)) {
+      getRefAlias({ $ref: `#/components/schemas/${name}` }, ctx);
     }
   }
 

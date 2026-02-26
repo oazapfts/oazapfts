@@ -31,6 +31,7 @@ See https://www.npmjs.com/package/oazapfts`);
     expect(ctx.servers).toEqual([]);
 
     // Internal state starts empty
+    expect(ctx.mode).toBeUndefined();
     expect(ctx.discriminatingSchemas).toBeInstanceOf(Set);
     expect(ctx.discriminatingSchemas.size).toBe(0);
     expect(ctx.aliases).toEqual([]);

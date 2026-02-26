@@ -1,7 +1,7 @@
 import ts from "typescript";
 import _ from "lodash";
 import { resolveArray, resolve, getReferenceName } from "@oazapfts/resolve";
-import { OazapftsContext } from "../context";
+import { OazapftsContext, withMode } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
 import * as h from "../helpers";
@@ -78,7 +78,7 @@ export function generateClientMethod(
       if (requestBody) {
         body = resolve(requestBody, ctx);
         const schema = getSchemaFromContent(body.content);
-        const type = getTypeFromSchema(ctx, schema, undefined, "writeOnly");
+        const type = getTypeFromSchema(withMode(ctx, "writeOnly"), schema);
         bodyVar = h.toIdentifier(
           (type as any).name || getReferenceName(schema) || "body",
         );
@@ -130,7 +130,7 @@ export function generateClientMethod(
       if (requestBody) {
         body = resolve(requestBody, ctx);
         const schema = getSchemaFromContent(body.content);
-        const type = getTypeFromSchema(ctx, schema, undefined, "writeOnly");
+        const type = getTypeFromSchema(withMode(ctx, "writeOnly"), schema);
         bodyVar = h.toIdentifier(
           (type as any).name || getReferenceName(schema) || "body",
         );
@@ -277,7 +277,7 @@ export function generateClientMethod(
           args,
           returnType === "json" || returnType === "blob"
             ? [
-                getTypeFromResponses(responses!, ctx, "readOnly") ||
+                getTypeFromResponses(responses!, withMode(ctx, "readOnly")) ||
                   ts.SyntaxKind.AnyKeyword,
               ]
             : undefined,

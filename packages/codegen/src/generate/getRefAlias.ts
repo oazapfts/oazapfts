@@ -1,7 +1,7 @@
 import ts from "typescript";
 import _ from "lodash";
 import { resolve, getRefName } from "@oazapfts/resolve";
-import { OazapftsContext, OnlyMode } from "../context";
+import { OazapftsContext, withMode } from "../context";
 import * as cg from "./tscodegen";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as h from "../helpers";
@@ -13,7 +13,6 @@ import { getTypeFromSchema } from "../getTypeFromSchema";
 export function getRefAlias(
   obj: OpenApi.ReferenceObject,
   ctx: OazapftsContext,
-  onlyMode?: OnlyMode,
   // If true, the discriminator property of the schema referenced by `obj` will be ignored.
   // This is meant to be used when getting the type of a discriminating schema in an `allOf`
   // construct.
@@ -50,12 +49,12 @@ export function getRefAlias(
       writeOnly: undefined,
     };
 
-    const type = getTypeFromSchema(ctx, schema, undefined);
+    const baseType = getTypeFromSchema(withMode(ctx, undefined), schema);
     ctx.aliases.push(
       cg.createTypeAliasDeclaration({
         modifiers: [cg.modifier.export],
         name: alias,
-        type,
+        type: baseType,
       }),
     );
 
@@ -71,7 +70,11 @@ export function getRefAlias(
         undefined,
       );
 
-      const readOnlyType = getTypeFromSchema(ctx, schema, name, "readOnly");
+      const readOnlyType = getTypeFromSchema(
+        withMode(ctx, "readOnly"),
+        schema,
+        name,
+      );
       ctx.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
@@ -90,7 +93,11 @@ export function getRefAlias(
         writeOnlyAlias,
         undefined,
       );
-      const writeOnlyType = getTypeFromSchema(ctx, schema, name, "writeOnly");
+      const writeOnlyType = getTypeFromSchema(
+        withMode(ctx, "writeOnly"),
+        schema,
+        name,
+      );
       ctx.aliases.push(
         cg.createTypeAliasDeclaration({
           modifiers: [cg.modifier.export],
@@ -102,5 +109,5 @@ export function getRefAlias(
   }
 
   // If not ref fallback to the regular reference
-  return ctx.refs[$ref][onlyMode || "base"] ?? ctx.refs[$ref].base;
+  return ctx.refs[$ref][ctx.mode || "base"] ?? ctx.refs[$ref].base;
 }

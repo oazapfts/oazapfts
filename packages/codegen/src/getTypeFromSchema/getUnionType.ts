@@ -1,7 +1,7 @@
 import ts from "typescript";
 import _ from "lodash";
 import { isReference, resolve, getRefBasename } from "@oazapfts/resolve";
-import { OazapftsContext, OnlyMode } from "../context";
+import { OazapftsContext } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import { createPropertySignature } from "../generate/tscodegen";
 import { getTypeFromSchema } from "./getTypeFromSchema";
@@ -11,7 +11,6 @@ export function getUnionType(
   variants: (OpenApi.ReferenceObject | OpenApi.SchemaObject)[],
   ctx: OazapftsContext,
   discriminator?: OpenApi.DiscriminatorObject,
-  onlyMode?: OnlyMode,
 ) {
   if (discriminator) {
     // oneOf + discriminator -> tagged union (polymorphism)
@@ -78,7 +77,7 @@ export function getUnionType(
               ),
             }),
           ]),
-          getTypeFromSchema(ctx, variant, undefined, onlyMode),
+          getTypeFromSchema(ctx, variant),
         ]),
       ),
     );
@@ -87,7 +86,7 @@ export function getUnionType(
     return ts.factory.createUnionTypeNode(
       _.uniq(
         variants.map((schema) =>
-          getTypeFromSchema(ctx, schema, undefined, onlyMode),
+          getTypeFromSchema(ctx, schema),
         ),
       ),
     );
