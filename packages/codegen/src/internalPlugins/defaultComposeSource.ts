@@ -3,12 +3,12 @@ import { createDefaultsStatement } from "../generate/createDefaultsStatement";
 import { createImportStatement } from "../generate/generateImports";
 import { createServersStatement } from "../generate/generateServers";
 import {
-  UNSTABLE_createPlugin,
-  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+  createPlugin,
+  OAZAPFTS_PLUGIN_PRECEDENCE,
 } from "../plugin";
 
 export function defaultComposeSourcePlugin() {
-  return UNSTABLE_createPlugin(
+  return createPlugin(
     (hooks) => {
       hooks.composeSource.tap("defaultComposeSource", (ctx, methods) => {
         return [
@@ -23,7 +23,7 @@ export function defaultComposeSourcePlugin() {
       });
     },
     {
-      precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+      precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
     },
   );
 }

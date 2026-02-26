@@ -1,7 +1,7 @@
-import { UNSTABLE_createPlugin } from "../plugin";
+import { createPlugin } from "../plugin";
 
 export function includeExcludeFilterEndpointPlugin() {
-  return UNSTABLE_createPlugin((hooks) => {
+  return createPlugin((hooks) => {
     hooks.filterEndpoint.tap(
       "includeExcludeFilterEndpoint",
       (shouldGenerate, endpoint, ctx) => {

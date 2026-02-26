@@ -11,7 +11,7 @@ import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getResponseType } from "./getResponseType";
 import { getTypeFromResponses } from "./getTypeFromResponses";
 import * as OpenAPI from "../helpers/openApi3-x";
-import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
+import type { OazapftsPluginHooks } from "../plugin";
 import { getOperationNames } from "./getOperationName";
 
 export const argumentStyleOptions = ["positional", "object"] as const;
@@ -23,7 +23,7 @@ export function generateClientMethod(
   operation: OpenAPI.OperationObject,
   pathItem: OpenAPI.PathItemObject,
   ctx: OazapftsContext,
-  hooks: UNSTABLE_OazapftsPluginHooks,
+  hooks: OazapftsPluginHooks,
 ): ts.Statement[] {
   const { operationId, requestBody, responses, summary, description } =
     operation;

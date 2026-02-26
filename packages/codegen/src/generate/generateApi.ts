@@ -2,12 +2,12 @@ import ts from "typescript";
 import { OazapftsContext } from "../context";
 import * as h from "../helpers";
 import * as OpenAPI from "../helpers/openApi3-x";
-import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
+import type { OazapftsPluginHooks } from "../plugin";
 import { getRefAlias } from "./getRefAlias";
 
 export async function generateApi(
   ctx: OazapftsContext,
-  hooks: UNSTABLE_OazapftsPluginHooks,
+  hooks: OazapftsPluginHooks,
 ): Promise<ts.SourceFile> {
   // Preprocess components (needs mutable context)
   h.preprocessComponents(ctx);

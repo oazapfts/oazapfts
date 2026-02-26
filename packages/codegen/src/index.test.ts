@@ -111,7 +111,7 @@ describe("index exports (public API surface)", () => {
       unionUndefined: true,
       allSchemas: false,
       numericBooleanQueryParameters: true,
-      UNSTABLE_plugins: [],
+      plugins: [],
     };
   });
 });

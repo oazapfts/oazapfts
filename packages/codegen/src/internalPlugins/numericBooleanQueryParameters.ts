@@ -3,8 +3,8 @@ import { resolve } from "@oazapfts/resolve";
 import type { OazapftsContext } from "../context";
 import type { ParameterObject } from "../helpers/openApi3-x";
 import {
-  UNSTABLE_createPlugin,
-  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+  createPlugin,
+  OAZAPFTS_PLUGIN_PRECEDENCE,
 } from "../plugin";
 
 function hasBooleanQueryParameter(
@@ -18,7 +18,7 @@ function hasBooleanQueryParameter(
 }
 
 export function numericBooleanQueryParametersPlugin() {
-  return UNSTABLE_createPlugin(
+  return createPlugin(
     (hooks) => {
       hooks.querySerializerArgs.tap(
         "numericBooleanQueryParameters",
@@ -42,7 +42,7 @@ export function numericBooleanQueryParametersPlugin() {
       );
     },
     {
-      precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+      precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
     },
   );
 }
