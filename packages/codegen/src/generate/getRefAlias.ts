@@ -5,7 +5,7 @@ import { OazapftsContext, withMode } from "../context";
 import * as cg from "./tscodegen";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as h from "../helpers";
-import { getTypeFromSchema } from "../getTypeFromSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 
 /**
  * Create a type alias for the schema referenced by the given ReferenceObject

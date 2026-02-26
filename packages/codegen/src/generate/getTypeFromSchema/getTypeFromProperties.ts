@@ -1,10 +1,10 @@
 import ts from "typescript";
-import { OazapftsContext } from "../context";
-import { ReferenceObject, SchemaObject } from "../helpers/openApi3-x";
-import * as cg from "../generate/tscodegen";
-import { checkSchemaOnlyMode } from "../helpers";
+import { OazapftsContext } from "../../context";
+import { ReferenceObject, SchemaObject } from "../../helpers/openApi3-x";
+import * as cg from "../tscodegen";
+import { checkSchemaOnlyMode } from "../../helpers";
 import { getTypeFromSchema } from "./getTypeFromSchema";
-import { getEmptySchemaType } from "../helpers/emptySchemaType";
+import { getEmptySchemaType } from "../../helpers/emptySchemaType";
 
 /**
  * Recursively creates a type literal with the given props.

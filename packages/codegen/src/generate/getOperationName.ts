@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { toIdentifier } from "./toIdentifier";
-import { isValidIdentifier } from "../generate/tscodegen";
+import { toIdentifier } from "../helpers/toIdentifier";
+import { isValidIdentifier } from "./tscodegen";
 
 /**
  * Result of getOperationNames containing the primary method name and
@@ -19,6 +19,8 @@ export type OperationNames = {
  * Create method name(s) for a given operation, either from its operationId or
  * the HTTP verb and path. Returns the primary name and optionally a deprecated
  * legacy name for backward compatibility.
+ *
+ * @deprecated will be removed in next major version. Use `getOperationName` instead
  */
 export function getOperationNames(
   verb: string,
@@ -57,14 +59,20 @@ export function getOperationNames(
 /**
  * Create a method name for a given operation, either from its operationId or
  * the HTTP verb and path.
- * @deprecated Use getOperationNames instead for backward compatibility support.
  */
 export function getOperationName(
   verb: string,
   path: string,
   operationId?: string,
+  operationNames: Map<string, number> = new Map(),
+  /** @deprecated will be removed in next major version */
+  DEPRECATED_legacyName?: true,
 ) {
-  return getOperationNames(verb, path, operationId).primaryName;
+  const names = getOperationNames(verb, path, operationId, operationNames);
+  if (DEPRECATED_legacyName) {
+    return names.deprecatedLegacyName;
+  }
+  return names.primaryName;
 }
 
 /**

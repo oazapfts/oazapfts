@@ -7,11 +7,12 @@ import * as cg from "./tscodegen";
 import * as h from "../helpers";
 import { getTypeFromParameter } from "./getTypeFromParameter";
 import { getSchemaFromContent } from "./getSchemaFromContent";
-import { getTypeFromSchema } from "../getTypeFromSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getResponseType } from "./getResponseType";
 import { getTypeFromResponses } from "./getTypeFromResponses";
 import * as OpenAPI from "../helpers/openApi3-x";
 import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
+import { getOperationNames } from "./getOperationName";
 
 export const argumentStyleOptions = ["positional", "object"] as const;
 export type ArgumentStyle = (typeof argumentStyleOptions)[number];
@@ -27,7 +28,7 @@ export function generateClientMethod(
   const { operationId, requestBody, responses, summary, description } =
     operation;
 
-  const { primaryName, deprecatedLegacyName } = h.getOperationNames(
+  const { primaryName, deprecatedLegacyName } = getOperationNames(
     method,
     path,
     operationId,

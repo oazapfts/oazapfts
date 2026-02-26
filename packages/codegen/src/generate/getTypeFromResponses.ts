@@ -3,7 +3,7 @@ import { resolve } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
-import { getTypeFromSchema } from "../getTypeFromSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getSchemaFromContent } from "./getSchemaFromContent";
 
 export function getTypeFromResponses(

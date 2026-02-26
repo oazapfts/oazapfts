@@ -1,12 +1,12 @@
 import ts, { factory } from "typescript";
 import _ from "lodash";
 import { isReference, resolve } from "@oazapfts/resolve";
-import { OazapftsContext } from "../context";
-import * as OpenApi from "../helpers/openApi3-x";
-import * as cg from "../generate/tscodegen";
-import * as h from "../helpers";
-import { getEmptySchemaType } from "../helpers/emptySchemaType";
-import { getRefAlias } from "../generate/getRefAlias";
+import { OazapftsContext } from "../../context";
+import * as OpenApi from "../../helpers/openApi3-x";
+import * as cg from "../tscodegen";
+import * as h from "../../helpers";
+import { getEmptySchemaType } from "../../helpers/emptySchemaType";
+import { getRefAlias } from "../getRefAlias";
 import { getUnionType } from "./getUnionType";
 import { getTypeFromProperties } from "./getTypeFromProperties";
 import { getTrueEnum } from "./getTrueEnum";

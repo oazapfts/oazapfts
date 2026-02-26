@@ -1,5 +1,4 @@
 export * from "./preprocessComponents";
-export * from "./getOperationName";
 export * from "./supportDeepObjects";
 export * from "./toIdentifier";
 export * from "./getFormatter";

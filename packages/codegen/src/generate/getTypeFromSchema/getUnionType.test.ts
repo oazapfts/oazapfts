@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { OpenAPIV3 } from "openapi-types";
-import { printNode } from "../generate/tscodegen";
-import { createContext } from "../context";
+import { printNode } from "../tscodegen";
+import { createContext } from "../../context";
 import { getUnionType } from "./getUnionType";
 
 describe("getUnionType", () => {
