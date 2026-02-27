@@ -69,7 +69,7 @@ export function getOperationName(
   DEPRECATED_legacyName?: true,
 ) {
   const names = getOperationNames(verb, path, operationId, operationNames);
-  if (DEPRECATED_legacyName) {
+  if (DEPRECATED_legacyName && names.deprecatedLegacyName) {
     return names.deprecatedLegacyName;
   }
   return names.primaryName;
