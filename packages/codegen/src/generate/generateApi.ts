@@ -9,9 +9,6 @@ export async function generateApi(
   ctx: OazapftsContext,
   hooks: OazapftsPluginHooks,
 ): Promise<ts.SourceFile> {
-  // Preprocess components (needs mutable context)
-  h.preprocessComponents(ctx);
-
   // Hook: prepare - allow plugins to modify spec, context, or template parts
   await hooks.prepare.promise(ctx);
 
