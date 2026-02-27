@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import ts from "typescript";
 import { generateAst, printAst } from "./index";
 import {
-  UNSTABLE_OazapftsPlugin,
-  UNSTABLE_sortPlugins,
-  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
-  UNSTABLE_QuerySerializerHookArgs,
+  OazapftsPlugin,
+  sortPlugins,
+  OAZAPFTS_PLUGIN_PRECEDENCE,
+  QuerySerializerHookArgs,
 } from "./plugin";
 import {
   Document,
@@ -30,7 +30,7 @@ const TEST_CONTEXT = Symbol("TEST_CONTEXT");
 // Helper to generate source from inline spec
 async function generate(
   spec: Document,
-  plugins: UNSTABLE_OazapftsPlugin[] = [],
+  plugins: OazapftsPlugin[] = [],
 ): Promise<string> {
   const ctx = createContext(spec);
   ctx[TEST_CONTEXT] = true;
@@ -46,30 +46,30 @@ describe("Plugin System", () => {
   describe("sortPlugins", () => {
     it("should sort plugins in order", () => {
       expect(
-        UNSTABLE_sortPlugins([
+        sortPlugins([
           {
             name: "plugin1",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
           },
           {
             name: "plugin2",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
           },
           {
             name: "plugin3",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
           },
           {
             name: "plugin4",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
           },
           {
             name: "plugin5",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
           },
           {
             name: "plugin6",
-            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
           },
         ]).map(({ name }) => name),
       ).toEqual([
@@ -97,7 +97,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", prepareMock);
       };
 
@@ -146,11 +146,27 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", () => callOrder.push("prepare"));
-        hooks.generateMethod.tap("test", (methods) => {
+        hooks.filterEndpoint.tap("test", (shouldGenerate) => {
+          callOrder.push("filterEndpoint");
+          return shouldGenerate;
+        });
+        hooks.generateMethod.tap("test", () => {
           callOrder.push("generateMethod");
+          return undefined;
+        });
+        hooks.refineMethod.tap("test", (methods) => {
+          callOrder.push("refineMethod");
           return methods;
+        });
+        hooks.composeSource.tap("test", () => {
+          callOrder.push("composeSource");
+          return [];
+        });
+        hooks.refineSource.tap("test", (statements) => {
+          callOrder.push("refineSource");
+          return statements;
         });
         hooks.querySerializerArgs.tap("test", (args) => {
           callOrder.push("querySerializerArgs");
@@ -166,8 +182,12 @@ describe("Plugin System", () => {
 
       expect(callOrder).toEqual([
         "prepare",
-        "querySerializerArgs",
+        "filterEndpoint",
         "generateMethod",
+        "querySerializerArgs",
+        "refineMethod",
+        "composeSource",
+        "refineSource",
         "astGenerated",
       ]);
     });
@@ -185,7 +205,7 @@ describe("Plugin System", () => {
       });
 
       // Async plugin that modifies spec after a delay
-      const asyncPlugin: UNSTABLE_OazapftsPlugin = async (hooks) => {
+      const asyncPlugin: OazapftsPlugin = async (hooks) => {
         await new Promise((resolve) => setTimeout(resolve, 5));
 
         hooks.prepare.tapPromise("async", async (ctx) => {
@@ -227,7 +247,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           if (ctx.spec.paths) {
             delete ctx.spec.paths["/remove"];
@@ -246,7 +266,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Simply push a new server - much simpler!
           ctx.servers.push({
@@ -267,7 +287,7 @@ describe("Plugin System", () => {
     it("should allow modifying banner", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.banner = "CUSTOM BANNER TEXT";
         });
@@ -280,7 +300,7 @@ describe("Plugin System", () => {
     it("should allow adding imports", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.imports.unshift("side-effect");
           ctx.imports.push([
@@ -315,7 +335,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Replace all servers with a custom one
           ctx.servers = [
@@ -336,7 +356,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.defaults.baseUrl = "https://modified.example.com";
         });
@@ -349,7 +369,7 @@ describe("Plugin System", () => {
     it("should allow setting custom fetch as arrow function", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set fetch to an arrow function expression
           ctx.defaults.fetch = ts.factory.createArrowFunction(
@@ -390,7 +410,7 @@ describe("Plugin System", () => {
     it("should allow setting custom fetch as identifier", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set fetch to an identifier reference
           ctx.defaults.fetch = ts.factory.createIdentifier("myCustomFetch");
@@ -414,7 +434,7 @@ describe("Plugin System", () => {
     it("should allow setting custom FormData as identifier", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set FormData to an identifier reference
           ctx.defaults.FormData = ts.factory.createIdentifier("CustomFormData");
@@ -438,7 +458,7 @@ describe("Plugin System", () => {
     it("should allow setting custom FormData as class expression", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set FormData to a class expression
           ctx.defaults.FormData = ts.factory.createClassExpression(
@@ -481,7 +501,7 @@ describe("Plugin System", () => {
     it("should allow adding init statements", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.init.push(
             ts.factory.createVariableStatement(
@@ -537,15 +557,15 @@ describe("Plugin System", () => {
         tags?: string[];
       } | null = null;
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("test", (endpoint) => {
           capturedEndpoint = {
             method: endpoint.method,
             path: endpoint.path,
             operationId: endpoint.operation.operationId,
             tags: endpoint.operation.tags,
           };
-          return methods;
+          return undefined;
         });
       };
 
@@ -558,40 +578,46 @@ describe("Plugin System", () => {
       expect(capturedEndpoint!.tags).toContain("users");
     });
 
-    it("should allow filtering out methods", async () => {
+    it("should allow completely replacing method implementation", async () => {
       const spec = createMinimalSpec({
         paths: {
-          "/public": {
+          "/test": {
             get: {
-              operationId: "publicEndpoint",
-              responses: { "200": { description: "OK" } },
-            },
-          },
-          "/private": {
-            get: {
-              operationId: "privateEndpoint",
-              tags: ["internal"],
+              operationId: "testOp",
               responses: { "200": { description: "OK" } },
             },
           },
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
-          if (endpoint.operation.tags?.includes("internal")) {
-            return [];
-          }
-          return methods;
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("test", () => {
+          const customMethod = ts.factory.createFunctionDeclaration(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            undefined,
+            "customImplementation",
+            undefined,
+            [],
+            undefined,
+            ts.factory.createBlock([
+              ts.factory.createReturnStatement(
+                ts.factory.createStringLiteral("custom"),
+              ),
+            ]),
+          );
+          return [customMethod];
         });
       };
 
       const src = await generate(spec, [plugin]);
 
-      expect(src).toContain("publicEndpoint");
-      expect(src).not.toContain("privateEndpoint");
+      expect(src).toContain("customImplementation");
+      expect(src).toContain('return "custom"');
+      expect(src).not.toContain("testOp");
     });
+  });
 
+  describe("refineMethod hook", () => {
     it("should allow renaming methods", async () => {
       const spec = createMinimalSpec({
         paths: {
@@ -604,9 +630,10 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods) => {
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("test", (methods) => {
           return methods.map((method) => {
+            if (!ts.isFunctionDeclaration(method)) return method;
             return ts.factory.updateFunctionDeclaration(
               method,
               method.modifiers,
@@ -639,8 +666,8 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", (methods, endpoint) => {
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("test", (methods, endpoint) => {
           return methods.map((method) => {
             return ts.addSyntheticLeadingComment(
               method,
@@ -656,7 +683,7 @@ describe("Plugin System", () => {
       expect(src).toContain("@custom testOp");
     });
 
-    it("should allow completely replacing method implementation", async () => {
+    it("should allow returning a subset of methods", async () => {
       const spec = createMinimalSpec({
         paths: {
           "/test": {
@@ -668,30 +695,160 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("test", () => {
-          const customMethod = ts.factory.createFunctionDeclaration(
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("seed", () => {
+          const keep = ts.factory.createFunctionDeclaration(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
             undefined,
-            "customImplementation",
+            "keepMethod",
             undefined,
             [],
             undefined,
-            ts.factory.createBlock([
-              ts.factory.createReturnStatement(
-                ts.factory.createStringLiteral("custom"),
-              ),
-            ]),
+            ts.factory.createBlock([], true),
           );
-          return [customMethod];
+          const drop = ts.factory.createFunctionDeclaration(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            undefined,
+            "dropMethod",
+            undefined,
+            [],
+            undefined,
+            ts.factory.createBlock([], true),
+          );
+          return [keep, drop];
+        });
+        hooks.refineMethod.tap("subset", (methods) => {
+          return methods.filter(
+            (m) =>
+              !ts.isFunctionDeclaration(m) || m.name?.text !== "dropMethod",
+          );
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+      expect(src).toContain("keepMethod");
+      expect(src).not.toContain("dropMethod");
+    });
+
+    it("should chain multiple refineMethod transformations", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "original",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const prefixPlugin: OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("prefix", (methods) => {
+          return methods.map((m) => {
+            if (!ts.isFunctionDeclaration(m)) return m;
+            const name = m.name?.text || "";
+            return ts.factory.updateFunctionDeclaration(
+              m,
+              m.modifiers,
+              m.asteriskToken,
+              ts.factory.createIdentifier(`prefix_${name}`),
+              m.typeParameters,
+              m.parameters,
+              m.type,
+              m.body,
+            );
+          });
+        });
+      };
+
+      const suffixPlugin: OazapftsPlugin = (hooks) => {
+        hooks.refineMethod.tap("suffix", (methods) => {
+          return methods.map((m) => {
+            if (!ts.isFunctionDeclaration(m)) return m;
+            const name = m.name?.text || "";
+            return ts.factory.updateFunctionDeclaration(
+              m,
+              m.modifiers,
+              m.asteriskToken,
+              ts.factory.createIdentifier(`${name}_suffix`),
+              m.typeParameters,
+              m.parameters,
+              m.type,
+              m.body,
+            );
+          });
+        });
+      };
+
+      const src = await generate(spec, [prefixPlugin, suffixPlugin]);
+
+      expect(src).toContain("prefix_original_suffix");
+    });
+  });
+
+  describe("filterEndpoint hook", () => {
+    it("should allow filtering out endpoints before generation", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/public": {
+            get: {
+              operationId: "publicEndpoint",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+          "/private": {
+            get: {
+              operationId: "privateEndpoint",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
+          return shouldGenerate && endpoint.path !== "/private";
         });
       };
 
       const src = await generate(spec, [plugin]);
 
-      expect(src).toContain("customImplementation");
-      expect(src).toContain('return "custom"');
-      expect(src).not.toContain("testOp");
+      expect(src).toContain("publicEndpoint");
+      expect(src).not.toContain("privateEndpoint");
+    });
+
+    it("should run before generateMethod for filtered endpoints", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/a": {
+            get: {
+              operationId: "keepA",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+          "/b": {
+            get: {
+              operationId: "skipB",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+      const generateMethodPaths: string[] = [];
+
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
+          return shouldGenerate && endpoint.path !== "/b";
+        });
+        hooks.generateMethod.tap("test", (endpoint) => {
+          generateMethodPaths.push(endpoint.path);
+          return undefined;
+        });
+      };
+
+      await generate(spec, [plugin]);
+
+      expect(generateMethodPaths).toEqual(["/a"]);
     });
   });
 
@@ -731,11 +888,11 @@ describe("Plugin System", () => {
         },
       });
 
-      const spy = vi.fn((..._: UNSTABLE_QuerySerializerHookArgs) => [
+      const spy = vi.fn((..._: QuerySerializerHookArgs) => [
         ts.factory.createIdentifier("hiiiiii"),
       ]);
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.querySerializerArgs.tap("test", spy);
       };
 
@@ -760,6 +917,163 @@ describe("Plugin System", () => {
     });
   });
 
+  describe("composeSource/refineSource hooks", () => {
+    it("should stop after first composeSource result", async () => {
+      const spec = createMinimalSpec();
+      const callOrder: string[] = [];
+
+      const firstPlugin: OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("first", () => {
+          callOrder.push("first");
+          return [
+            ts.factory.createVariableStatement(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              ts.factory.createVariableDeclarationList(
+                [
+                  ts.factory.createVariableDeclaration(
+                    "fromFirstCompose",
+                    undefined,
+                    undefined,
+                    ts.factory.createTrue(),
+                  ),
+                ],
+                ts.NodeFlags.Const,
+              ),
+            ),
+          ];
+        });
+      };
+
+      const secondPlugin: OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("second", () => {
+          callOrder.push("second");
+          return [
+            ts.factory.createVariableStatement(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              ts.factory.createVariableDeclarationList(
+                [
+                  ts.factory.createVariableDeclaration(
+                    "fromSecondCompose",
+                    undefined,
+                    undefined,
+                    ts.factory.createTrue(),
+                  ),
+                ],
+                ts.NodeFlags.Const,
+              ),
+            ),
+          ];
+        });
+      };
+
+      const src = await generate(spec, [firstPlugin, secondPlugin]);
+
+      expect(callOrder).toEqual(["first"]);
+      expect(src).toContain("fromFirstCompose");
+      expect(src).not.toContain("fromSecondCompose");
+    });
+
+    it("should chain multiple refineSource transformations", async () => {
+      const spec = createMinimalSpec();
+
+      const composePlugin: OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("seed", () => [
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "seedStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createStringLiteral("seed"),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const firstRefine: OazapftsPlugin = (hooks) => {
+        hooks.refineSource.tap("firstRefine", (statements) => [
+          ...statements,
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "firstRefineStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createNumericLiteral(1),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const secondRefine: OazapftsPlugin = (hooks) => {
+        hooks.refineSource.tap("secondRefine", (statements) => [
+          ...statements,
+          ts.factory.createVariableStatement(
+            [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+            ts.factory.createVariableDeclarationList(
+              [
+                ts.factory.createVariableDeclaration(
+                  "secondRefineStatement",
+                  undefined,
+                  undefined,
+                  ts.factory.createNumericLiteral(2),
+                ),
+              ],
+              ts.NodeFlags.Const,
+            ),
+          ),
+        ]);
+      };
+
+      const src = await generate(spec, [
+        composePlugin,
+        firstRefine,
+        secondRefine,
+      ]);
+
+      expect(src).toContain("seedStatement");
+      expect(src).toContain("firstRefineStatement");
+      expect(src).toContain("secondRefineStatement");
+    });
+
+    it("should fall back to default statement composition", async () => {
+      const spec = createMinimalSpec({
+        paths: {
+          "/test": {
+            get: {
+              operationId: "testOp",
+              responses: { "200": { description: "OK" } },
+            },
+          },
+        },
+      });
+
+      let composeCalled = false;
+      const plugin: OazapftsPlugin = (hooks) => {
+        hooks.composeSource.tap("delegate", () => {
+          composeCalled = true;
+          return undefined;
+        });
+      };
+
+      const src = await generate(spec, [plugin]);
+
+      expect(composeCalled).toBe(true);
+      expect(src).toContain("export const defaults");
+      expect(src).toContain("testOp");
+    });
+  });
+
   describe("astGenerated hook", () => {
     it("should receive complete AST", async () => {
       const spec = createMinimalSpec({
@@ -776,7 +1090,7 @@ describe("Plugin System", () => {
       let statementCount = 0;
       let hasFunctionDeclaration = false;
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           statementCount = sourceFile.statements.length;
           hasFunctionDeclaration = sourceFile.statements.some((s) =>
@@ -795,7 +1109,7 @@ describe("Plugin System", () => {
     it("should allow adding custom exports", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           const customType = ts.factory.createTypeAliasDeclaration(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -851,7 +1165,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin: OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           const filtered = sourceFile.statements.filter((stmt) => {
             if (ts.isFunctionDeclaration(stmt) && stmt.name) {
@@ -875,11 +1189,11 @@ describe("Plugin System", () => {
       const spec = createMinimalSpec();
       const callOrder: string[] = [];
 
-      const plugin1: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin1: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("p1", () => callOrder.push("plugin1"));
       };
 
-      const plugin2: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const plugin2: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("p2", () => callOrder.push("plugin2"));
       };
 
@@ -888,7 +1202,7 @@ describe("Plugin System", () => {
       expect(callOrder).toEqual(["plugin1", "plugin2"]);
     });
 
-    it("should chain waterfall transformations", async () => {
+    it("should stop after first generateMethod result", async () => {
       const spec = createMinimalSpec({
         paths: {
           "/test": {
@@ -899,46 +1213,47 @@ describe("Plugin System", () => {
           },
         },
       });
+      const callOrder: string[] = [];
 
-      const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("prefix", (methods) => {
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`prefix_${name}`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
+      const prefixPlugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("prefix", () => {
+          callOrder.push("prefix");
+          return [
+            ts.factory.createFunctionDeclaration(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              undefined,
+              "prefix_original",
+              undefined,
+              [],
+              undefined,
+              ts.factory.createBlock([], true),
+            ),
+          ];
         });
       };
 
-      const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("suffix", (methods) => {
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`${name}_suffix`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
+      const suffixPlugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("suffix", () => {
+          callOrder.push("suffix");
+          return [
+            ts.factory.createFunctionDeclaration(
+              [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+              undefined,
+              "original_suffix",
+              undefined,
+              [],
+              undefined,
+              ts.factory.createBlock([], true),
+            ),
+          ];
         });
       };
 
       const src = await generate(spec, [prefixPlugin, suffixPlugin]);
 
-      expect(src).toContain("prefix_original_suffix");
+      expect(callOrder).toEqual(["prefix"]);
+      expect(src).toContain("prefix_original");
+      expect(src).not.toContain("original_suffix");
     });
 
     it("should allow data sharing between plugins via closure", async () => {
@@ -961,16 +1276,16 @@ describe("Plugin System", () => {
 
       const collectedOps: string[] = [];
 
-      const collectorPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("collector", (methods, endpoint) => {
+      const collectorPlugin: OazapftsPlugin = (hooks) => {
+        hooks.generateMethod.tap("collector", (endpoint) => {
           if (endpoint.operation.operationId) {
             collectedOps.push(endpoint.operation.operationId);
           }
-          return methods;
+          return undefined;
         });
       };
 
-      const reporterPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const reporterPlugin: OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("reporter", (sourceFile) => {
           const report = ts.factory.createVariableStatement(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -1036,7 +1351,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const noopPlugin: UNSTABLE_OazapftsPlugin = () => {};
+      const noopPlugin: OazapftsPlugin = () => {};
 
       const srcWithout = await generate(spec);
       const srcWithNoop = await generate(spec, [noopPlugin]);
@@ -1056,9 +1371,13 @@ describe("Plugin System", () => {
         },
       });
 
-      const identityPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const identityPlugin: OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("id", () => {});
-        hooks.generateMethod.tap("id", (m) => m);
+        hooks.filterEndpoint.tap("id", (g) => g);
+        hooks.generateMethod.tap("id", () => undefined);
+        hooks.refineMethod.tap("id", (m) => m);
+        hooks.composeSource.tap("id", () => undefined);
+        hooks.refineSource.tap("id", (s) => s);
         hooks.astGenerated.tap("id", (a) => a);
       };
 
@@ -1097,12 +1416,9 @@ describe("Plugin System", () => {
         },
       });
 
-      const publicOnlyPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("public-only", (methods, endpoint) => {
-          if (endpoint.operation.tags?.includes("public")) {
-            return methods;
-          }
-          return [];
+      const publicOnlyPlugin: OazapftsPlugin = (hooks) => {
+        hooks.filterEndpoint.tap("public-only", (_, endpoint) => {
+          return !!endpoint.operation.tags?.includes("public");
         });
       };
 
@@ -1111,53 +1427,6 @@ describe("Plugin System", () => {
       expect(src).toContain("getPublicData");
       expect(src).not.toContain("getAdminUsers");
       expect(src).not.toContain("getHealth");
-    });
-
-    it("should support prefixing methods by tag", async () => {
-      const spec = createMinimalSpec({
-        paths: {
-          "/users": {
-            get: {
-              operationId: "list",
-              tags: ["users"],
-              responses: { "200": { description: "OK" } },
-            },
-          },
-          "/posts": {
-            get: {
-              operationId: "list",
-              tags: ["posts"],
-              responses: { "200": { description: "OK" } },
-            },
-          },
-        },
-      });
-
-      const tagPrefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
-        hooks.generateMethod.tap("tag-prefix", (methods, endpoint) => {
-          const tag = endpoint.operation.tags?.[0];
-          if (!tag) return methods;
-
-          return methods.map((m) => {
-            const name = m.name?.text || "";
-            return ts.factory.updateFunctionDeclaration(
-              m,
-              m.modifiers,
-              m.asteriskToken,
-              ts.factory.createIdentifier(`${tag}_${name}`),
-              m.typeParameters,
-              m.parameters,
-              m.type,
-              m.body,
-            );
-          });
-        });
-      };
-
-      const src = await generate(spec, [tagPrefixPlugin]);
-
-      expect(src).toContain("users_list");
-      expect(src).toContain("posts_list");
     });
 
     it("should support adding metadata export", async () => {
@@ -1173,7 +1442,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const metadataPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
+      const metadataPlugin: OazapftsPlugin = (hooks) => {
         let apiTitle = "";
         let apiVersion = "";
 

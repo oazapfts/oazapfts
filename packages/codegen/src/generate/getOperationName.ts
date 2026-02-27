@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { toIdentifier } from "./toIdentifier";
-import { isValidIdentifier } from "../generate/tscodegen";
+import { toIdentifier } from "../helpers/toIdentifier";
+import { isValidIdentifier } from "./tscodegen";
 
 /**
  * Result of getOperationNames containing the primary method name and
@@ -19,11 +19,14 @@ export type OperationNames = {
  * Create method name(s) for a given operation, either from its operationId or
  * the HTTP verb and path. Returns the primary name and optionally a deprecated
  * legacy name for backward compatibility.
+ *
+ * @deprecated will be removed in next major version. Use `getOperationName` instead
  */
 export function getOperationNames(
   verb: string,
   path: string,
   operationId?: string,
+  operationNames: Map<string, number> = new Map(),
 ): OperationNames {
   const fallbackName = getFallbackName(verb, path);
   const legacyId = getLegacyOperationIdentifier(operationId);
@@ -32,29 +35,69 @@ export function getOperationNames(
   // If new normalization produces a valid identifier but legacy did not,
   // we need to emit a deprecated alias for backward compatibility.
   if (newId && !legacyId) {
+    const primaryName = reserveOperationName(newId, operationNames);
+    const deprecatedLegacyName = reserveOperationName(
+      fallbackName,
+      operationNames,
+    );
     return {
-      primaryName: newId,
-      deprecatedLegacyName: fallbackName,
+      primaryName,
+      deprecatedLegacyName,
     };
   }
 
   // Either both agree on the id, or both fall back
+  const primaryName = reserveOperationName(
+    newId || fallbackName,
+    operationNames,
+  );
   return {
-    primaryName: newId || fallbackName,
+    primaryName,
   };
 }
 
 /**
  * Create a method name for a given operation, either from its operationId or
  * the HTTP verb and path.
- * @deprecated Use getOperationNames instead for backward compatibility support.
  */
 export function getOperationName(
   verb: string,
   path: string,
   operationId?: string,
+  operationNames: Map<string, number> = new Map(),
+  /** @deprecated will be removed in next major version */
+  DEPRECATED_legacyName?: true,
 ) {
-  return getOperationNames(verb, path, operationId).primaryName;
+  const names = getOperationNames(verb, path, operationId, operationNames);
+  if (DEPRECATED_legacyName && names.deprecatedLegacyName) {
+    return names.deprecatedLegacyName;
+  }
+  return names.primaryName;
+}
+
+/**
+ * Make sure the name is unique by appending a counter to the name.
+ */
+function reserveOperationName(
+  name: string,
+  operationNames: Map<string, number>,
+): string {
+  let count = operationNames.get(name) ?? 0;
+  if (count === 0) {
+    operationNames.set(name, 1);
+    return name;
+  }
+
+  count += 1;
+  let dedupedName = `${name}${count}`;
+  while (operationNames.has(dedupedName)) {
+    count += 1;
+    dedupedName = `${name}${count}`;
+  }
+
+  operationNames.set(name, count);
+  operationNames.set(dedupedName, 1);
+  return dedupedName;
 }
 
 /**

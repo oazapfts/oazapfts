@@ -4,11 +4,7 @@ import SwaggerParser from "@apidevtools/swagger-parser";
 import { createContext, OazapftsContext } from "./context";
 import { generateApi } from "./generate/generateApi";
 import * as OpenAPI from "./helpers/openApi3-x";
-import {
-  type UNSTABLE_OazapftsPlugin,
-  UNSTABLE_createHooks,
-  UNSTABLE_applyPlugins,
-} from "./plugin";
+import { type OazapftsPlugin, createHooks, applyPlugins } from "./plugin";
 import { ArgumentStyle } from "./generate/generateClientMethod";
 import { EnumStyle } from "./helpers/getEnumStyle";
 import { getInternalPlugins } from "./internalPlugins";
@@ -47,7 +43,7 @@ export type OazapftsOptions = {
    * Plugins to apply during code generation.
    * Each plugin receives hooks and can tap into generation steps.
    */
-  UNSTABLE_plugins?: UNSTABLE_OazapftsPlugin[];
+  plugins?: OazapftsPlugin[];
 };
 
 /**
@@ -65,7 +61,7 @@ export async function generateSource(spec: string, opts: OazapftsOptions = {}) {
     .filter(Boolean)
     .join("\n");
 
-  const ast = await generateAst(ctx, opts.UNSTABLE_plugins);
+  const ast = await generateAst(ctx, opts.plugins);
 
   return printAst(ast);
 }
@@ -75,18 +71,15 @@ export { generateSource as default, generateSource as oazapfts };
  * Create an Typescript AST from an OpenAPI document.
  *
  * @param ctx - Oazapfts context
- * @param UNSTABLE_plugins - Unstable plugins to apply
+ * @param plugins - Plugins to apply
  * @returns The generated TypeScript AST
  */
 export async function generateAst(
   ctx: OazapftsContext,
-  UNSTABLE_plugins: UNSTABLE_OazapftsPlugin[] = [],
+  plugins: OazapftsPlugin[] = [],
 ) {
-  const hooks = UNSTABLE_createHooks();
-  await UNSTABLE_applyPlugins(hooks, [
-    ...getInternalPlugins(ctx),
-    ...UNSTABLE_plugins,
-  ]);
+  const hooks = createHooks();
+  await applyPlugins(hooks, [...getInternalPlugins(ctx), ...plugins]);
 
   return generateApi(ctx, hooks);
 }

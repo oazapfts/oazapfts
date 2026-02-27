@@ -13,6 +13,7 @@ import type {
 import { defaultBaseUrl } from "./generate/generateServers";
 import _ from "lodash";
 import { CustomHeaders } from "@oazapfts/runtime";
+import { preprocessComponents } from "./helpers";
 
 // ─── Data types for template parts ──────────────────────────────────────────
 
@@ -56,6 +57,7 @@ export type Defaults = {
 export type OazapftsContext = {
   readonly opts: ReadonlyDeep<OazapftsOptions>;
   readonly spec: Document;
+  readonly mode?: OnlyMode;
 
   /** Banner comment at the top of the file (the text content, not including comment markers) */
   banner: string;
@@ -96,6 +98,8 @@ export type OazapftsContext = {
 
   // Keep track of already used type aliases
   typeAliases: Record<string, number>;
+  // Keep track of already used operation names for collision handling
+  operationNames: Map<string, number>;
 };
 
 export function createContext(
@@ -104,9 +108,10 @@ export function createContext(
 ): OazapftsContext {
   const spec = _.cloneDeep(inputSpec);
 
-  return {
+  const ctx: OazapftsContext = {
     opts,
     spec,
+    mode: undefined,
 
     // Template parts
     banner: `DO NOT MODIFY - This file has been generated using oazapfts.
@@ -127,7 +132,19 @@ See https://www.npmjs.com/package/oazapfts`,
     refs: {},
     refsOnlyMode: new Map(),
     typeAliases: {},
+    operationNames: new Map(),
   };
+
+  preprocessComponents(ctx);
+
+  return ctx;
+}
+
+export function withMode(
+  ctx: OazapftsContext,
+  mode?: OnlyMode,
+): OazapftsContext {
+  return { ...ctx, mode };
 }
 
 /** Creates: const oazapfts = Oazapfts.runtime(defaults); */

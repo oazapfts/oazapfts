@@ -1,26 +1,19 @@
 import ts from "typescript";
 import { OazapftsContext } from "../context";
 import * as h from "../helpers";
-import { generateClientMethod } from "./generateClientMethod";
-import { createImportStatement } from "./generateImports";
-import { createDefaultsStatement } from "./createDefaultsStatement";
 import * as OpenAPI from "../helpers/openApi3-x";
-import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
-import { createServersStatement } from "./generateServers";
+import type { OazapftsPluginHooks } from "../plugin";
 import { getRefAlias } from "./getRefAlias";
 
 export async function generateApi(
   ctx: OazapftsContext,
-  hooks: UNSTABLE_OazapftsPluginHooks,
+  hooks: OazapftsPluginHooks,
 ): Promise<ts.SourceFile> {
-  // Preprocess components (needs mutable context)
-  h.preprocessComponents(ctx);
-
   // Hook: prepare - allow plugins to modify spec, context, or template parts
   await hooks.prepare.promise(ctx);
 
   // Generate methods with hook support
-  const methods: ts.FunctionDeclaration[] = [];
+  const methods: ts.Statement[] = [];
   for (const [path, pathItem] of Object.entries(ctx.spec.paths || {})) {
     if (!pathItem) continue;
 
@@ -28,65 +21,44 @@ export async function generateApi(
       if (!operation) continue;
       const method = verb.toUpperCase();
       if (!h.isHttpMethod(method)) continue;
-
-      // Generate default methods
-      let generatedMethods = generateClientMethod(
+      const endpoint = {
         method,
         path,
-        operation as OpenAPI.OperationObject,
+        operation: operation as OpenAPI.OperationObject,
         pathItem,
-        ctx,
-        hooks,
-      );
+      };
 
-      // Hook: generateMethod - allow plugins to modify/replace methods
-      generatedMethods = await hooks.generateMethod.promise(
+      // Hook: filterEndpoint - allow plugins to skip endpoint generation
+      const shouldGenerate = hooks.filterEndpoint.call(true, endpoint, ctx);
+      if (!shouldGenerate) continue;
+
+      // Hook: generateMethod - first plugin returning methods wins
+      const generatedMethods =
+        (await hooks.generateMethod.promise(endpoint, ctx)) ?? [];
+      const refinedMethods = await hooks.refineMethod.promise(
         generatedMethods,
-        {
-          method,
-          path,
-          operation: operation as OpenAPI.OperationObject,
-          pathItem,
-        },
+        endpoint,
         ctx,
       );
 
-      methods.push(...generatedMethods);
+      methods.push(...refinedMethods);
     }
   }
 
   if (ctx.opts.allSchemas && ctx.spec.components?.schemas) {
-    for (const [name, schema] of Object.entries(ctx.spec.components.schemas)) {
-      getRefAlias({ $ref: `#/components/schemas/${name}` }, ctx, schema);
+    for (const [name] of Object.entries(ctx.spec.components.schemas)) {
+      getRefAlias({ $ref: `#/components/schemas/${name}` }, ctx);
     }
   }
 
-  // Compose the final source file from template parts
-  let apiSourceFile = composeSourceFile(ctx, methods);
-
-  // Hook: astGenerated - allow plugins to modify final AST
-  apiSourceFile = await hooks.astGenerated.promise(apiSourceFile, ctx);
-
-  return apiSourceFile;
-}
-
-/**
- * Compose the final source file from all template parts and generated code.
- */
-export function composeSourceFile(
-  ctx: OazapftsContext,
-  methods: ts.FunctionDeclaration[],
-): ts.SourceFile {
-  // Build statements array from flat context properties
-  let statements: ts.Statement[] = [
-    ...ctx.imports.map(createImportStatement),
-    createDefaultsStatement(ctx.defaults),
-    ...ctx.init,
-    createServersStatement(ctx.servers),
-    ...ctx.aliases,
-    ...h.dedupeMethodNames(methods),
-    ...ctx.enumAliases,
-  ];
+  // Hook: composeSource/refineSource - compose and refine top-level statements
+  const composedStatements =
+    (await hooks.composeSource.promise(ctx, methods)) ?? [];
+  const statements = await hooks.refineSource.promise(
+    composedStatements,
+    ctx,
+    methods,
+  );
 
   // Add banner comment to first statement if present
   if (ctx.banner && statements.length > 0) {
@@ -100,9 +72,14 @@ export function composeSourceFile(
   }
 
   // Create the source file with all parts in order
-  return ts.factory.createSourceFile(
+  let apiSourceFile = ts.factory.createSourceFile(
     statements,
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
     ts.NodeFlags.None,
   );
+
+  // Hook: astGenerated - allow plugins to modify final AST
+  apiSourceFile = await hooks.astGenerated.promise(apiSourceFile, ctx);
+
+  return apiSourceFile;
 }
