@@ -40,7 +40,7 @@ export function getTypeFromResponses(
   );
 }
 
-function getTypeFromResponse(
+export function getTypeFromResponse(
   resOrRef: OpenApi.ResponseObject | OpenApi.ReferenceObject,
   ctx: OazapftsContext,
 ) {

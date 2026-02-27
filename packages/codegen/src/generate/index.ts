@@ -8,4 +8,7 @@ export { getOperationName, getOperationNames } from "./getOperationName";
 export { getRefAlias } from "./getRefAlias";
 export { getResponseType } from "./getResponseType";
 export { getSchemaFromContent } from "./getSchemaFromContent";
-export { getTypeFromResponses } from "./getTypeFromResponses";
+export {
+  getTypeFromResponses,
+  getTypeFromResponse,
+} from "./getTypeFromResponses";

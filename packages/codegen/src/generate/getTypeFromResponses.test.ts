@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { OpenAPIV3 } from "openapi-types";
 import { createContext } from "../context";
-import { getTypeFromResponses } from "./getTypeFromResponses";
+import {
+  getTypeFromResponses,
+  getTypeFromResponse,
+} from "./getTypeFromResponses";
 import * as cg from "./tscodegen";
 
 describe("getTypeFromResponses", () => {
@@ -54,5 +57,58 @@ describe("getTypeFromResponses", () => {
           data: string;
       }"
     `);
+  });
+});
+
+describe("getTypeFromResponse", () => {
+  function makeCtx() {
+    return createContext({
+      openapi: "3.0.0",
+      info: { title: "Test", version: "1.0.0" },
+      paths: {},
+    } as OpenAPIV3.Document);
+  }
+
+  it("returns void for a response with no content", () => {
+    const type = getTypeFromResponse({ description: "No Content" }, makeCtx());
+    expect(cg.printNode(type)).toBe("void");
+  });
+
+  it("returns the schema type for a JSON response", () => {
+    const type = getTypeFromResponse(
+      {
+        description: "OK",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["name"],
+              properties: { name: { type: "string" } },
+            },
+          },
+        },
+      },
+      makeCtx(),
+    );
+    expect(cg.printNode(type)).toMatchInlineSnapshot(`
+      "{
+          name: string;
+      }"
+    `);
+  });
+
+  it("returns string for a plain text response", () => {
+    const type = getTypeFromResponse(
+      {
+        description: "OK",
+        content: {
+          "text/plain": {
+            schema: { type: "string" },
+          },
+        },
+      },
+      makeCtx(),
+    );
+    expect(cg.printNode(type)).toBe("string");
   });
 });

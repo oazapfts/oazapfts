@@ -15,6 +15,7 @@ describe("generate", () => {
       getResponseType: expect.any(Function),
       getSchemaFromContent: expect.any(Function),
       getTypeFromResponses: expect.any(Function),
+      getTypeFromResponse: expect.any(Function),
       getTypeFromSchema: expect.any(Function),
     });
   });
