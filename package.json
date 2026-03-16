@@ -35,7 +35,7 @@
     "semantic-release-monorepo": "^8.0.2",
     "vite": "^8.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.0",
     "with-server": "^2.1.0"
   }
 }
