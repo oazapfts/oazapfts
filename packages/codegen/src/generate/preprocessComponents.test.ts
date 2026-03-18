@@ -79,9 +79,8 @@ describe("preprocessComponents", () => {
 
     preprocessComponents(ctx);
 
-    const animal =
-      ctx.spec.components!.schemas!
-        .Animal as OpenApi.UNSTABLE_DiscriminatingSchemaObject;
+    const animal = ctx.spec.components!.schemas!
+      .Animal as OpenApi.UNSTABLE_DiscriminatingSchemaObject;
     expect(animal.discriminator?.mapping).toEqual({
       Cat: "#/components/schemas/Cat",
       Dog: "#/components/schemas/Dog",
@@ -139,7 +138,9 @@ describe("preprocessComponents", () => {
       ctx.spec.components!.schemas!.Animal as unknown as OpenApi.SchemaObject,
     );
 
-    expect(() => preprocessComponents(ctx)).toThrow("Unexpected nested reference");
+    expect(() => preprocessComponents(ctx)).toThrow(
+      "Unexpected nested reference",
+    );
   });
 
   it("only maps direct allOf references to discriminating schemas", () => {
