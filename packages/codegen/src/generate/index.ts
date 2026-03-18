@@ -12,3 +12,4 @@ export {
   getTypeFromResponses,
   getTypeFromResponse,
 } from "./getTypeFromResponses";
+export { preprocessComponents } from "./preprocessComponents";

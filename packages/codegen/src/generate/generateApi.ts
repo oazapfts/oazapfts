@@ -4,13 +4,14 @@ import * as h from "../helpers";
 import * as OpenAPI from "../helpers/openApi3-x";
 import type { UNSTABLE_OazapftsPluginHooks } from "../plugin";
 import { getRefAlias } from "./getRefAlias";
+import { preprocessComponents } from "./preprocessComponents";
 
 export async function generateApi(
   ctx: OazapftsContext,
   hooks: UNSTABLE_OazapftsPluginHooks,
 ): Promise<ts.SourceFile> {
   // Preprocess components (needs mutable context)
-  h.preprocessComponents(ctx);
+  preprocessComponents(ctx);
 
   // Hook: prepare - allow plugins to modify spec, context, or template parts
   await hooks.prepare.promise(ctx);

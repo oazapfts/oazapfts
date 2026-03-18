@@ -1,4 +1,3 @@
-export * from "./preprocessComponents";
 export * from "./supportDeepObjects";
 export * from "./toIdentifier";
 export * from "./getFormatter";
