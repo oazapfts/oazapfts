@@ -2,10 +2,13 @@ import ts from "typescript";
 import { createDefaultsStatement } from "../generate/createDefaultsStatement";
 import { createImportStatement } from "../generate/generateImports";
 import { createServersStatement } from "../generate/generateServers";
-import { createPlugin, OAZAPFTS_PLUGIN_PRECEDENCE } from "../plugin";
+import {
+  UNSTABLE_createPlugin,
+  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+} from "../plugin";
 
 export function defaultComposeSourcePlugin() {
-  return createPlugin(
+  return UNSTABLE_createPlugin(
     (hooks) => {
       hooks.composeSource.tap("defaultComposeSource", (ctx, methods) => {
         return [
@@ -20,7 +23,7 @@ export function defaultComposeSourcePlugin() {
       });
     },
     {
-      precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+      precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
     },
   );
 }

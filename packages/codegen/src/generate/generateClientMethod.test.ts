@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { OpenAPIV3 } from "openapi-types";
 import { createContext } from "../context";
-import { createHooks } from "../plugin";
+import { UNSTABLE_createHooks } from "../plugin";
 import { generateClientMethod } from "./generateClientMethod";
 import * as cg from "./tscodegen";
 
@@ -15,7 +15,7 @@ describe("generateClientMethod", () => {
       } as OpenAPIV3.Document,
       { futureStripLegacyMethods: false },
     );
-    const hooks = createHooks();
+    const hooks = UNSTABLE_createHooks();
 
     const statements = generateClientMethod(
       "POST",
@@ -156,7 +156,7 @@ describe("generateClientMethod", () => {
       },
       {},
       ctx,
-      createHooks(),
+      UNSTABLE_createHooks(),
     );
 
     expect(cg.printNodes(statements)).toMatchInlineSnapshot(`

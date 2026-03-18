@@ -1,8 +1,11 @@
 import { generateClientMethod } from "../generate/generateClientMethod";
-import { createPlugin, OAZAPFTS_PLUGIN_PRECEDENCE } from "../plugin";
+import {
+  UNSTABLE_createPlugin,
+  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+} from "../plugin";
 
 export function defaultGenerateMethodPlugin() {
-  return createPlugin(
+  return UNSTABLE_createPlugin(
     (hooks) => {
       hooks.generateMethod.tapPromise(
         "defaultGenerateMethod",
@@ -19,7 +22,7 @@ export function defaultGenerateMethodPlugin() {
       );
     },
     {
-      precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+      precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
     },
   );
 }

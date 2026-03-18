@@ -9,26 +9,27 @@ import type { OazapftsContext } from "./context";
 import type * as OpenApi from "./helpers/openApi3-x";
 import { HttpMethod } from "./helpers";
 
-export enum OAZAPFTS_PLUGIN_PRECEDENCE {
+export enum UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE {
   EAGER = "eager",
   DEFAULT = "default",
   LAZY = "lazy",
 }
 
-export type OazapftsPluginOptions = {
+export type UNSTABLE_OazapftsPluginOptions = {
   name?: string;
   version?: string;
-  precedence?: OAZAPFTS_PLUGIN_PRECEDENCE;
+  precedence?: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE;
 };
 /**
  * A plugin initiator function that receives hooks and can tap into them.
  */
-export type OazapftsPluginFn = (
-  hooks: OazapftsPluginHooks,
+export type UNSTABLE_OazapftsPluginFn = (
+  hooks: UNSTABLE_OazapftsPluginHooks,
 ) => void | Promise<void>;
-export type OazapftsPlugin = OazapftsPluginFn & OazapftsPluginOptions;
+export type UNSTABLE_OazapftsPlugin = UNSTABLE_OazapftsPluginFn &
+  UNSTABLE_OazapftsPluginOptions;
 
-export type QuerySerializerHookArgs = [
+export type UNSTABLE_QuerySerializerHookArgs = [
   ts.Expression[],
   {
     method: HttpMethod;
@@ -42,7 +43,7 @@ export type QuerySerializerHookArgs = [
   OazapftsContext,
 ];
 
-export type EndpointHookArgs = [
+export type UNSTABLE_EndpointHookArgs = [
   {
     method: HttpMethod;
     path: string;
@@ -52,9 +53,9 @@ export type EndpointHookArgs = [
   OazapftsContext,
 ];
 
-export type ComposeSourceHookArgs = [OazapftsContext, ts.Statement[]];
+export type UNSTABLE_ComposeSourceHookArgs = [OazapftsContext, ts.Statement[]];
 
-export type OazapftsPluginHooks = {
+export type UNSTABLE_OazapftsPluginHooks = {
   /**
    * Called after context is created with all template parts initialized.
    * Use this to modify the spec, context, or template parts.
@@ -84,7 +85,7 @@ export type OazapftsPluginHooks = {
    * Return `undefined` to delegate to later plugins.
    */
   generateMethod: AsyncSeriesBailHook<
-    EndpointHookArgs,
+    UNSTABLE_EndpointHookArgs,
     ts.Statement[] | undefined
   >;
   /**
@@ -92,14 +93,16 @@ export type OazapftsPluginHooks = {
    * Receives generated methods and can return a modified array.
    * Runs after generateMethod for each endpoint.
    */
-  refineMethod: AsyncSeriesWaterfallHook<[ts.Statement[], ...EndpointHookArgs]>;
+  refineMethod: AsyncSeriesWaterfallHook<
+    [ts.Statement[], ...UNSTABLE_EndpointHookArgs]
+  >;
   /**
    * Compose top-level source statements from context and generated methods.
    * This is a bail hook: the first plugin that returns a value wins.
    * Return `undefined` to delegate to later plugins.
    */
   composeSource: AsyncSeriesBailHook<
-    ComposeSourceHookArgs,
+    UNSTABLE_ComposeSourceHookArgs,
     ts.Statement[] | undefined
   >;
   /**
@@ -108,13 +111,13 @@ export type OazapftsPluginHooks = {
    * Runs after composeSource.
    */
   refineSource: AsyncSeriesWaterfallHook<
-    [ts.Statement[], ...ComposeSourceHookArgs]
+    [ts.Statement[], ...UNSTABLE_ComposeSourceHookArgs]
   >;
   /**
    * Customize query serializer call arguments for each formatter call.
    * Default behavior is identity (returns the original args unchanged).
    */
-  querySerializerArgs: SyncWaterfallHook<QuerySerializerHookArgs>;
+  querySerializerArgs: SyncWaterfallHook<UNSTABLE_QuerySerializerHookArgs>;
   /**
    * Called after the full AST has been generated, before printing to string.
    * Use this to add/modify/remove statements from the final source file.
@@ -125,9 +128,9 @@ export type OazapftsPluginHooks = {
 /**
  * Create a oazapfts plugin
  */
-export function createPlugin(
-  fn: OazapftsPluginFn,
-  options: OazapftsPluginOptions = {},
+export function UNSTABLE_createPlugin(
+  fn: UNSTABLE_OazapftsPluginFn,
+  options: UNSTABLE_OazapftsPluginOptions = {},
 ) {
   return Object.assign(fn, options);
 }
@@ -135,7 +138,7 @@ export function createPlugin(
 /**
  * Create a fresh Hooks instance for a generation run.
  */
-export function createHooks() {
+export function UNSTABLE_createHooks() {
   return {
     prepare: new AsyncSeriesHook(["ctx"], "prepare"),
     filterEndpoint: new SyncWaterfallHook(
@@ -160,37 +163,37 @@ export function createHooks() {
       "querySerializerArgs",
     ),
     astGenerated: new AsyncSeriesWaterfallHook(["ast", "ctx"], "astGenerated"),
-  } satisfies OazapftsPluginHooks;
+  } satisfies UNSTABLE_OazapftsPluginHooks;
 }
 
 /**
  * Apply plugins to a hooks instance.
  * Plugins are applied in order, and each can tap into hooks.
  */
-export async function applyPlugins(
-  hooks: OazapftsPluginHooks,
-  plugins: OazapftsPlugin[],
+export async function UNSTABLE_applyPlugins(
+  hooks: UNSTABLE_OazapftsPluginHooks,
+  plugins: UNSTABLE_OazapftsPlugin[],
 ): Promise<void> {
-  for (const plugin of sortPlugins(plugins)) {
+  for (const plugin of UNSTABLE_sortPlugins(plugins)) {
     await plugin(hooks);
   }
 }
 
-export function sortPlugins<Plugin extends Pick<OazapftsPlugin, "precedence">>(
-  plugins: Plugin[],
-) {
+export function UNSTABLE_sortPlugins<
+  Plugin extends Pick<UNSTABLE_OazapftsPlugin, "precedence">,
+>(plugins: Plugin[]) {
   const eagerPlugins: Plugin[] = [];
   const defaultPlugins: Plugin[] = [];
   const lazyPlugins: Plugin[] = [];
   for (const plugin of plugins) {
     switch (plugin.precedence) {
-      case OAZAPFTS_PLUGIN_PRECEDENCE.EAGER:
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER:
         eagerPlugins.push(plugin);
         break;
-      case OAZAPFTS_PLUGIN_PRECEDENCE.LAZY:
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY:
         lazyPlugins.push(plugin);
         break;
-      case OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT:
+      case UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT:
       default:
         defaultPlugins.push(plugin);
         break;

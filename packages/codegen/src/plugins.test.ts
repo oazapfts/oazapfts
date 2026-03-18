@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import ts from "typescript";
 import { generateAst, printAst } from "./index";
 import {
-  OazapftsPlugin,
-  sortPlugins,
-  OAZAPFTS_PLUGIN_PRECEDENCE,
-  QuerySerializerHookArgs,
+  UNSTABLE_OazapftsPlugin,
+  UNSTABLE_sortPlugins,
+  UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE,
+  UNSTABLE_QuerySerializerHookArgs,
 } from "./plugin";
 import {
   Document,
@@ -30,7 +30,7 @@ const TEST_CONTEXT = Symbol("TEST_CONTEXT");
 // Helper to generate source from inline spec
 async function generate(
   spec: Document,
-  plugins: OazapftsPlugin[] = [],
+  plugins: UNSTABLE_OazapftsPlugin[] = [],
 ): Promise<string> {
   const ctx = createContext(spec);
   ctx[TEST_CONTEXT] = true;
@@ -46,30 +46,30 @@ describe("Plugin System", () => {
   describe("sortPlugins", () => {
     it("should sort plugins in order", () => {
       expect(
-        sortPlugins([
+        UNSTABLE_sortPlugins([
           {
             name: "plugin1",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
           },
           {
             name: "plugin2",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
           },
           {
             name: "plugin3",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
           },
           {
             name: "plugin4",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.EAGER,
           },
           {
             name: "plugin5",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.DEFAULT,
           },
           {
             name: "plugin6",
-            precedence: OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
+            precedence: UNSTABLE_OAZAPFTS_PLUGIN_PRECEDENCE.LAZY,
           },
         ]).map(({ name }) => name),
       ).toEqual([
@@ -97,7 +97,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", prepareMock);
       };
 
@@ -146,7 +146,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", () => callOrder.push("prepare"));
         hooks.filterEndpoint.tap("test", (shouldGenerate) => {
           callOrder.push("filterEndpoint");
@@ -205,7 +205,7 @@ describe("Plugin System", () => {
       });
 
       // Async plugin that modifies spec after a delay
-      const asyncPlugin: OazapftsPlugin = async (hooks) => {
+      const asyncPlugin: UNSTABLE_OazapftsPlugin = async (hooks) => {
         await new Promise((resolve) => setTimeout(resolve, 5));
 
         hooks.prepare.tapPromise("async", async (ctx) => {
@@ -247,7 +247,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           if (ctx.spec.paths) {
             delete ctx.spec.paths["/remove"];
@@ -266,7 +266,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Simply push a new server - much simpler!
           ctx.servers.push({
@@ -287,7 +287,7 @@ describe("Plugin System", () => {
     it("should allow modifying banner", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.banner = "CUSTOM BANNER TEXT";
         });
@@ -300,7 +300,7 @@ describe("Plugin System", () => {
     it("should allow adding imports", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.imports.unshift("side-effect");
           ctx.imports.push([
@@ -335,7 +335,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Replace all servers with a custom one
           ctx.servers = [
@@ -356,7 +356,7 @@ describe("Plugin System", () => {
         servers: [{ url: "https://original.example.com" }],
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.defaults.baseUrl = "https://modified.example.com";
         });
@@ -369,7 +369,7 @@ describe("Plugin System", () => {
     it("should allow setting custom fetch as arrow function", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set fetch to an arrow function expression
           ctx.defaults.fetch = ts.factory.createArrowFunction(
@@ -410,7 +410,7 @@ describe("Plugin System", () => {
     it("should allow setting custom fetch as identifier", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set fetch to an identifier reference
           ctx.defaults.fetch = ts.factory.createIdentifier("myCustomFetch");
@@ -434,7 +434,7 @@ describe("Plugin System", () => {
     it("should allow setting custom FormData as identifier", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set FormData to an identifier reference
           ctx.defaults.FormData = ts.factory.createIdentifier("CustomFormData");
@@ -458,7 +458,7 @@ describe("Plugin System", () => {
     it("should allow setting custom FormData as class expression", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           // Set FormData to a class expression
           ctx.defaults.FormData = ts.factory.createClassExpression(
@@ -501,7 +501,7 @@ describe("Plugin System", () => {
     it("should allow adding init statements", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("test", (ctx) => {
           ctx.init.push(
             ts.factory.createVariableStatement(
@@ -557,7 +557,7 @@ describe("Plugin System", () => {
         tags?: string[];
       } | null = null;
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("test", (endpoint) => {
           capturedEndpoint = {
             method: endpoint.method,
@@ -590,7 +590,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("test", () => {
           const customMethod = ts.factory.createFunctionDeclaration(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -630,7 +630,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("test", (methods) => {
           return methods.map((method) => {
             if (!ts.isFunctionDeclaration(method)) return method;
@@ -666,7 +666,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("test", (methods, endpoint) => {
           return methods.map((method) => {
             return ts.addSyntheticLeadingComment(
@@ -695,7 +695,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("seed", () => {
           const keep = ts.factory.createFunctionDeclaration(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -742,7 +742,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const prefixPlugin: OazapftsPlugin = (hooks) => {
+      const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("prefix", (methods) => {
           return methods.map((m) => {
             if (!ts.isFunctionDeclaration(m)) return m;
@@ -761,7 +761,7 @@ describe("Plugin System", () => {
         });
       };
 
-      const suffixPlugin: OazapftsPlugin = (hooks) => {
+      const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineMethod.tap("suffix", (methods) => {
           return methods.map((m) => {
             if (!ts.isFunctionDeclaration(m)) return m;
@@ -805,7 +805,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
           return shouldGenerate && endpoint.path !== "/private";
         });
@@ -836,7 +836,7 @@ describe("Plugin System", () => {
       });
       const generateMethodPaths: string[] = [];
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.filterEndpoint.tap("test", (shouldGenerate, endpoint) => {
           return shouldGenerate && endpoint.path !== "/b";
         });
@@ -888,11 +888,11 @@ describe("Plugin System", () => {
         },
       });
 
-      const spy = vi.fn((..._: QuerySerializerHookArgs) => [
+      const spy = vi.fn((..._: UNSTABLE_QuerySerializerHookArgs) => [
         ts.factory.createIdentifier("hiiiiii"),
       ]);
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.querySerializerArgs.tap("test", spy);
       };
 
@@ -922,7 +922,7 @@ describe("Plugin System", () => {
       const spec = createMinimalSpec();
       const callOrder: string[] = [];
 
-      const firstPlugin: OazapftsPlugin = (hooks) => {
+      const firstPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.composeSource.tap("first", () => {
           callOrder.push("first");
           return [
@@ -944,7 +944,7 @@ describe("Plugin System", () => {
         });
       };
 
-      const secondPlugin: OazapftsPlugin = (hooks) => {
+      const secondPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.composeSource.tap("second", () => {
           callOrder.push("second");
           return [
@@ -976,7 +976,7 @@ describe("Plugin System", () => {
     it("should chain multiple refineSource transformations", async () => {
       const spec = createMinimalSpec();
 
-      const composePlugin: OazapftsPlugin = (hooks) => {
+      const composePlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.composeSource.tap("seed", () => [
           ts.factory.createVariableStatement(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -995,7 +995,7 @@ describe("Plugin System", () => {
         ]);
       };
 
-      const firstRefine: OazapftsPlugin = (hooks) => {
+      const firstRefine: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineSource.tap("firstRefine", (statements) => [
           ...statements,
           ts.factory.createVariableStatement(
@@ -1015,7 +1015,7 @@ describe("Plugin System", () => {
         ]);
       };
 
-      const secondRefine: OazapftsPlugin = (hooks) => {
+      const secondRefine: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.refineSource.tap("secondRefine", (statements) => [
           ...statements,
           ts.factory.createVariableStatement(
@@ -1059,7 +1059,7 @@ describe("Plugin System", () => {
       });
 
       let composeCalled = false;
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.composeSource.tap("delegate", () => {
           composeCalled = true;
           return undefined;
@@ -1090,7 +1090,7 @@ describe("Plugin System", () => {
       let statementCount = 0;
       let hasFunctionDeclaration = false;
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           statementCount = sourceFile.statements.length;
           hasFunctionDeclaration = sourceFile.statements.some((s) =>
@@ -1109,7 +1109,7 @@ describe("Plugin System", () => {
     it("should allow adding custom exports", async () => {
       const spec = createMinimalSpec();
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           const customType = ts.factory.createTypeAliasDeclaration(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -1165,7 +1165,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const plugin: OazapftsPlugin = (hooks) => {
+      const plugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("test", (sourceFile) => {
           const filtered = sourceFile.statements.filter((stmt) => {
             if (ts.isFunctionDeclaration(stmt) && stmt.name) {
@@ -1189,11 +1189,11 @@ describe("Plugin System", () => {
       const spec = createMinimalSpec();
       const callOrder: string[] = [];
 
-      const plugin1: OazapftsPlugin = (hooks) => {
+      const plugin1: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("p1", () => callOrder.push("plugin1"));
       };
 
-      const plugin2: OazapftsPlugin = (hooks) => {
+      const plugin2: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("p2", () => callOrder.push("plugin2"));
       };
 
@@ -1215,7 +1215,7 @@ describe("Plugin System", () => {
       });
       const callOrder: string[] = [];
 
-      const prefixPlugin: OazapftsPlugin = (hooks) => {
+      const prefixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("prefix", () => {
           callOrder.push("prefix");
           return [
@@ -1232,7 +1232,7 @@ describe("Plugin System", () => {
         });
       };
 
-      const suffixPlugin: OazapftsPlugin = (hooks) => {
+      const suffixPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("suffix", () => {
           callOrder.push("suffix");
           return [
@@ -1276,7 +1276,7 @@ describe("Plugin System", () => {
 
       const collectedOps: string[] = [];
 
-      const collectorPlugin: OazapftsPlugin = (hooks) => {
+      const collectorPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.generateMethod.tap("collector", (endpoint) => {
           if (endpoint.operation.operationId) {
             collectedOps.push(endpoint.operation.operationId);
@@ -1285,7 +1285,7 @@ describe("Plugin System", () => {
         });
       };
 
-      const reporterPlugin: OazapftsPlugin = (hooks) => {
+      const reporterPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.astGenerated.tap("reporter", (sourceFile) => {
           const report = ts.factory.createVariableStatement(
             [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -1351,7 +1351,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const noopPlugin: OazapftsPlugin = () => {};
+      const noopPlugin: UNSTABLE_OazapftsPlugin = () => {};
 
       const srcWithout = await generate(spec);
       const srcWithNoop = await generate(spec, [noopPlugin]);
@@ -1371,7 +1371,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const identityPlugin: OazapftsPlugin = (hooks) => {
+      const identityPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.prepare.tap("id", () => {});
         hooks.filterEndpoint.tap("id", (g) => g);
         hooks.generateMethod.tap("id", () => undefined);
@@ -1416,7 +1416,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const publicOnlyPlugin: OazapftsPlugin = (hooks) => {
+      const publicOnlyPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         hooks.filterEndpoint.tap("public-only", (_, endpoint) => {
           return !!endpoint.operation.tags?.includes("public");
         });
@@ -1442,7 +1442,7 @@ describe("Plugin System", () => {
         },
       });
 
-      const metadataPlugin: OazapftsPlugin = (hooks) => {
+      const metadataPlugin: UNSTABLE_OazapftsPlugin = (hooks) => {
         let apiTitle = "";
         let apiVersion = "";
 
