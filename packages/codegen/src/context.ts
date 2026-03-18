@@ -13,7 +13,6 @@ import type {
 import { defaultBaseUrl } from "./generate/generateServers";
 import _ from "lodash";
 import { CustomHeaders } from "@oazapfts/runtime";
-import { preprocessComponents } from "./helpers";
 
 // ─── Data types for template parts ──────────────────────────────────────────
 
@@ -108,7 +107,7 @@ export function createContext(
 ): OazapftsContext {
   const spec = _.cloneDeep(inputSpec);
 
-  const ctx: OazapftsContext = {
+  return {
     opts,
     spec,
     mode: undefined,
@@ -134,10 +133,6 @@ See https://www.npmjs.com/package/oazapfts`,
     typeAliases: {},
     operationNames: new Map(),
   };
-
-  preprocessComponents(ctx);
-
-  return ctx;
 }
 
 export function withMode(
