@@ -11,6 +11,7 @@ import oazapftsLib, {
   type OazapftsOptions,
   type OpenAPI,
 } from "./index";
+import { createContext } from "./context";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { ScriptTarget } from "typescript";
 
@@ -136,6 +137,62 @@ describe("generateSource", () => {
     const src1 = await generate(spec);
     const src2 = await generate(spec);
     expect(src1).toBe(src2);
+  });
+
+  it("should filter endpoints by include tags", async () => {
+    const doc = await parseSpec({
+      openapi: "3.0.0",
+      info: { title: "Tag Filter API", version: "1.0.0" },
+      paths: {
+        "/public": {
+          get: {
+            operationId: "publicOp",
+            tags: ["public"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+        "/admin": {
+          get: {
+            operationId: "adminOp",
+            tags: ["admin"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+      },
+    });
+    const ctx = createContext(doc, { include: ["public"] });
+    const src = printAst(await generateAst(ctx));
+
+    expect(src).toContain("publicOp");
+    expect(src).not.toContain("adminOp");
+  });
+
+  it("should filter endpoints by exclude tags", async () => {
+    const doc = await parseSpec({
+      openapi: "3.0.0",
+      info: { title: "Tag Filter API", version: "1.0.0" },
+      paths: {
+        "/public": {
+          get: {
+            operationId: "publicOp",
+            tags: ["public"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+        "/internal": {
+          get: {
+            operationId: "internalOp",
+            tags: ["internal"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+      },
+    });
+    const ctx = createContext(doc, { exclude: ["internal"] });
+    const src = printAst(await generateAst(ctx));
+
+    expect(src).toContain("publicOp");
+    expect(src).not.toContain("internalOp");
   });
 
   it("should handle enums as union types", async () => {

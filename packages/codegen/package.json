@@ -20,6 +20,11 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./generate": {
+      "types": "./dist/generate.d.ts",
+      "require": "./dist/generate.cjs",
+      "default": "./dist/generate.js"
+    },
     "./context": {
       "types": "./dist/context.d.ts",
       "require": "./dist/context.cjs",

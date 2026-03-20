@@ -1,17 +1,16 @@
 import ts from "typescript";
 import _ from "lodash";
 import { isReference, resolve, getRefBasename } from "@oazapfts/resolve";
-import { OazapftsContext, OnlyMode } from "../context";
-import * as OpenApi from "../helpers/openApi3-x";
-import { createPropertySignature } from "./tscodegen";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { OazapftsContext } from "../../context";
+import * as OpenApi from "../../helpers/openApi3-x";
+import { createPropertySignature } from "../tscodegen";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getDiscriminatorType } from "./getDiscriminatorType";
 
 export function getUnionType(
   variants: (OpenApi.ReferenceObject | OpenApi.SchemaObject)[],
   ctx: OazapftsContext,
   discriminator?: OpenApi.DiscriminatorObject,
-  onlyMode?: OnlyMode,
 ) {
   if (discriminator) {
     // oneOf + discriminator -> tagged union (polymorphism)
@@ -78,18 +77,14 @@ export function getUnionType(
               ),
             }),
           ]),
-          getTypeFromSchema(ctx, variant, undefined, onlyMode),
+          getTypeFromSchema(ctx, variant),
         ]),
       ),
     );
   } else {
     // oneOf -> untagged union
     return ts.factory.createUnionTypeNode(
-      _.uniq(
-        variants.map((schema) =>
-          getTypeFromSchema(ctx, schema, undefined, onlyMode),
-        ),
-      ),
+      _.uniq(variants.map((schema) => getTypeFromSchema(ctx, schema))),
     );
   }
 }

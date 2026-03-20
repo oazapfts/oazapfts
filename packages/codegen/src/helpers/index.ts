@@ -1,6 +1,3 @@
-export * from "./preprocessComponents";
-export * from "./skip";
-export * from "./getOperationName";
 export * from "./supportDeepObjects";
 export * from "./toIdentifier";
 export * from "./getFormatter";
@@ -19,4 +16,3 @@ export * from "./checkSchemaOnlyMode";
 export * from "./mimeTypes";
 export * from "./isNullable";
 export * from "./isHttpMethod";
-export * from "./dedupeMethodNames";

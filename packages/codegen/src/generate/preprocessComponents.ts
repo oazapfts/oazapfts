@@ -1,6 +1,6 @@
 import { isReference, resolve, getRefBasename } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
-import * as OpenApi from "./openApi3-x";
+import * as OpenApi from "../helpers/openApi3-x";
 
 /**
  * In order to support discriminated unions.

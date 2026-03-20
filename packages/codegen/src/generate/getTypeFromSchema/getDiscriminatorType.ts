@@ -1,8 +1,8 @@
 import ts, { factory } from "typescript";
 import { resolve } from "@oazapfts/resolve";
-import { OazapftsContext } from "../context";
-import { getEnumStyle, isNamedEnumSchema, toIdentifier } from "../helpers";
-import * as OpenApi from "../helpers/openApi3-x";
+import { OazapftsContext } from "../../context";
+import { getEnumStyle, isNamedEnumSchema, toIdentifier } from "../../helpers";
+import * as OpenApi from "../../helpers/openApi3-x";
 import { getTrueEnum } from "./getTrueEnum";
 import { getAsConstEnum } from "./getAsConstEnum";
 import { getTypeFromEnum } from "./getTypeFromEnum";

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { generateServers } from "./generateServers";
+import {
+  createServersStatement,
+  defaultBaseUrl,
+  generateServers,
+} from "./generateServers";
 import * as cg from "./tscodegen";
 
 describe("generateServer", () => {
@@ -51,5 +55,34 @@ describe("generateServer", () => {
           }) => \`http://example.\${tld}/\${path}\`
       }"
     `);
+  });
+
+  it("creates exported servers statement", () => {
+    const statement = createServersStatement([
+      { url: "https://api.example.com" },
+    ]);
+
+    expect(cg.printNode(statement)).toMatchInlineSnapshot(`
+      "export const servers = {
+          server1: "https://api.example.com"
+      };"
+    `);
+  });
+});
+
+describe("defaultBaseUrl", () => {
+  it("uses first server and applies variable defaults", () => {
+    expect(defaultBaseUrl()).toBe("/");
+    expect(
+      defaultBaseUrl([
+        {
+          url: "https://{env}.example.com/{version}",
+          variables: {
+            env: { default: "api" },
+            version: { default: "v1" },
+          },
+        },
+      ]),
+    ).toBe("https://api.example.com/v1");
   });
 });

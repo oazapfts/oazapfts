@@ -1,15 +1,14 @@
 import ts from "typescript";
 import { resolve } from "@oazapfts/resolve";
-import { OazapftsContext, OnlyMode } from "../context";
+import { OazapftsContext } from "../context";
 import * as OpenApi from "../helpers/openApi3-x";
 import * as cg from "./tscodegen";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 import { getSchemaFromContent } from "./getSchemaFromContent";
 
 export function getTypeFromResponses(
   responses: OpenApi.ResponsesObject,
   ctx: OazapftsContext,
-  onlyMode?: OnlyMode,
 ) {
   return ts.factory.createUnionTypeNode(
     Object.entries(responses).map(([code, res]) => {
@@ -27,7 +26,7 @@ export function getTypeFromResponses(
         }),
       ];
 
-      const dataType = getTypeFromResponse(res, ctx, onlyMode);
+      const dataType = getTypeFromResponse(res, ctx);
       if (dataType !== cg.keywordType.void) {
         props.push(
           cg.createPropertySignature({
@@ -41,17 +40,11 @@ export function getTypeFromResponses(
   );
 }
 
-function getTypeFromResponse(
+export function getTypeFromResponse(
   resOrRef: OpenApi.ResponseObject | OpenApi.ReferenceObject,
   ctx: OazapftsContext,
-  onlyMode?: OnlyMode,
 ) {
   const res = resolve(resOrRef, ctx);
   if (!res || !res.content) return cg.keywordType.void;
-  return getTypeFromSchema(
-    ctx,
-    getSchemaFromContent(res.content),
-    undefined,
-    onlyMode,
-  );
+  return getTypeFromSchema(ctx, getSchemaFromContent(res.content));
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { printNode } from "./tscodegen";
-import { getTypeFromSchema } from "./getTypeForSchema";
-import { createContext } from "../context";
+import { printNode } from "../tscodegen";
+import { getTypeFromSchema } from "./getTypeFromSchema";
+import { createContext } from "../../context";
 import { OpenAPIV3 } from "openapi-types";
 
 describe("getTypeFromSchema", () => {

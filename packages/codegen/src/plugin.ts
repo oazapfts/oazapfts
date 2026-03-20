@@ -1,5 +1,6 @@
 import ts from "typescript";
 import {
+  AsyncSeriesBailHook,
   AsyncSeriesWaterfallHook,
   AsyncSeriesHook,
   SyncWaterfallHook,
@@ -42,6 +43,18 @@ export type UNSTABLE_QuerySerializerHookArgs = [
   OazapftsContext,
 ];
 
+export type UNSTABLE_EndpointHookArgs = [
+  {
+    method: HttpMethod;
+    path: string;
+    operation: OpenApi.OperationObject;
+    pathItem: OpenApi.PathItemObject;
+  },
+  OazapftsContext,
+];
+
+export type UNSTABLE_ComposeSourceHookArgs = [OazapftsContext, ts.Statement[]];
+
 export type UNSTABLE_OazapftsPluginHooks = {
   /**
    * Called after context is created with all template parts initialized.
@@ -50,13 +63,13 @@ export type UNSTABLE_OazapftsPluginHooks = {
    */
   prepare: AsyncSeriesHook<[OazapftsContext]>;
   /**
-   * Generate or modify a client method for an endpoint.
-   * First argument is the array of generated FunctionDeclarations (may be empty).
-   * Return modified array to change the methods for this endpoint.
+   * Decide whether a given endpoint should be generated.
+   * Receives the current decision (default true) as first argument.
+   * Return false to skip endpoint generation.
    */
-  generateMethod: AsyncSeriesWaterfallHook<
+  filterEndpoint: SyncWaterfallHook<
     [
-      ts.FunctionDeclaration[],
+      boolean,
       {
         method: HttpMethod;
         path: string;
@@ -65,6 +78,40 @@ export type UNSTABLE_OazapftsPluginHooks = {
       },
       OazapftsContext,
     ]
+  >;
+  /**
+   * Generate client methods for an endpoint.
+   * This is a bail hook: the first plugin that returns a value wins.
+   * Return `undefined` to delegate to later plugins.
+   */
+  generateMethod: AsyncSeriesBailHook<
+    UNSTABLE_EndpointHookArgs,
+    ts.Statement[] | undefined
+  >;
+  /**
+   * Refine client methods for an endpoint.
+   * Receives generated methods and can return a modified array.
+   * Runs after generateMethod for each endpoint.
+   */
+  refineMethod: AsyncSeriesWaterfallHook<
+    [ts.Statement[], ...UNSTABLE_EndpointHookArgs]
+  >;
+  /**
+   * Compose top-level source statements from context and generated methods.
+   * This is a bail hook: the first plugin that returns a value wins.
+   * Return `undefined` to delegate to later plugins.
+   */
+  composeSource: AsyncSeriesBailHook<
+    UNSTABLE_ComposeSourceHookArgs,
+    ts.Statement[] | undefined
+  >;
+  /**
+   * Refine top-level source statements before SourceFile construction.
+   * Receives composed statements and can return a modified array.
+   * Runs after composeSource.
+   */
+  refineSource: AsyncSeriesWaterfallHook<
+    [ts.Statement[], ...UNSTABLE_ComposeSourceHookArgs]
   >;
   /**
    * Customize query serializer call arguments for each formatter call.
@@ -94,9 +141,22 @@ export function UNSTABLE_createPlugin(
 export function UNSTABLE_createHooks() {
   return {
     prepare: new AsyncSeriesHook(["ctx"], "prepare"),
-    generateMethod: new AsyncSeriesWaterfallHook(
-      ["methods", "endpoint", "ctx"],
+    filterEndpoint: new SyncWaterfallHook(
+      ["generate", "endpoint", "ctx"],
+      "filterEndpoint",
+    ),
+    generateMethod: new AsyncSeriesBailHook(
+      ["endpoint", "ctx"],
       "generateMethod",
+    ),
+    refineMethod: new AsyncSeriesWaterfallHook(
+      ["methods", "endpoint", "ctx"],
+      "refineMethod",
+    ),
+    composeSource: new AsyncSeriesBailHook(["ctx", "methods"], "composeSource"),
+    refineSource: new AsyncSeriesWaterfallHook(
+      ["statements", "ctx", "methods"],
+      "refineSource",
     ),
     querySerializerArgs: new SyncWaterfallHook(
       ["args", "queryContext", "ctx"],

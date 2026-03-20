@@ -2,7 +2,7 @@ import { isReference } from "@oazapfts/resolve";
 import { OazapftsContext } from "../context";
 import { ParameterObject } from "../helpers/openApi3-x";
 import { getSchemaFromContent } from "./getSchemaFromContent";
-import { getTypeFromSchema } from "./getTypeForSchema";
+import { getTypeFromSchema } from "./getTypeFromSchema";
 
 export function getTypeFromParameter(p: ParameterObject, ctx: OazapftsContext) {
   if (p.content) {
