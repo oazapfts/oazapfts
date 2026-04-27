@@ -33,7 +33,7 @@
     "prettier": "^3.8.3",
     "semantic-release": "^25.0.3",
     "semantic-release-monorepo": "^8.0.2",
-    "vite": "^8.0.9",
+    "vite": "^8.0.10",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.5",
     "with-server": "^2.1.0"
