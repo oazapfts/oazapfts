@@ -2,13 +2,23 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    open-pull-requests-limit: 999
-    rebase-strategy: disabled
+    groups:
+      non-major-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
     schedule:
       interval: weekly
   - package-ecosystem: github-actions
     directory: /
-    open-pull-requests-limit: 999
-    rebase-strategy: disabled
+    groups:
+      non-major-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
     schedule:
       interval: weekly
