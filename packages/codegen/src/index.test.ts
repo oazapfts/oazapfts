@@ -195,6 +195,39 @@ describe("generateSource", () => {
     expect(src).not.toContain("internalOp");
   });
 
+  it("should generate operations with anonymous security alternatives", async () => {
+    const src = await generateSource({
+      openapi: "3.0.0",
+      info: { title: "Security API", version: "1.0.0" },
+      paths: {
+        "/items": {
+          get: {
+            operationId: "listItems",
+            security: [{}, { apiKeyAuth: [] }],
+            responses: {
+              "204": {
+                description: "No content",
+              },
+            },
+          },
+        },
+      },
+      components: {
+        securitySchemes: {
+          apiKeyAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "X-API-Key",
+          },
+        },
+      },
+    } as OpenAPI.Document);
+    const error = await checkForTypeErrors(src);
+
+    expect(error).toBeUndefined();
+    expect(src).toContain("function listItems(opts?: Oazapfts.RequestOpts)");
+  });
+
   it("should handle enums as union types", async () => {
     const src = await generate(path.join(demoFolder, "./petstore.json"));
     expect(src).toContain(`export type Option = ("one" | "two" | "three")[];`);
