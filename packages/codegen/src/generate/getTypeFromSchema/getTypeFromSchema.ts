@@ -83,9 +83,21 @@ function getBaseTypeFromSchema(
     );
   }
   if (schema.allOf) {
+    // `required` applies to the whole object, so a member can make properties
+    // of its siblings required
+    const required = _.union(
+      schema.required,
+      ...schema.allOf.map((childSchema) => collectRequired(childSchema, ctx)),
+    );
+
+    // properties that another member constrains, but this one doesn't. They
+    // would erase the constrained type in the intersection and can be dropped.
+    const redundant = getRedundantProperties(schema, ctx);
+
     // allOf -> intersection
     const types: ts.TypeNode[] = [];
     for (const childSchema of schema.allOf) {
+      const omitted = redundant.get(childSchema) ?? [];
       if (
         isReference(childSchema) &&
         ctx.discriminatingSchemas.has(
@@ -118,13 +130,23 @@ function getBaseTypeFromSchema(
           );
         }
         types.push(
-          getRefAlias(childSchema, ctx, /* ignoreDiscriminator */ true),
+          omitProperties(
+            getRefAlias(childSchema, ctx, /* ignoreDiscriminator */ true),
+            omitted,
+          ),
+        );
+      } else if (isReference(childSchema) || typeof childSchema === "boolean") {
+        types.push(
+          omitProperties(getTypeFromSchema(ctx, childSchema), omitted),
         );
       } else {
         types.push(
           getTypeFromSchema(ctx, {
-            required: schema.required,
             ...childSchema,
+            required,
+            ...(omitted.length && {
+              properties: _.omit(childSchema.properties, omitted),
+            }),
           }),
         );
       }
@@ -222,6 +244,99 @@ function getBaseTypeFromSchema(
   }
 
   return getEmptySchemaType(ctx);
+}
+
+/**
+ * A schema that puts no constraints on its value, like `{ description: "..." }`.
+ * It becomes `any` (or `unknown`), which would swallow the type of the same
+ * property in a sibling of an allOf.
+ */
+function isUnconstrainedSchema(
+  schema: OpenApi.SchemaObject | OpenApi.ReferenceObject,
+): boolean {
+  if (isReference(schema)) return false;
+  if (typeof schema === "boolean") return schema;
+
+  const annotations = [
+    "description",
+    "title",
+    "default",
+    "example",
+    "examples",
+    "deprecated",
+    "externalDocs",
+    "readOnly",
+    "writeOnly",
+    "xml",
+  ];
+  return Object.keys(schema).every((key) => annotations.includes(key));
+}
+
+/**
+ * Maps every member of an allOf to the properties it declares without any
+ * constraints while another member does constrain them.
+ */
+function getRedundantProperties(
+  schema: Exclude<OpenApi.SchemaObject, boolean>,
+  ctx: OazapftsContext,
+) {
+  const members = (schema.allOf ?? []).map((member) => {
+    const resolved = isReference(member)
+      ? resolve<OpenApi.SchemaObject>(member, ctx)
+      : member;
+    const properties =
+      typeof resolved === "object" ? (resolved.properties ?? {}) : {};
+    return { member, properties };
+  });
+
+  const constrained = new Set(
+    [...members, { properties: schema.properties ?? {} }].flatMap(
+      ({ properties }) =>
+        Object.entries(properties)
+          .filter(([, property]) => !isUnconstrainedSchema(property))
+          .map(([name]) => name),
+    ),
+  );
+
+  return new Map(
+    members.map(({ member, properties }) => [
+      member,
+      Object.keys(properties).filter(
+        (name) =>
+          constrained.has(name) && isUnconstrainedSchema(properties[name]),
+      ),
+    ]),
+  );
+}
+
+/**
+ * Wraps a type in `Omit<T, "a" | "b">`.
+ */
+function omitProperties(type: ts.TypeNode, names: string[]) {
+  if (!names.length) return type;
+  return factory.createTypeReferenceNode("Omit", [
+    type,
+    getTypeFromEnum(names),
+  ]);
+}
+
+/**
+ * Collects the required property names of a schema, including the ones
+ * declared by the members of a nested allOf.
+ */
+function collectRequired(
+  schema: OpenApi.SchemaObject | OpenApi.ReferenceObject,
+  ctx: OazapftsContext,
+): string[] {
+  const resolved = isReference(schema)
+    ? resolve<OpenApi.SchemaObject>(schema, ctx)
+    : schema;
+  if (typeof resolved !== "object") return [];
+
+  return _.union(
+    resolved.required,
+    ...(resolved.allOf ?? []).map((member) => collectRequired(member, ctx)),
+  );
 }
 
 function isKeyOfKeywordType(key: string): key is keyof typeof cg.keywordType {
