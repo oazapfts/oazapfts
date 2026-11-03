@@ -210,7 +210,10 @@ export function generateClientMethod(
     );
   }
 
-  const url = h.createUrlExpression(path, qs);
+  const url = h.createUrlExpression(path, qs, (name) => {
+    const param = parameters.find((p) => p.in === "path" && p.name === name);
+    return param ? getArgName(param) : h.toIdentifier(name);
+  });
   const init: ts.ObjectLiteralElementLike[] = [
     ts.factory.createSpreadAssignment(ts.factory.createIdentifier("opts")),
   ];
