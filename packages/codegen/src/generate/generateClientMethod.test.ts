@@ -167,4 +167,55 @@ describe("generateClientMethod", () => {
       }"
     `);
   });
+  it("uses suffixed argument names for path parameters that collide with other parameters", () => {
+    const ctx = createContext(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {},
+      } as OpenAPIV3.Document,
+      { futureStripLegacyMethods: true },
+    );
+
+    const statements = generateClientMethod(
+      "GET",
+      "/{id}/",
+      {
+        parameters: [
+          {
+            name: "id",
+            in: "query",
+            required: false,
+            schema: { type: "integer" },
+          },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "ok",
+          },
+        },
+      } as OpenAPIV3.OperationObject,
+      {},
+      ctx,
+      UNSTABLE_createHooks(),
+    );
+
+    expect(cg.printNodes(statements)).toMatchInlineSnapshot(`
+      "export function getById(idPath: string, { id }: {
+          id?: number;
+      } = {}, opts?: Oazapfts.RequestOpts) {
+          return oazapfts.fetchText(\`/\${encodeURIComponent(idPath)}/\${QS.query(QS.explode({
+              id
+          }))}\`, {
+              ...opts
+          });
+      }"
+    `);
+  });
 });

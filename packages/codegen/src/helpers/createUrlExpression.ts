@@ -6,14 +6,20 @@ import { createCall, createTemplateString } from "../generate/tscodegen";
  * Create a template string literal from the given OpenAPI urlTemplate.
  * Curly braces in the path are turned into identifier expressions,
  * which are read from the local scope during runtime.
+ * `getArgName` maps a path parameter name to its identifier, which may differ
+ * from the plain identifier when it collides with another parameter.
  */
-export function createUrlExpression(path: string, qs?: ts.Expression) {
+export function createUrlExpression(
+  path: string,
+  qs?: ts.Expression,
+  getArgName: (name: string) => string = toIdentifier,
+) {
   const spans: Array<{ expression: ts.Expression; literal: string }> = [];
   // Use a replacer function to collect spans as a side effect:
   const head = path.replace(
     /(.*?)\{(.+?)\}(.*?)(?=\{|$)/g,
     (_substr, head, name, literal) => {
-      const expression = toIdentifier(name);
+      const expression = getArgName(name);
       spans.push({
         expression: createCall(
           ts.factory.createIdentifier("encodeURIComponent"),
