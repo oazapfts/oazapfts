@@ -45,18 +45,25 @@ export function generateClientMethod(
   }
 
   // convert parameter names to argument names ...
-  const argNames = new Map<OpenApi.ParameterObject, string>();
-  _.sortBy(parameters, "name.length").forEach((p) => {
-    const identifier = h.toIdentifier(p.name);
-    const existing = [...argNames.values()];
-    const suffix = existing.includes(identifier) ? _.upperFirst(p.in) : "";
-    argNames.set(p, identifier + suffix);
-  });
+  const argNames = getUniqueIdentifiers(parameters);
 
   const getArgName = (param: OpenApi.ParameterObject) => {
     const name = argNames.get(param);
     if (!name) throw new Error(`Can't find parameter: ${param.name}`);
     return name;
+  };
+
+  // destructure a parameter from its public property into its argument name
+  const createBindingElement = (
+    param: OpenApi.ParameterObject,
+    propertyNames: Map<OpenApi.ParameterObject, string>,
+  ) => {
+    const name = getArgName(param);
+    const propertyName = propertyNames.get(param)!;
+    return {
+      name,
+      propertyName: propertyName !== name ? propertyName : undefined,
+    };
   };
 
   const methodParams: ts.ParameterDeclaration[] = [];
@@ -66,6 +73,7 @@ export function generateClientMethod(
     case "positional":
       // split into required/optional
       const [required, optional] = _.partition(parameters, "required");
+      const optionalNames = getUniqueIdentifiers(optional);
 
       // build the method signature - first all the required parameters
       const requiredParams = required.map((p) =>
@@ -96,16 +104,16 @@ export function generateClientMethod(
         methodParams.push(
           cg.createParameter(
             cg.createObjectBinding(
-              optional
-                .map((param) => resolve(param, ctx))
-                .map((param) => ({ name: getArgName(param) })),
+              optional.map((param) =>
+                createBindingElement(param, optionalNames),
+              ),
             ),
             {
               initializer: ts.factory.createObjectLiteralExpression(),
               type: ts.factory.createTypeLiteralNode(
                 optional.map((p) =>
                   cg.createPropertySignature({
-                    name: getArgName(resolve(p, ctx)),
+                    name: optionalNames.get(p)!,
                     questionToken: true,
                     type: getTypeFromParameter(p, ctx),
                   }),
@@ -119,9 +127,10 @@ export function generateClientMethod(
 
     case "object":
       // build the method signature - first all the required/optional parameters
+      const propertyNames = getUniqueIdentifiers(parameters);
       const paramMembers = parameters.map((p) =>
         cg.createPropertySignature({
-          name: getArgName(resolve(p, ctx)),
+          name: propertyNames.get(p)!,
           questionToken: !p.required,
           type: getTypeFromParameter(p, ctx),
         }),
@@ -152,9 +161,9 @@ export function generateClientMethod(
       methodParams.push(
         cg.createParameter(
           cg.createObjectBinding([
-            ...parameters
-              .map((param) => resolve(param, ctx))
-              .map((param) => ({ name: getArgName(param) })),
+            ...parameters.map((param) =>
+              createBindingElement(param, propertyNames),
+            ),
             ...(bodyVar ? [{ name: bodyVar }] : []),
           ]),
           {
@@ -327,4 +336,19 @@ export function generateClientMethod(
   }
 
   return result;
+}
+
+/**
+ * Convert parameter names to identifiers, adding the parameter location as
+ * suffix (e.g. `idQuery`) where names would otherwise collide.
+ */
+function getUniqueIdentifiers(parameters: OpenApi.ParameterObject[]) {
+  const names = new Map<OpenApi.ParameterObject, string>();
+  _.sortBy(parameters, "name.length").forEach((p) => {
+    const identifier = h.toIdentifier(p.name);
+    const existing = [...names.values()];
+    const suffix = existing.includes(identifier) ? _.upperFirst(p.in) : "";
+    names.set(p, identifier + suffix);
+  });
+  return names;
 }

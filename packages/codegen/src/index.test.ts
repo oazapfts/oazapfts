@@ -497,7 +497,7 @@ describe("generateSource", () => {
     const src = await generate(
       __dirname + "/__fixtures__/duplicateIdentifiers.yaml",
     );
-    expect(src).toContain("getPetById(id: number, { idQuery }");
+    expect(src).toContain("getPetById(id: number, { id: idQuery }");
   });
 
   it("should normalize operationId with dots and emit deprecated legacy alias", async () => {

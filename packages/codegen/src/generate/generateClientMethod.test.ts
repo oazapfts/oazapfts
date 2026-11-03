@@ -167,4 +167,113 @@ describe("generateClientMethod", () => {
       }"
     `);
   });
+  describe("query parameter declared after a path parameter with the same name", () => {
+    const operation = {
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+        {
+          name: "id",
+          in: "query",
+          required: false,
+          schema: { type: "integer" },
+        },
+      ],
+      responses: { "200": { description: "ok" } },
+    } as OpenAPIV3.OperationObject;
+
+    const generate = (opts: Parameters<typeof createContext>[1]) =>
+      cg.printNodes(
+        generateClientMethod(
+          "GET",
+          "/{id}/",
+          operation,
+          {},
+          createContext(
+            {
+              openapi: "3.0.0",
+              info: { title: "Test", version: "1.0.0" },
+              paths: {},
+            } as OpenAPIV3.Document,
+            { futureStripLegacyMethods: true, ...opts },
+          ),
+          UNSTABLE_createHooks(),
+        ),
+      );
+
+    it("keeps the original name in the optional parameters object", () => {
+      expect(generate({})).toMatchInlineSnapshot(`
+        "export function getById(id: string, { id: idQuery }: {
+            id?: number;
+        } = {}, opts?: Oazapfts.RequestOpts) {
+            return oazapfts.fetchText(\`/\${encodeURIComponent(id)}/\${QS.query(QS.explode({
+                id: idQuery
+            }))}\`, {
+                ...opts
+            });
+        }"
+      `);
+    });
+
+    it("suffixes only colliding property names in object style", () => {
+      expect(generate({ argumentStyle: "object" })).toMatchInlineSnapshot(`
+        "export function getById({ id, idQuery }: {
+            id: string;
+            idQuery?: number;
+        }, opts?: Oazapfts.RequestOpts) {
+            return oazapfts.fetchText(\`/\${encodeURIComponent(id)}/\${QS.query(QS.explode({
+                id: idQuery
+            }))}\`, {
+                ...opts
+            });
+        }"
+      `);
+    });
+  });
+
+  it("keeps suffixes for colliding names within the optional parameters object", () => {
+    const ctx = createContext(
+      {
+        openapi: "3.0.0",
+        info: { title: "Test", version: "1.0.0" },
+        paths: {},
+      } as OpenAPIV3.Document,
+      { futureStripLegacyMethods: true },
+    );
+
+    const statements = generateClientMethod(
+      "GET",
+      "/items",
+      {
+        parameters: [
+          { name: "id", in: "query", schema: { type: "integer" } },
+          { name: "id", in: "header", schema: { type: "string" } },
+        ],
+        responses: { "200": { description: "ok" } },
+      } as OpenAPIV3.OperationObject,
+      {},
+      ctx,
+      UNSTABLE_createHooks(),
+    );
+
+    expect(cg.printNodes(statements)).toMatchInlineSnapshot(`
+      "export function getItems({ id, idHeader }: {
+          id?: number;
+          idHeader?: string;
+      } = {}, opts?: Oazapfts.RequestOpts) {
+          return oazapfts.fetchText(\`/items\${QS.query(QS.explode({
+              id
+          }))}\`, {
+              ...opts,
+              headers: oazapfts.mergeHeaders(opts?.headers, {
+                  id: idHeader
+              })
+          });
+      }"
+    `);
+  });
 });
