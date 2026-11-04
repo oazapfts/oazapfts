@@ -29,6 +29,8 @@ describe("getDocComment", () => {
   it("returns undefined when there is nothing to document", () => {
     expect(getDocComment()).toBeUndefined();
     expect(getDocComment("", false)).toBeUndefined();
+    expect(getDocComment("   ")).toBeUndefined();
+    expect(getDocComment(" ", true)).toBe("@deprecated");
   });
 
   it("returns the description untouched", () => {

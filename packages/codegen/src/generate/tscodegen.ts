@@ -503,7 +503,7 @@ export function appendNodes<T extends ts.Node>(
 }
 
 /** Prevents text from closing the surrounding JSDoc comment. */
-export function escapeJsDoc(text: string): string {
+function escapeJsDoc(text: string): string {
   return text.replaceAll("*/", "*\\/");
 }
 
@@ -516,7 +516,7 @@ export function getDocComment(
   deprecated?: boolean,
 ): string | undefined {
   const lines = [
-    description ? escapeJsDoc(description) : undefined,
+    description?.trim() ? escapeJsDoc(description) : undefined,
     deprecated ? "@deprecated" : undefined,
   ];
   const comment = lines.filter(Boolean).join("\n");

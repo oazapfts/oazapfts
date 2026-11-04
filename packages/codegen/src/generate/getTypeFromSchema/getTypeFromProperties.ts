@@ -56,6 +56,8 @@ export function getTypeFromProperties(
         deprecated,
       );
 
+      // Non-deprecated properties keep the compact single-line form to leave
+      // existing generated output unchanged; the tag needs its own line.
       if (comment && deprecated) {
         cg.addComment(signature, comment);
       } else if (comment) {
