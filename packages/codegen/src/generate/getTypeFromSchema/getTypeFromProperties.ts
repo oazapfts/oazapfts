@@ -49,21 +49,29 @@ export function getTypeFromProperties(
       type,
     });
 
-    if (
-      typeof schema !== "boolean" &&
-      "description" in schema &&
-      schema.description
-    ) {
-      // Escape any JSDoc comment closing tags in description
-      const description = schema.description.replace("*/", "*\\/");
+    if (typeof schema !== "boolean") {
+      const description =
+        "description" in schema ? schema.description : undefined;
+      const deprecated = "deprecated" in schema && schema.deprecated === true;
 
-      ts.addSyntheticLeadingComment(
-        signature,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        // Ensures it is formatted like a JSDoc comment: /** description here */
-        `* ${description} `,
-        true,
-      );
+      if (deprecated) {
+        // Escape any JSDoc comment closing tags in description
+        cg.addComment(
+          signature,
+          cg.getDocComment(description?.replaceAll("*/", "*\\/"), true),
+        );
+      } else if (description) {
+        // Escape any JSDoc comment closing tags in description
+        const escaped = description.replace("*/", "*\\/");
+
+        ts.addSyntheticLeadingComment(
+          signature,
+          ts.SyntaxKind.MultiLineCommentTrivia,
+          // Ensures it is formatted like a JSDoc comment: /** description here */
+          `* ${escaped} `,
+          true,
+        );
+      }
     }
 
     return signature;

@@ -235,6 +235,7 @@ export function findPetsByStatus(
 }
 /**
  * Finds Pets by tags
+ * @deprecated
  */
 export function findPetsByTags(tags: string[], opts?: Oazapfts.RequestOpts) {
   return oazapfts.ok(

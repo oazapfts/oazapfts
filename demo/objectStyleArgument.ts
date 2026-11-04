@@ -252,6 +252,7 @@ export function findPetsByStatus(
 }
 /**
  * Finds Pets by tags
+ * @deprecated
  */
 export function findPetsByTags(
   {

@@ -167,4 +167,88 @@ describe("generateClientMethod", () => {
       }"
     `);
   });
+
+  describe("deprecated operations", () => {
+    const generate = (
+      operation: Partial<OpenAPIV3.OperationObject>,
+      opts: { futureStripLegacyMethods: boolean } = {
+        futureStripLegacyMethods: true,
+      },
+    ) => {
+      const ctx = createContext(
+        {
+          openapi: "3.0.0",
+          info: { title: "Test", version: "1.0.0" },
+          paths: {},
+        } as OpenAPIV3.Document,
+        opts,
+      );
+
+      return generateClientMethod(
+        "GET",
+        "/pets",
+        {
+          operationId: "pets.list",
+          responses: { "200": { description: "ok" } },
+          ...operation,
+        } as OpenAPIV3.OperationObject,
+        {} as OpenAPIV3.PathItemObject,
+        ctx,
+        UNSTABLE_createHooks(),
+      );
+    };
+
+    it("adds a bare @deprecated tag when there is no summary", () => {
+      const output = cg.printNodes(generate({ deprecated: true }));
+
+      expect(output).toMatch(
+        /^\/\*\*\n \* @deprecated\n \*\/\nexport function petsList\(/,
+      );
+    });
+
+    it("keeps the summary above the @deprecated tag", () => {
+      const output = cg.printNodes(
+        generate({ deprecated: true, summary: "List pets" }),
+      );
+
+      expect(output).toMatch(
+        /^\/\*\*\n \* List pets\n \* @deprecated\n \*\/\nexport function petsList\(/,
+      );
+    });
+
+    it("falls back to the description when there is no summary", () => {
+      const output = cg.printNodes(
+        generate({ deprecated: true, description: "Use /v2/pets" }),
+      );
+
+      expect(output).toContain(" * Use /v2/pets\n * @deprecated\n");
+    });
+
+    it("does not tag operations that are not deprecated", () => {
+      expect(cg.printNodes(generate({ summary: "List pets" }))).not.toContain(
+        "@deprecated",
+      );
+      expect(
+        cg.printNodes(generate({ summary: "List pets", deprecated: false })),
+      ).not.toContain("@deprecated");
+      expect(cg.printNodes(generate({}))).not.toContain("@deprecated");
+    });
+
+    it("tags only the primary method, with exactly one @deprecated, when a legacy alias exists", () => {
+      const output = cg.printNodes(
+        generate(
+          { deprecated: true, summary: "List pets" },
+          { futureStripLegacyMethods: false },
+        ),
+      );
+
+      expect(output.match(/@deprecated/g)).toHaveLength(2);
+      expect(output).toMatch(
+        / \* List pets\n \* @deprecated\n \*\/\nexport function petsList\(/,
+      );
+      expect(output).toMatch(
+        / \* @deprecated Use \{@link petsList\} instead\.\n \* List pets\n \*\/\nexport function getPets\(/,
+      );
+    });
+  });
 });

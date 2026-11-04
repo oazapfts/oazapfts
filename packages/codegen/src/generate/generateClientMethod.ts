@@ -25,8 +25,14 @@ export function generateClientMethod(
   ctx: OazapftsContext,
   hooks: UNSTABLE_OazapftsPluginHooks,
 ): ts.Statement[] {
-  const { operationId, requestBody, responses, summary, description } =
-    operation;
+  const {
+    operationId,
+    requestBody,
+    responses,
+    summary,
+    description,
+    deprecated,
+  } = operation;
 
   const { primaryName, deprecatedLegacyName } = getOperationNames(
     method,
@@ -298,7 +304,7 @@ export function generateClientMethod(
         methodParams,
         methodBody,
       ),
-      summary || description,
+      cg.getDocComment(summary || description, deprecated),
     ),
   ];
 
