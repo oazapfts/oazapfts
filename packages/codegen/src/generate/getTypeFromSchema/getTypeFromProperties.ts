@@ -49,21 +49,26 @@ export function getTypeFromProperties(
       type,
     });
 
-    if (
-      typeof schema !== "boolean" &&
-      "description" in schema &&
-      schema.description
-    ) {
-      // Escape any JSDoc comment closing tags in description
-      const description = schema.description.replace("*/", "*\\/");
-
-      ts.addSyntheticLeadingComment(
-        signature,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        // Ensures it is formatted like a JSDoc comment: /** description here */
-        `* ${description} `,
-        true,
+    if (typeof schema !== "boolean") {
+      const deprecated = "deprecated" in schema && schema.deprecated === true;
+      const comment = cg.getDocComment(
+        "description" in schema ? schema.description : undefined,
+        deprecated,
       );
+
+      // Non-deprecated properties keep the compact single-line form to leave
+      // existing generated output unchanged; the tag needs its own line.
+      if (comment && deprecated) {
+        cg.addComment(signature, comment);
+      } else if (comment) {
+        ts.addSyntheticLeadingComment(
+          signature,
+          ts.SyntaxKind.MultiLineCommentTrivia,
+          // Ensures it is formatted like a JSDoc comment: /** description here */
+          `* ${comment} `,
+          true,
+        );
+      }
     }
 
     return signature;
