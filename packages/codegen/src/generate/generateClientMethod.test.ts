@@ -234,7 +234,25 @@ describe("generateClientMethod", () => {
       expect(cg.printNodes(generate({}))).not.toContain("@deprecated");
     });
 
-    it("tags only the primary method, with exactly one @deprecated, when a legacy alias exists", () => {
+    it("escapes comment terminators in summaries, including on the legacy alias", () => {
+      const output = cg.printNodes(
+        generate(
+          { summary: "a */ b */ c" },
+          { futureStripLegacyMethods: false },
+        ),
+      );
+
+      expect(output).toContain("a *\\/ b *\\/ c");
+      expect(output.match(/\*\//g)).toHaveLength(2);
+    });
+
+    it("does not trim descriptions of operations that are not deprecated", () => {
+      expect(cg.printNodes(generate({ summary: "  padded  " }))).toContain(
+        " *   padded",
+      );
+    });
+
+    it("tags the primary method and the legacy alias once each", () => {
       const output = cg.printNodes(
         generate(
           { deprecated: true, summary: "List pets" },

@@ -112,6 +112,15 @@ describe("getTypeFromProperties", () => {
     expect(output.match(/\*\//g)).toHaveLength(1);
   });
 
+  it("escapes every comment terminator in non-deprecated descriptions", () => {
+    const output = print({
+      name: { type: "string", description: "a */ b */ c" },
+    });
+
+    expect(output).toContain("/** a *\\/ b *\\/ c */");
+    expect(output.match(/\*\//g)).toHaveLength(1);
+  });
+
   it("tags required deprecated properties", () => {
     const output = printNode(
       getTypeFromProperties(

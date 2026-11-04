@@ -312,7 +312,7 @@ export function generateClientMethod(
   if (deprecatedLegacyName && !ctx.opts.futureStripLegacyMethods) {
     const deprecatedComment = [
       `@deprecated Use {@link ${primaryName}} instead.`,
-      summary || description,
+      cg.getDocComment(summary || description),
     ]
       .filter(Boolean)
       .join("\n");

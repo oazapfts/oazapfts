@@ -502,15 +502,23 @@ export function appendNodes<T extends ts.Node>(
   return factory.createNodeArray([...array, ...nodes]);
 }
 
+/** Prevents text from closing the surrounding JSDoc comment. */
+export function escapeJsDoc(text: string): string {
+  return text.replaceAll("*/", "*\\/");
+}
+
 /**
- * Builds JSDoc text from an optional description, appending a `@deprecated`
- * tag when the OpenAPI `deprecated` flag is set.
+ * Builds escaped JSDoc text from an optional description, appending a
+ * `@deprecated` tag when the OpenAPI `deprecated` flag is set.
  */
 export function getDocComment(
   description?: string,
   deprecated?: boolean,
 ): string | undefined {
-  const lines = [description?.trim(), deprecated ? "@deprecated" : undefined];
+  const lines = [
+    description ? escapeJsDoc(description) : undefined,
+    deprecated ? "@deprecated" : undefined,
+  ];
   const comment = lines.filter(Boolean).join("\n");
   return comment || undefined;
 }

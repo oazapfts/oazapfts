@@ -50,25 +50,20 @@ export function getTypeFromProperties(
     });
 
     if (typeof schema !== "boolean") {
-      const description =
-        "description" in schema ? schema.description : undefined;
       const deprecated = "deprecated" in schema && schema.deprecated === true;
+      const comment = cg.getDocComment(
+        "description" in schema ? schema.description : undefined,
+        deprecated,
+      );
 
-      if (deprecated) {
-        // Escape any JSDoc comment closing tags in description
-        cg.addComment(
-          signature,
-          cg.getDocComment(description?.replaceAll("*/", "*\\/"), true),
-        );
-      } else if (description) {
-        // Escape any JSDoc comment closing tags in description
-        const escaped = description.replace("*/", "*\\/");
-
+      if (comment && deprecated) {
+        cg.addComment(signature, comment);
+      } else if (comment) {
         ts.addSyntheticLeadingComment(
           signature,
           ts.SyntaxKind.MultiLineCommentTrivia,
           // Ensures it is formatted like a JSDoc comment: /** description here */
-          `* ${escaped} `,
+          `* ${comment} `,
           true,
         );
       }
