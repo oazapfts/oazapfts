@@ -44,7 +44,7 @@ export function encode(encoders: Encoders, delimiter = ",") {
 export function delimited(delimiter = ",") {
   return (params: Record<string, any>, encoders = encodeReserved) =>
     Object.entries(params)
-      .filter(([, value]) => value !== undefined)
+      .filter(([, value]) => value != null)
       .map(([name, value]) => encode(encoders, delimiter)`${name}=${value}`)
       .join("&");
 }
