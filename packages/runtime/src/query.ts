@@ -22,7 +22,7 @@ export function deep(
   // https://github.com/expressjs/body-parser/issues/289
   const visit = (obj: any, prefix = ""): string =>
     Object.entries(obj)
-      .filter(([, v]) => v !== undefined)
+      .filter(([, v]) => v != null)
       .map(([prop, v]) => {
         const index = Array.isArray(obj) ? "" : prop;
         const key = prefix ? qk`${prefix}[${index}]` : prop;
@@ -48,7 +48,7 @@ export function explode(
 ): string {
   const q = encode(encoders);
   return Object.entries(params)
-    .filter(([, value]) => value !== undefined)
+    .filter(([, value]) => value != null)
     .map(([name, value]) => {
       if (Array.isArray(value)) {
         return value.map((v) => q`${name}=${v}`).join("&");

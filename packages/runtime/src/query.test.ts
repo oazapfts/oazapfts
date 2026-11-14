@@ -20,6 +20,11 @@ describe("delimited", () => {
   it("should omit undefined values", () => {
     expect(qs.form({ id: 23, foo: undefined })).toEqual("id=23");
   });
+  it("should omit null values", () => {
+    expect(qs.form({ id: 23, foo: null })).toEqual("id=23");
+    expect(qs.pipe({ ids: null })).toEqual("");
+    expect(qs.space({ ids: null, page: 1 })).toEqual("page=1");
+  });
   it("should keep zeros", () => {
     expect(qs.form({ id: 0 })).toEqual("id=0");
   });
@@ -45,6 +50,12 @@ describe("explode", () => {
   it("should omit undefined values", () => {
     expect(qs.explode({ id: 23, foo: undefined })).toEqual("id=23");
   });
+  it("should omit null values", () => {
+    expect(qs.explode({ id: 23, foo: null })).toEqual("id=23");
+    expect(qs.explode({ author: { firstName: "Felix", role: null } })).toEqual(
+      "firstName=Felix",
+    );
+  });
   it("should support numeric booleans with custom encoder", () => {
     expect(
       qs.explode(
@@ -69,6 +80,12 @@ describe("deep", () => {
   it("should omit undefined values", () => {
     expect(qs.deep({ author: { name: "Felix", role: undefined } })).toEqual(
       "author[name]=Felix",
+    );
+  });
+  it("should omit null values", () => {
+    expect(qs.deep({ filter: null, page: 1 })).toEqual("page=1");
+    expect(qs.deep({ filter: { status: null, name: "Felix" } })).toEqual(
+      "filter[name]=Felix",
     );
   });
   it("should serialize nested arrays", () => {
