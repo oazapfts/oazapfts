@@ -75,7 +75,9 @@ export function getTypeFromProperties(
         ? getEmptySchemaType(ctx)
         : getTypeFromSchema(ctx, additionalProperties);
 
-    members.push(cg.createIndexSignature(getIndexSignatureType(type, members)));
+    members.push(
+      cg.createIndexSignature(getIndexSignatureType(type, members, ctx)),
+    );
   }
   return ts.factory.createTypeLiteralNode(members);
 }
@@ -84,8 +86,13 @@ export function getTypeFromProperties(
  * Named properties are not constrained by `additionalProperties`, but
  * TypeScript requires every property to be assignable to the index signature.
  * Adds the property types (and `undefined` for optional ones) to the index type.
+ * `any` properties are skipped: they are already assignable and would erase it.
  */
-function getIndexSignatureType(type: ts.TypeNode, members: ts.TypeElement[]) {
+function getIndexSignatureType(
+  type: ts.TypeNode,
+  members: ts.TypeElement[],
+  ctx: OazapftsContext,
+) {
   const constituents = getUnionConstituents(type);
   if (
     constituents.some(
@@ -97,11 +104,15 @@ function getIndexSignatureType(type: ts.TypeNode, members: ts.TypeElement[]) {
     return type;
   }
 
-  const properties = members.filter(ts.isPropertySignature);
-  const memberTypes = properties.flatMap((member) =>
-    member.type ? getUnionConstituents(member.type) : [],
-  );
-  if (properties.some((member) => member.questionToken)) {
+  const properties = members
+    .filter(ts.isPropertySignature)
+    .map((member) => ({
+      member,
+      types: member.type ? getUnionConstituents(member.type) : [],
+    }))
+    .filter(({ types }) => !types.some((t) => isAnyType(t, ctx)));
+  const memberTypes = properties.flatMap(({ types }) => types);
+  if (properties.some(({ member }) => member.questionToken)) {
     memberTypes.push(cg.keywordType.undefined);
   }
   const missingTypes = _.differenceBy(
@@ -113,6 +124,32 @@ function getIndexSignatureType(type: ts.TypeNode, members: ts.TypeElement[]) {
   return missingTypes.length
     ? ts.factory.createUnionTypeNode([...constituents, ...missingTypes])
     : type;
+}
+
+/**
+ * Whether the type is `any`, directly or through a generated alias such as
+ * `type AnyValue = any` for a `$ref` to an empty schema.
+ */
+function isAnyType(
+  type: ts.TypeNode,
+  ctx: OazapftsContext,
+  seen = new Set<string>(),
+): boolean {
+  if (type.kind === ts.SyntaxKind.AnyKeyword) return true;
+  if (!ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName)) {
+    return false;
+  }
+  const name = type.typeName.text;
+  if (seen.has(name)) return false;
+  seen.add(name);
+  const alias = ctx.aliases.find(
+    (a): a is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(a) && a.name.text === name,
+  );
+  return (
+    !!alias &&
+    getUnionConstituents(alias.type).some((t) => isAnyType(t, ctx, seen))
+  );
 }
 
 function getUnionConstituents(type: ts.TypeNode): ts.TypeNode[] {

@@ -43,6 +43,23 @@
           }
         }
       }
+    },
+    "/metadata": {
+      "get": {
+        "operationId": "getMetadata",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metadata"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -72,7 +89,26 @@
         "additionalProperties": {
           "type": "string"
         }
-      }
+      },
+      "Metadata": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "extra": {
+            "description": "Any JSON value"
+          },
+          "value": {
+            "$ref": "#/components/schemas/AnyValue"
+          }
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "AnyValue": {}
     }
   }
 }

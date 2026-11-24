@@ -743,6 +743,9 @@ describe("generateSource", () => {
     expect(src).toContain(
       "export type Labels = { name: string; [key: string]: string; };",
     );
+    expect(src).toContain(
+      "export type Metadata = { name: string; /** Any JSON value */ extra?: any; value?: AnyValue; [key: string]: string; };",
+    );
   });
 
   it("should handle type array with nullable fields", async () => {
