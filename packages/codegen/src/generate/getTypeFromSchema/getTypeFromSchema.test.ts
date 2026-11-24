@@ -35,4 +35,23 @@ describe("getTypeFromSchema", () => {
       }"
     `);
   });
+
+  it("should not apply object keywords to the other types of a type array", () => {
+    const node = getTypeFromSchema(
+      createContext({} as unknown as OpenAPIV3.Document, {}),
+      {
+        type: ["object", "null"],
+        additionalProperties: {
+          type: "string",
+          enum: ["titi", "tata"],
+        },
+      },
+    );
+
+    expect(printNode(node)).toMatchInlineSnapshot(`
+      "{
+          [key: string]: "titi" | "tata";
+      } | null"
+    `);
+  });
 });
