@@ -158,6 +158,9 @@ function getBaseTypeFromSchema(
         if ("properties" in subSchema && type !== "object") {
           delete subSchema.properties;
         }
+        if ("additionalProperties" in subSchema && type !== "object") {
+          delete subSchema.additionalProperties;
+        }
 
         return getBaseTypeFromSchema(ctx, subSchema, name);
       }),
