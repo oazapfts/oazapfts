@@ -1,4 +1,5 @@
 import ts from "typescript";
+import _ from "lodash";
 import { OazapftsContext } from "../../context";
 import { ReferenceObject, SchemaObject } from "../../helpers/openApi3-x";
 import * as cg from "../tscodegen";
@@ -74,7 +75,49 @@ export function getTypeFromProperties(
         ? getEmptySchemaType(ctx)
         : getTypeFromSchema(ctx, additionalProperties);
 
-    members.push(cg.createIndexSignature(type));
+    members.push(cg.createIndexSignature(getIndexSignatureType(type, members)));
   }
   return ts.factory.createTypeLiteralNode(members);
+}
+
+/**
+ * Named properties are not constrained by `additionalProperties`, but
+ * TypeScript requires every property to be assignable to the index signature.
+ * Adds the property types (and `undefined` for optional ones) to the index type.
+ */
+function getIndexSignatureType(type: ts.TypeNode, members: ts.TypeElement[]) {
+  const constituents = getUnionConstituents(type);
+  if (
+    constituents.some(
+      (t) =>
+        t.kind === ts.SyntaxKind.AnyKeyword ||
+        t.kind === ts.SyntaxKind.UnknownKeyword,
+    )
+  ) {
+    return type;
+  }
+
+  const properties = members.filter(ts.isPropertySignature);
+  const memberTypes = properties.flatMap((member) =>
+    member.type ? getUnionConstituents(member.type) : [],
+  );
+  if (properties.some((member) => member.questionToken)) {
+    memberTypes.push(cg.keywordType.undefined);
+  }
+  const missingTypes = _.differenceBy(
+    _.uniqBy(memberTypes, cg.printNode),
+    constituents,
+    cg.printNode,
+  );
+
+  return missingTypes.length
+    ? ts.factory.createUnionTypeNode([...constituents, ...missingTypes])
+    : type;
+}
+
+function getUnionConstituents(type: ts.TypeNode): ts.TypeNode[] {
+  if (ts.isParenthesizedTypeNode(type)) return getUnionConstituents(type.type);
+  return ts.isUnionTypeNode(type)
+    ? type.types.flatMap(getUnionConstituents)
+    : [type];
 }

@@ -732,6 +732,19 @@ describe("generateSource", () => {
     expect(src).toContain("message: string");
   });
 
+  it("should widen the index signature to admit properties next to additionalProperties", async () => {
+    const src = await generate(
+      __dirname + "/__fixtures__/additionalProperties.json",
+    );
+
+    expect(src).toContain(
+      "export type Tags = { empty?: boolean; [key: string]: string[] | boolean | undefined; };",
+    );
+    expect(src).toContain(
+      "export type Labels = { name: string; [key: string]: string; };",
+    );
+  });
+
   it("should handle type array with nullable fields", async () => {
     const src = await generate(__dirname + "/__fixtures__/array-type.yaml");
 
